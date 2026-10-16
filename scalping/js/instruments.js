@@ -1,5 +1,9 @@
 'use strict';
-const $=s=>document.querySelector(s);
+const qs=s=>document.querySelector(s);
+const qsa=s=>[...document.querySelectorAll(s)];
+function on(sel,ev,fn,opt){ const el=typeof sel==='string'?qs(sel):sel;
+  if(el)el.addEventListener(ev,fn,opt); return el; }
+const $=qs;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
 const easeOut=t=>1-Math.pow(1-t,3);
@@ -21,7 +25,7 @@ const fmtV=v=>v>=1e7?(v/1e7).toFixed(2)+'Cr':v>=1e5?(v/1e5).toFixed(2)+'L':v>=1e
 const fmtInr=v=>'₹'+Math.round(v).toLocaleString('en-IN');
 const ts=()=>new Date().toLocaleTimeString('en-IN',{hour12:false});
 function toast(msg,cls){ const t=document.createElement('div');t.className='toast '+(cls||'');
-  t.textContent=msg;document.querySelector('#toasts').appendChild(t);setTimeout(()=>t.remove(),4500); }
+  t.textContent=msg;const c=qs('#toasts');if(c)c.appendChild(t);setTimeout(()=>t.remove(),4500); }
 function distSeg(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy;
   let t=L2?((px-x1)*dx+(py-y1)*dy)/L2:0;t=clamp(t,0,1);
   return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));}
@@ -30,6 +34,7 @@ function far(x0,y0,x1,y1){const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1;
 function rectHit(xa,ya,xb,yb,mx,my,tol=0){
   return mx>=Math.min(xa,xb)-tol&&mx<=Math.max(xa,xb)+tol&&my>=Math.min(ya,yb)-tol&&my<=Math.max(ya,yb)+tol;}
 
+let CUR_EXCH='NSE';
 const IDX={NIFTY:24350,BANKNIFTY:51300,FINNIFTY:23100,MIDCPNIFTY:12150,SENSEX:79400};
 const EQP={RELIANCE:2847.55,HDFCBANK:1642,TCS:3910,INFY:1852,SBIN:782,ICICIBANK:1148,
   AXISBANK:1104,LT:3520,ITC:462,TATAMOTORS:952,TATASTEEL:152,WIPRO:542,HCLTECH:1620,DMART:3850,ADANIENT:3120};
@@ -37,35 +42,32 @@ const FNO_SET=new Set([...Object.keys(IDX),'RELIANCE','HDFCBANK','TCS','INFY','S
 const LOTS={NIFTY:75,BANKNIFTY:30,FINNIFTY:65,MIDCPNIFTY:120,SENSEX:20};
 const MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 function basePriceOf(sym){ if(IDX[sym])return IDX[sym]; if(EQP[sym])return EQP[sym];
-  return 300+(hash('NSE:'+sym)%4700); }
+  return 300+(hash(sym)%4700); }
 function strikeStep(root,spot){ if(IDX[root])return({NIFTY:50,BANKNIFTY:100,FINNIFTY:50,MIDCPNIFTY:25,SENSEX:100})[root]||50;
   return spot>4000?100:spot>1500?50:spot>500?20:spot>200?10:5; }
-/* expiries: 4 weekly(ish) Thursdays + 2 monthlies */
 const expAll=[];
 (function(){ const d=new Date(); const wk=[];
   while(wk.length<4){d.setDate(d.getDate()+1);if(d.getDay()===4)wk.push(new Date(d));}
   wk.forEach(dt=>{ const f=String(dt.getDate()).padStart(2,'0')+MONTHS[dt.getMonth()]+String(dt.getFullYear()).slice(2);
-    expAll.push({f,date:dt,kind:'weekly'}); });
+    expAll.push({f,date:new Date(dt),kind:'weekly'}); });
   for(let mi=0;mi<2;mi++){
     const m=new Date(d.getFullYear(),d.getMonth()+mi+1,0);
     while(m.getDay()!==4)m.setDate(m.getDate()-1);
     const f=String(m.getDate()).padStart(2,'0')+MONTHS[m.getMonth()]+String(m.getFullYear()).slice(2);
     if(!expAll.some(e=>e.f===f))expAll.push({f,date:m,kind:'monthly'}); } })();
 expAll.sort((a,b)=>a.date-b.date);
-function nextWeekly(root){ return expAll.find(e=>e.kind==='weekly')||expAll[0]; }
-function nextMonthly(root){ return [...expAll].reverse().find(e=>e.kind==='monthly')||expAll[expAll.length-1]; }
 function tym(f){ const dd=String(f).match(/^(\d{2})([A-Z]{3})(\d{2})$/); if(!dd)return 2/365;
   const dt=new Date(2000+ +dd[3],MONTHS.indexOf(dd[2]),+dd[1],15,30);
   return Math.max(0.4,(dt-Date.now())/864e5)/365; }
 function parseKey(k){ k=k.trim().toUpperCase(); const i=k.indexOf(':');
-  return i<0?{exch:'NSE',sym:k}:{exch:k.slice(0,i),sym:k.slice(i+1)}; }
+  return i<0?{exch:CUR_EXCH,sym:k}:{exch:k.slice(0,i),sym:k.slice(i+1)}; }
 function normKey(k){ const {exch,sym}=parseKey(k); return exch+':'+sym; }
 function ncdf(x){const t=1/(1+.2316419*Math.abs(x));const d=.3989423*Math.exp(-x*x/2);
   const p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-p:p}
 function bs(S,K,T,iv,isCall){ if(T<=0)T=1/(365*8); const r=.065,sq=iv*Math.sqrt(T);
   const d1=(Math.log(S/K)+(r+iv*iv/2)*T)/sq,d2=d1-sq,disc=Math.exp(-r*T);
   return Math.max(.05,isCall?S*ncdf(d1)-K*disc*ncdf(d2):K*disc*ncdf(-d2)-S*ncdf(-d1)); }
-function mapApiRows(rows){ /* unchanged from previous version */
+function mapApiRows(rows){
   const days=[],dayIdx=new Map();
   for(const r of rows){ const t=(+r.timestamp>1e12?+r.timestamp:+r.timestamp*1000);
     const dk=new Date(t).toDateString();
@@ -81,7 +83,6 @@ function mapApiRows(rows){ /* unchanged from previous version */
     else{ex.h=Math.max(ex.h,h);ex.l=Math.min(ex.l,l);ex.c=c;ex.v+=v;} }
   const bars=[...map.entries()].sort((a,b)=>a[0]-b[0]).map(e=>e[1]);
   return {bars,dayLbl:days.map(fmtDate)}; }
-
 const metaCache=new Map();
 function resolveMeta(key){
   if(metaCache.has(key))return metaCache.get(key);
@@ -91,13 +92,12 @@ function resolveMeta(key){
   const fm=sym.match(/^([A-Z]+?)(\d{2}[A-Z]{3}\d{2})FUT$/);
   if(um){ const root=um[1];
     Object.assign(m,{type:'OPT',root,underlying:'NSE:'+root,exp:um[2],strike:+um[3],optSide:um[4]});
-    m.iv=((IDX[root]?0.13:0.22)+(expAll.findIndex(e=>e.f===um[2])<=0?0:0.01));
+    m.iv=(IDX[root]?0.13:0.22);
     m.basePrice=bs(basePriceOf(root),m.strike,tym(um[2]),m.iv,um[4]==='CE');
     m.disp=`${root} ${m.strike} ${um[4]}`;
   }else if(fm){ const root=fm[1];
     Object.assign(m,{type:'FUT',root,underlying:'NSE:'+root,exp:fm[2]});
-    m.basePrice=basePriceOf(root)*(1+0.0006*(expAll.findIndex(e=>e.f===fm[2])+1));
-    m.disp=`${root} FUT`; }
+    m.basePrice=basePriceOf(root)*1.0006; m.disp=`${root} FUT`; }
   else{ m.type=IDX[sym]?'INDEX':'EQ'; m.basePrice=basePriceOf(sym); }
   metaCache.set(key,m); return m; }
 const disp=key=>{try{return resolveMeta(key).disp}catch(e){return key}};
@@ -123,7 +123,7 @@ function genSeries(key){
       const o=p,c=o*(1+drift+g()*vol);
       const h=Math.max(o,c)+va*(0.15+r()*0.85);
       const l=Math.min(o,c)-va*(0.15+r()*0.85);
-      const v=Math.round((m.type==='INDEX'?9000:5200)*smile*(0.5+r())*(1+Math.abs(c-o)/(va||1e-9)*0.35));
+      const v=Math.round(5200*smile*(0.5+r()));
       out.bars.push({o,h,l,c,v});p=c; } }
   const k=m.basePrice/out.bars[out.bars.length-1].c;
   for(const b of out.bars){b.o*=k;b.h*=k;b.l*=k;b.c*=k;}
@@ -137,29 +137,24 @@ function ensureQuote(key){
   const sd=symbolData(key);
   const q={ltp:sd.price,prevClose:sd.prevClose};
   quotes.set(key,q); return q; }
-const BROKERS={};
-
-/* ---------- quick search autocomplete ---------- */
+window.BROKERS=window.BROKERS||{};
+const BROKERS=window.BROKERS;
 function acCandidates(qRaw){
-  const q=qRaw.trim().toUpperCase();
-  if(!q)return [];
-  let exch=null,term=q;
-  const ci=q.indexOf(':');
+  const q=qRaw.trim().toUpperCase(); if(!q)return[];
+  let exch=null,term=q; const ci=q.indexOf(':');
   if(ci>0){exch=q.slice(0,ci);term=q.slice(ci+1);}
   const out=[];
   const push=(key,tag,extra)=>{ if(out.length<12&&!out.some(o=>o.key===key))out.push({key,tag,extra}); };
   const roots=[...Object.keys(IDX),...Object.keys(EQP)];
   if(!term){ roots.slice(0,8).forEach(s=>push('NSE:'+s,IDX[s]?'INDEX':'EQ','')); return out; }
   for(const s of roots) if(s.includes(term)) push('NSE:'+s,IDX[s]?'INDEX':'EQ','');
-  if(exch==='NFO'||!exch){
-    for(const s of Object.keys(IDX)){
-      for(const e of expAll.slice(0,3)){
-        if((s+e.f).includes(term)||term===s) push(`NFO:${s}${e.f}FUT`,'FUT',e.f);
-        if(term.replace(/\d/g,'').includes(s)||term===s){
-          const spot=basePriceOf(s), st=strikeStep(s,spot);
-          const atm=Math.round(spot/st)*st;
-          push(`NFO:${s}${e.f}${atm}CE`,'OPT',e.f);
-          push(`NFO:${s}${e.f}${atm}PE`,'OPT',e.f); } } } }
+  for(const s of Object.keys(IDX)){
+    for(const e of expAll.slice(0,3)){
+      if((s+e.f).includes(term)||term===s) push(`NFO:${s}${e.f}FUT`,'FUT',e.f);
+      if(term===s||term.startsWith(s)){
+        const spot=basePriceOf(s), st=strikeStep(s,spot), atm=Math.round(spot/st)*st;
+        push(`NFO:${s}${e.f}${atm}CE`,'OPT',e.f);
+        push(`NFO:${s}${e.f}${atm}PE`,'OPT',e.f); } } }
   return out; }
 function wireAutocomplete(inp,drop,onPick){
   let hot=-1, items=[];
@@ -167,19 +162,17 @@ function wireAutocomplete(inp,drop,onPick){
   const render=()=>{
     items=acCandidates(inp.value);
     if(!items.length){close();return;}
-    drop.innerHTML=items.map((o,i)=>`
-      <div class="acRow${i===hot?' hot':''}" data-k="${o.key}">
-        <span class="t ${o.tag}">${o.tag}</span><span>${o.key}</span><small>${o.extra||''}</small></div>`).join('');
+    drop.innerHTML=items.map((o,i)=>`<div class="acRow${i===hot?' hot':''}" data-k="${o.key}">
+      <span class="t ${o.tag}">${o.tag}</span><span>${o.key}</span><small>${o.extra||''}</small></div>`).join('');
     drop.hidden=false; };
-  inp.addEventListener('input',()=>{hot=-1;render();});
-  inp.addEventListener('focus',()=>render());
-  inp.addEventListener('keydown',e=>{
+  on(inp,'input',()=>{hot=-1;render();});
+  on(inp,'focus',()=>render());
+  on(inp,'keydown',e=>{
     if(drop.hidden)return;
     if(e.key==='ArrowDown'){e.preventDefault();hot=Math.min(items.length-1,hot+1);render();}
     else if(e.key==='ArrowUp'){e.preventDefault();hot=Math.max(0,hot-1);render();}
     else if(e.key==='Enter'&&hot>=0){e.preventDefault();inp.value=items[hot].key;onPick(items[hot].key);close();}
     else if(e.key==='Escape')close(); });
-  drop.addEventListener('mousedown',e=>{
-    const r=e.target.closest('.acRow'); if(!r)return;
+  on(drop,'mousedown',e=>{ const r=e.target.closest('.acRow'); if(!r)return;
     inp.value=r.dataset.k; onPick(r.dataset.k); close(); });
   document.addEventListener('click',e=>{ if(!drop.contains(e.target)&&e.target!==inp)close(); }); }
