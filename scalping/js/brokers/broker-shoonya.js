@@ -65,7 +65,7 @@ BROKERS.shoonya={
     const {exch,sym}=parseKey(o.key);
     const j=await this.jpost(cfg,'PlaceOrder',{uid:cfg.uid,actid:cfg.uid,exch,
       tsym:sym,qty:o.qty,prc:o.priceType==='LIMIT'?o.price:0,
-      prd:'I',trantype:o.side>0?'B':'S',prctyp:o.priceType,ret:'DAY'});
+      prd:({MIS:'I',NRML:'M',CNC:'C'})[o.product]||'I',trantype:o.side>0?'B':'S',prctyp:o.priceType,ret:'DAY'});
     return {ok:true,orderId:j.norenmsg||''};
   }
 };
