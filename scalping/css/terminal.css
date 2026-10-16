@@ -291,3 +291,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .stask td b{color:var(--ink)}
 .stask.pend td{color:var(--ink)}
 .schedIn{width:170px;height:24px;font-size:10px}
+
+/* layout matrix picker */
+#layPop{position:absolute;top:30px;left:8px;z-index:70;background:#11141a;border:1px solid var(--line2);border-radius:12px;padding:9px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;box-shadow:0 16px 40px rgba(0,0,0,.6)}
+.layT{width:52px;height:38px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:3px;border:1px solid var(--line2);border-radius:7px;cursor:pointer;background:#0d1016}
+.layT:hover{border-color:var(--acc)}
+.layT i{background:#1c232d;border-radius:2px}
+.layT i.f{background:var(--acc);opacity:.85}
+/* g3: tall left + stacked right */
+#grid.g3 .paneBox:first-child{grid-row:1/3}
+/* chart area wrappers */
+#wrap{position:relative;flex:1;min-height:0;display:flex}
+#grid{flex:1;display:grid;gap:2px;background:var(--line);min-height:0}
+#legend{position:absolute;top:10px;left:56px;z-index:3}
+#latestBtn{z-index:4}
+#tools,#toolChip,#axMenu,#txtIn{z-index:6}
+.schedIn{width:180px;height:26px;font-size:10px}
