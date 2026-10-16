@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scalping Tool · OpenAlgo</title>
+<link rel="stylesheet" href="css/terminal.css">
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand"><div class="bolt">⚡</div>
+    <div><div class="brandName">SCALPING TOOL</div><div class="brandSub">OPENALGO · MULTI-BROKER</div></div></div>
+  <div class="vdiv"></div>
+  <div class="symLoad">
+    <input id="symIn" placeholder="exch:symbol · NSE:RELIANCE" spellcheck="false">
+    <button class="btn acc" id="loadBtn">LOAD</button>
+    <button class="btn" id="addWatchBtn">+ WATCH</button>
+  </div>
+  <div class="vdiv"></div>
+  <div class="seg" id="instSeg">
+    <button data-i="spot" class="on">SPOT</button><button data-i="fut">FUT</button><button data-i="opt">OPT</button>
+  </div>
+  <select id="expSel" disabled></select>
+  <div class="right">
+    <span class="achip" id="capChip">CAP <b>—</b></span>
+    <span class="achip" id="pnlChip">P&amp;L <b>—</b></span>
+    <input type="range" id="capSlider" min="0" max="100" value="75" title="deploy % of capital">
+    <span class="achip" id="capPct">75%</span>
+    <div class="seg" id="srcSeg"></div>
+    <span id="srcDot"></span><span id="srcLbl">SIM</span>
+    <button class="btn" id="setBtn">⚙ SETTINGS</button>
+  </div>
+</header>
+
+<div id="mid">
+  <aside id="watch">
+    <div class="phead"><span>WATCHLIST</span><span class="cnt" id="wCnt">0</span></div>
+    <div class="pbody" id="wBody"></div>
+    <div class="pnote">click to load into the active chart tab · LOAD → + WATCH</div>
+  </aside>
+
+  <section id="chartcol">
+    <div id="chartbar">
+      <div class="ctabs" id="ctabs"></div>
+      <div class="symTitle"><div class="s1" id="symName">—</div><div class="s2" id="symSub">—</div></div>
+      <div class="ltpBox"><div class="ltp" id="ltp">—</div><div class="chg up" id="chg">—</div></div>
+      <div class="seg" id="tfSeg">
+        <button data-tf="1">1m</button><button data-tf="3">3m</button>
+        <button data-tf="5" class="on">5m</button><button data-tf="15">15m</button>
+      </div>
+      <div class="ghostCtl" id="ghostCtl">
+        <span class="ctlLabel">1M GHOST</span>
+        <button class="toggle on" id="ghostToggle"></button>
+        <div class="seg mini" id="styleSeg"><button data-s="hollow" class="on">HOLLOW</button><button data-s="fade">FADE</button></div>
+      </div>
+      <div class="seg mini" id="ovSeg">
+        <button data-o="fvg" class="on">FVG</button><button data-o="vw" class="on">V WICK</button>
+      </div>
+      <div class="right" style="margin-left:auto">
+        <div class="popWrap"><button class="hdrBtn" id="sclBtn">SCALES</button>
+          <div class="pop" id="sclPop" hidden>
+            <label><input type="checkbox" data-scale="price" checked><span>Price</span></label>
+            <label><input type="checkbox" data-scale="pct" checked><span>Percent</span></label>
+            <label><input type="checkbox" data-scale="inv"><span>Inverted&nbsp;%</span><span class="param">sellers</span></label>
+            <label><input type="checkbox" data-scale="pts"><span>Points</span></label>
+          </div></div>
+        <div class="popWrap"><button class="hdrBtn" id="indBtn">INDICATORS</button>
+          <div class="pop" id="indPop" hidden>
+            <label><input type="checkbox" data-pane="rsi" checked><span>RSI</span><span class="param">14</span></label>
+            <label><input type="checkbox" data-pane="macd" checked><span>MACD</span><span class="param">12·26·9</span></label>
+            <label><input type="checkbox" data-pane="adx"><span>ADX / DMI</span><span class="param">14</span></label>
+          </div></div>
+        <div class="live" id="live"><span class="dot"></span><span id="liveTxt">LIVE</span></div>
+        <button class="iconBtn" id="pauseBtn" title="pause/resume (space)">
+          <svg id="icPause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 5v14M15 5v14"/></svg>
+          <svg id="icPlay" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M8 5.5v13l11-6.5z"/></svg></button>
+        <button class="iconBtn" id="resetBtn" title="reset view (R)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4"/></svg></button>
+      </div>
+    </div>
+    <main id="wrap">
+      <canvas id="chart"></canvas>
+      <div id="tools"></div><div id="toolChip"></div>
+      <div id="axMenu" hidden>
+        <div class="mh">ADD ON SCALE</div>
+        <button data-act="buy"><span class="sw" style="background:var(--up)"></span>BUY MARKER</button>
+        <button data-act="sell"><span class="sw" style="background:var(--dn)"></span>SELL MARKER</button>
+        <button data-act="base"><span class="sw" style="background:var(--acc)"></span>SET 0 · BASELINE</button>
+      </div>
+      <input id="txtIn" type="text" maxlength="120" placeholder="Type · Enter to place" spellcheck="false">
+      <div id="wm"><div class="wm1" id="wm1">—</div><div class="wm2" id="wm2">—</div></div>
+      <div id="legend">
+        <div class="lgRow"><span class="chipTf" id="lgTf">5m</span>
+          <span class="k">O</span><span class="v" id="lgO">—</span><span class="k">H</span><span class="v" id="lgH">—</span>
+          <span class="k">L</span><span class="v" id="lgL">—</span><span class="k">C</span><span class="v" id="lgC">—</span>
+          <span class="k">Δ</span><span class="v" id="lgChg">—</span><span class="k">VOL</span><span class="v" id="lgV">—</span></div>
+        <div class="lgRow" id="lgRow2">—</div>
+      </div>
+      <button id="latestBtn">▶ LATEST</button>
+    </main>
+  </section>
+
+  <aside id="strikes">
+    <div class="phead"><span>STRIKES</span>
+      <select id="stSort" class="miniSel" title="sort">
+        <option value="K">STRIKE</option><option value="L">LTP</option><option value="P">P&amp;L</option></select>
+      <select id="stFilt" class="miniSel" title="filter">
+        <option value="ALL">ALL</option><option value="CE">CE</option><option value="PE">PE</option>
+        <option value="B">BUYER</option><option value="S">SELLER</option></select>
+      <span class="cnt" id="stCnt"></span></div>
+    <div class="statline" id="stStats">—</div>
+    <div class="pbody" id="stBody"></div>
+    <div class="sfoot">
+      <div class="crow">
+        <button class="qb a" id="qAtm" style="flex:1.4">ATM</button>
+        <button class="qb on" id="sgnP" style="flex:.6">+</button>
+        <button class="qb" id="sgnM" style="flex:.6">−</button>
+        <button class="qb num" data-n="1">1</button><button class="qb num" data-n="2">2</button>
+        <button class="qb num" data-n="3">3</button><button class="qb num" data-n="4">4</button>
+        <button class="qb num" data-n="5">5</button><button class="qb num" data-n="6">6</button>
+        <button class="qb num" data-n="7">7</button>
+      </div>
+      <div class="crow">
+        <div class="seg mini" id="cpSeg" style="flex:1"><button data-s="CE" class="on">CE</button><button data-s="PE">PE</button></div>
+        <div class="seg mini" id="bsSeg" style="flex:1.4"><button data-s="buyer" class="on">BUYER</button><button data-s="seller">SELLER</button></div>
+      </div>
+      <div class="crow"><input id="stIn" placeholder="custom strike" spellcheck="false"><button class="btn" id="stAdd" style="height:26px">ADD</button></div>
+    </div>
+  </aside>
+</div>
+
+<section id="bottom">
+  <div id="botbar">
+    <div class="tabs"><button data-t="pos" class="on">POSITIONS</button><button data-t="trd">TRADE BOOK</button></div>
+    <div class="ticket">
+      <span class="tsym" id="tkSym">—</span>
+      <input id="tkQty" type="number" min="1" value="1" title="quantity">
+      <button class="btn buy" id="tkBuy">BUY</button>
+      <button class="btn sell" id="tkSell">SELL</button>
+      <button class="btn" id="tkFlat">SQ-OFF ALL</button>
+      <div class="seg mini" id="ordType"><button data-o="MKT" class="on">MKT</button><button data-o="LMT">LMT</button></div>
+      <input id="ordPx" type="number" step="0.05" placeholder="limit" style="width:62px;display:none" title="limit price">
+    </div>
+    <div class="qwrap" style="margin-left:auto">
+      <button class="qbtn g" id="qDCE">DEPLOY CE</button><button class="qbtn g" id="qDPE">DEPLOY PE</button>
+      <button class="qbtn r" id="qCCE">CLOSE CE</button><button class="qbtn r" id="qCPE">CLOSE PE</button>
+      <button class="qbtn r" id="qCA">CLOSE ALL</button><button class="qbtn" id="qCXL">CANCEL</button>
+      <button class="btn" id="botMin" style="height:24px">▾</button>
+    </div>
+  </div>
+  <div id="botwrap">
+    <table id="tblPos"><thead><tr>
+      <th>SYMBOL</th><th>SIDE</th><th>QTY</th><th>AVG</th><th>LTP</th><th>P&amp;L</th><th>NET</th><th>ACTIONS</th>
+    </tr></thead><tbody id="tbPos"></tbody></table>
+    <table id="tblTrd" style="display:none"><thead><tr>
+      <th>TIME</th><th>SYMBOL</th><th>SIDE</th><th>QTY</th><th>PRICE</th><th>P&amp;L</th><th></th>
+    </tr></thead><tbody id="tbTrd"></tbody></table>
+  </div>
+</section>
+
+<div class="modalBk" id="setModal">
+  <div class="modal">
+    <h3 id="setTitle">SETTINGS</h3>
+    <p class="warn" id="setWarn">⚠ HTTPS page (GitHub Pages) cannot call http://127.0.0.1 — mixed content. Run from http://localhost or use an HTTPS URL (ngrok / cloudflared).</p>
+    <div id="bkFields"></div>
+    <label>TOTAL CAPITAL (₹)</label><input id="setCap" type="number" min="0" step="1000">
+    <div class="two">
+      <div><label>DEPLOY BY</label><select id="setMode"><option value="pct">% of capital</option><option value="amt">fixed ₹</option></select></div>
+      <div><label>VALUE</label><input id="setVal" type="number" min="0"></div>
+    </div>
+    <div class="row">
+      <button class="btn" id="setTest">TEST</button>
+      <button class="btn" id="setCancel">CANCEL</button>
+      <button class="btn acc" id="setSave">SAVE</button>
+    </div>
+  </div>
+</div>
+<div id="toasts"></div>
+
+<script src="js/instruments.js"></script>
+<script src="js/indicators.js"></script>
+<script src="js/brokers/broker-sim.js"></script>
+<script src="js/brokers/broker-openalgo.js"></script>
+<script src="js/brokers/broker-shoonya.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/core.js"></script>
+</body>
+</html>
