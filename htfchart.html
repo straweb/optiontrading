@@ -18,7 +18,6 @@
   button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   button:focus-visible{outline:1px solid var(--acc);outline-offset:2px}
 
-  /* ---------- header ---------- */
   header{display:flex;align-items:center;gap:18px;padding:10px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:11px}
   .brandName{font-weight:800;font-size:13px;letter-spacing:.28em}
@@ -68,12 +67,10 @@
   .pop .param{margin-left:auto;font-size:9px;color:var(--faint)}
   .pop .note{font-family:var(--mono);font-size:8.5px;color:var(--faint);padding:5px 10px 3px;letter-spacing:.04em;line-height:1.5}
 
-  /* ---------- chart ---------- */
   main{position:relative;flex:1;min-height:0}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:none;user-select:none}
   canvas.grabbing{cursor:grabbing}
 
-  /* drawing toolbar — TradingView-style groups with flyouts */
   #tools{position:absolute;left:10px;top:12px;z-index:6;display:flex;flex-direction:column;gap:1px;background:rgba(13,16,20,.86);border:1px solid var(--line);border-radius:10px;padding:5px;backdrop-filter:blur(8px);max-height:calc(100% - 24px);overflow-y:auto;user-select:none;scrollbar-width:none}
   #tools::-webkit-scrollbar{display:none}
   .tgrp{font:600 7.5px var(--mono);color:#3d454f;letter-spacing:.16em;text-align:center;padding:3px 0 1px;flex:none}
@@ -154,6 +151,11 @@
       <button data-s="hollow" class="on" title="outline only">HOLLOW</button>
       <button data-s="fade" title="outline + transparent fill">FADE</button>
     </div>
+  </div>
+
+  <div class="seg mini" id="ovSeg" title="chart overlays">
+    <button data-o="fvg" class="on" title="fair value gaps — solid boxes where price was skipped and likely to re-test">FVG</button>
+    <button data-o="vw" class="on" title="high-volume bars — buy/sell horizontal volume wicks">V WICK</button>
   </div>
 
   <div class="right">
@@ -255,12 +257,13 @@ function rectHit(xa,ya,xb,yb,mx,my,tol=0){
   return mx>=x0&&mx<=x1&&my>=y0&&my<=y1;}
 
 /* ============================ data ============================= */
-const SESSION=375, OPEN_MIN=555;                     // 09:15 → 15:30
+const SESSION=375, OPEN_MIN=555;
 const COL={bg:'#0c0e11',grid:'rgba(255,255,255,.045)',gridStrong:'rgba(255,255,255,.11)',
   ink:'#d6dae0',dim:'#79828d',up:'#2fbf7f',dn:'#e5484d',acc:'#e0a63f'};
-const AXIS_W=92, MCOLW=40, TIME_H=26;                // ← TIME_H restored (bug fix)
+const AXIS_W=92, MCOLW=40, TIME_H=26;
 
 let tf=5, ghostOn=true, ghostStyle='hollow', paused=false;
+let fvgOn=true, vwOn=true;                           // overlay toggles
 const bars=[], dayLbl=[];
 let price=2847.55, liveDrift=0, dataVer=0;
 let bornGM=-1, bornAt=0;
@@ -413,8 +416,9 @@ const CIRCLR=[0.382,0.618,1,1.618,2.618];
 const TZL=[1,2,3,5,8,13,21,34,55,89,144];
 const PATS=new Set(['abcd','dbltop','dblbot','hns','ihns','tri','wedge']);
 const EDITABLE=new Set(['text','comment','callout','pin','pricenote','table']);
+/* vprofile:2 & vbs:2 RESTORED — this was the missing piece that broke the VP tool */
 const NPTS={trend:2,ray:2,arrow:2,rect:2,ellipse:2,fib:2,fibext:2,fan:2,circles:2,tzones:2,
-  tbfib:3,pitchfork:3,pricerange:2,daterange:2,pricedate:2,
+  tbfib:3,pitchfork:3,pricerange:2,daterange:2,pricedate:2,vprofile:2,vbs:2,
   abcd:4,dbltop:4,dblbot:4,hns:5,ihns:5,tri:5,wedge:5,projection:3,forecast:2,callout:2};
 const CHIP={trend:'TREND LINE — click start, click end',ray:'RAY — click origin, click direction',
   arrow:'ARROW — click start, click end',hline:'H LINE — click to place',hray:'H RAY — click to place',
@@ -429,6 +433,8 @@ const CHIP={trend:'TREND LINE — click start, click end',ray:'RAY — click ori
   pricerange:'PRICE RANGE — click start, click end',
   daterange:'DATE RANGE — click start, click end',
   pricedate:'PRICE + DATE RANGE — click start, click end',
+  vprofile:'VOLUME PROFILE — drag or click range start & end',
+  vbs:'BUY/SELL VOLUME — click range start & end · buy left / sell right',
   abcd:'AB=CD PATTERN — click 4 points A → B → C → D',
   dbltop:'DOUBLE TOP — click 4 points',dblbot:'DOUBLE BOTTOM — click 4 points',
   hns:'HEAD & SHOULDERS — click 5 points',ihns:'INVERTED H&S — click 5 points',
@@ -439,8 +445,7 @@ const CHIP={trend:'TREND LINE — click start, click end',ray:'RAY — click ori
   short:'SHORT POSITION — click entry',text:'TEXT — click to type',
   comment:'COMMENT — click to place',callout:'CALLOUT — click anchor, click label spot',
   pin:'PIN — click to place',pricenote:'PRICE NOTE — click a price level',
-  table:'TABLE — click to place · dbl-click to edit',free:'PENCIL — draw freehand',
-  vprofile:'VOLUME PROFILE — click range start & end'};
+  table:'TABLE — click to place · dbl-click to edit',free:'PENCIL — draw freehand'};
 
 let tool='cursor', pending=null, selId=null, drag=null, downPt=null;
 let drawings=[], uidC=1;
@@ -468,6 +473,39 @@ function computeVP(gm0,gm1){
     if(vb>=va){b2++;cum+=bins[b2];}else{a--;cum+=bins[a];} }
   return{lo,hi,bins,N,poc,a,b2};
 }
+/* Buy/Sell split volume: per-bar bull fraction from close position in range */
+function computeBSV(gm0,gm1){
+  const g0=Math.max(0,Math.floor(gm0)), g1=Math.min(bars.length-1,Math.ceil(gm1));
+  if(g1<g0)return null;
+  let lo=1e18,hi=-1e18,tv=0;
+  for(let g=g0;g<=g1;g++){const b=bars[g];if(b.l<lo)lo=b.l;if(b.h>hi)hi=b.h;tv+=b.v;}
+  if(tv===0||hi<=lo)return null;
+  const N=28, buy=new Array(N).fill(0), sell=new Array(N).fill(0), bh=(hi-lo)/N;
+  for(let g=g0;g<=g1;g++){const b=bars[g], r=b.h-b.l;
+    const bf=r>0?(b.c-b.l)/r:0.5;
+    const bi=clamp(Math.floor(((b.h+b.l+b.c)/3-lo)/bh),0,N-1);
+    buy[bi]+=b.v*bf; sell[bi]+=b.v*(1-bf);}
+  let bt=0,st=0;for(let i=0;i<N;i++){bt+=buy[i];st+=sell[i];}
+  return{lo,hi,N,buy,sell,bt,st};
+}
+
+/* FVG detection on the 1m base (cached per data version) */
+let fvgCache={ver:-1,list:[]};
+function getFVG(){
+  if(fvgCache.ver===dataVer)return fvgCache.list;
+  const list=[];
+  for(let i=1;i<bars.length-1;i++){
+    const a=bars[i-1], b=bars[i+1];
+    if(b.l>a.h) list.push({top:b.l,bot:a.h,gm:i+1,dir:1,fill:0,gone:false});
+    else if(b.h<a.l) list.push({top:a.l,bot:b.h,gm:i+1,dir:-1,fill:0,gone:false});
+  }
+  for(const f of list){
+    for(let j=f.gm+1;j<bars.length;j++){const x=bars[j];
+      if(f.dir===1){ if(x.l<=f.bot){f.gone=true;f.fill=j;break;} if(!f.fill&&x.l<f.top)f.fill=j; }
+      else{ if(x.h>=f.top){f.gone=true;f.fill=j;break;} if(!f.fill&&x.h>f.bot)f.fill=j; } }
+  }
+  fvgCache={ver:dataVer,list}; return list;
+}
 
 function handlesOf(d){ const out=[],X=geo.X,Y=geo.Y;
   const add=(x,y,kind,i)=>out.push({x,y,kind,i});
@@ -484,7 +522,9 @@ function handlesOf(d){ const out=[],X=geo.X,Y=geo.Y;
       add(X(d.pts[0].gm),Y(d.pts[0].p),'pt',0);break;
     case 'pricenote':
       add(X(d.pts[0].gm),Y(d.pts[0].p),'hlp',0);break;
-    case 'vprofile':{const vp=computeVP(d.pts[0].gm,d.pts[1].gm);
+    case 'vprofile': case 'vbs':{
+      const f=d.type==='vprofile'?computeVP:computeBSV;
+      const vp=f(d.pts[0].gm,d.pts[1].gm);
       const ym=Y(vp?(vp.lo+vp.hi)/2:0);
       add(X(d.pts[0].gm),ym,'gm0',0);add(X(d.pts[1].gm),ym,'gm1',1);break;}
     case 'pos':
@@ -581,6 +621,9 @@ function hitDrawing(d,mx,my){
     case 'vprofile':{ const vp=computeVP(P[0].gm,P[1].gm);if(!vp)return null;
       const x0=Math.min(X(P[0].gm),X(P[1].gm)),x1=Math.max(X(P[0].gm),X(P[1].gm));
       return (mx>x0&&mx<x1&&my>Y(vp.hi)&&my<Y(vp.lo))?{}:null;}
+    case 'vbs':{ const vp=computeBSV(P[0].gm,P[1].gm);if(!vp)return null;
+      const x0=Math.min(X(P[0].gm),X(P[1].gm)),x1=Math.max(X(P[0].gm),X(P[1].gm));
+      return (mx>x0-6&&mx<x1+120&&my>Y(vp.hi)&&my<Y(vp.lo))?{}:null;}
     case 'pos':{ const x0=Math.min(X(d.gm0),X(d.gm1)),x1=Math.max(X(d.gm0),X(d.gm1));
       const yT=Math.min(Y(d.pE),Y(d.pS),Y(d.pT)),yB=Math.max(Y(d.pE),Y(d.pS),Y(d.pT));
       return (mx>x0&&mx<x1&&my>yT&&my<yB)?{}:null;}
@@ -605,7 +648,7 @@ function applyHandle(d,h,md){
 function applyMove(d,orig,dgm,dp){
   if(d.type==='pos'){ d.gm0=orig.gm0+dgm;d.gm1=orig.gm1+dgm;
     d.pE=orig.pE+dp;d.pS=orig.pS+dp;d.pT=orig.pT+dp;return true;}
-  d.pts=orig.pts.map(pt=>d.type==='vprofile'?{gm:pt.gm+dgm,p:pt.p}:{gm:pt.gm+dgm,p:pt.p+dp});
+  d.pts=orig.pts.map(pt=>d.type==='vprofile'||d.type==='vbs'?{gm:pt.gm+dgm,p:pt.p}:{gm:pt.gm+dgm,p:pt.p+dp});
   return dgm!==0||dp!==0;
 }
 
@@ -781,12 +824,12 @@ function renderDrawing(d,o={}){
       const col=dp>=0?COL.up:COL.dn;
       const xa=Math.min(X(A.gm),X(B.gm)),xb=Math.max(X(A.gm),X(B.gm));
       const ya=Math.min(Y(A.p),Y(B.p)),yb=Math.max(Y(A.p),Y(B.p));
-      ctx.fillStyle=col==='#2fbf7f'?'rgba(47,191,127,.12)':'rgba(229,72,77,.12)';
+      ctx.fillStyle=col===COL.up?'rgba(47,191,127,.12)':'rgba(229,72,77,.12)';
       ctx.fillRect(xa,ya,xb-xa,yb-ya);
       ctx.strokeStyle=col;ctx.lineWidth=1.1;ctx.strokeRect(xa,ya,xb-xa,yb-ya);
       const xa2=Math.min(X(C2.gm),X(D.gm)),xb2=Math.max(X(C2.gm),X(D.gm));
       const ya2=Math.min(Y(C2.p),Y(D.p)),yb2=Math.max(Y(C2.p),Y(D.p));
-      ctx.fillStyle=col==='#2fbf7f'?'rgba(47,191,127,.07)':'rgba(229,72,77,.07)';
+      ctx.fillStyle=col===COL.up?'rgba(47,191,127,.07)':'rgba(229,72,77,.07)';
       ctx.fillRect(xa2,ya2,xb2-xa2,yb2-ya2);
       ctx.setLineDash([4,4]);ctx.strokeRect(xa2,ya2,xb2-xa2,yb2-ya2);ctx.setLineDash([]);
       drawArrow(X(C2.gm),Y(C2.p),X(D.gm),Y(D.p),col);
@@ -797,7 +840,7 @@ function renderDrawing(d,o={}){
       const col=B.p>=A.p?COL.up:COL.dn;
       const xa=Math.min(X(A.gm),X(B.gm)),xb=Math.max(X(A.gm),X(B.gm));
       const ya=Math.min(Y(A.p),Y(B.p)),yb=Math.max(Y(A.p),Y(B.p));
-      ctx.fillStyle=col==='#2fbf7f'?'rgba(47,191,127,.08)':'rgba(229,72,77,.08)';
+      ctx.fillStyle=col===COL.up?'rgba(47,191,127,.08)':'rgba(229,72,77,.08)';
       ctx.fillRect(xa,ya,xb-xa,yb-ya);
       ctx.strokeStyle=col;ctx.lineWidth=1.1;ctx.strokeRect(xa,ya,xb-xa,yb-ya);
       drawArrow(X(A.gm),Y(A.p),X(B.gm),Y(B.p),col);
@@ -893,6 +936,25 @@ function renderDrawing(d,o={}){
       ctx.font='500 9.5px '+MONO;ctx.fillStyle='rgba(224,166,63,.9)';
       ctx.textAlign='left';ctx.textBaseline='alphabetic';
       ctx.fillText(`VP · POC ${fmtP(vp.lo+(vp.poc+.5)*bh)}`,x0+4,Y(vp.hi)-5);break;}
+    case 'vbs':{ const vp=computeBSV(P[0].gm,P[1].gm);if(!vp)break;
+      const x0=Math.min(X(P[0].gm),X(P[1].gm)),x1=Math.max(X(P[0].gm),X(P[1].gm));
+      const bh=(vp.hi-vp.lo)/vp.N;
+      let mNet=1e-9;for(let i=0;i<vp.N;i++)mNet=Math.max(mNet,Math.abs(vp.buy[i]-vp.sell[i]));
+      const wMax=clamp((x1-x0)*0.5,30,150);
+      ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;
+      line(cr(x0),Y(vp.hi),cr(x0),Y(vp.lo));
+      for(let i=0;i<vp.N;i++){
+        const net=vp.buy[i]-vp.sell[i];
+        if(Math.abs(net)<mNet*0.05)continue;
+        const w=Math.abs(net)/mNet*wMax;
+        const yT=Y(vp.hi-(i+1)*bh),hh=Math.max(1,Math.abs(Y(vp.hi-i*bh)-yT));
+        ctx.fillStyle=net>0?'rgba(47,191,127,.5)':'rgba(229,72,77,.5)';
+        ctx.fillRect(net>0?x0-w:x0,yT,w,hh);}
+      const bp2=vp.bt+vp.st>0?vp.bt/(vp.bt+vp.st)*100:50;
+      ctx.font='600 9.5px '+MONO;ctx.textAlign='left';ctx.textBaseline='alphabetic';
+      const dom=bp2>=50?COL.up:COL.dn;
+      ctx.fillStyle=dom;
+      ctx.fillText(`BSV · BUY ${bp2.toFixed(0)}% / SELL ${(100-bp2).toFixed(0)}% · ${fmtV(vp.bt)} / ${fmtV(vp.st)}`,x0+4,Y(vp.hi)-5);break;}
     case 'pos':{ const x0=Math.min(X(d.gm0),X(d.gm1)),x1=Math.max(X(d.gm0),X(d.gm1));
       const yE=Y(d.pE),yS=Y(d.pS),yT=Y(d.pT);
       ctx.fillStyle='rgba(229,72,77,.13)';ctx.fillRect(x0,Math.min(yE,yS),x1-x0,Math.abs(yS-yE));
@@ -969,6 +1031,8 @@ const ICONS={
   pricerange:sv('<path d="M12 4v16M9 7l3-3 3 3M9 17l3 3 3-3"/>'),
   daterange:sv('<path d="M4 12h16M7 9l-3 3 3 3M17 9l3 3-3 3"/>'),
   pricedate:sv('<rect x="6" y="6" width="12" height="12"/><path d="M3 12h3M18 12h3"/>'),
+  vprofile:sv('<line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="12" x2="21" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/>'),
+  vbs:sv('<line x1="12" y1="4" x2="12" y2="20"/><line x1="11" y1="7" x2="6" y2="7"/><line x1="11" y1="12" x2="4" y2="12"/><line x1="11" y1="17" x2="7" y2="17"/><line x1="13" y1="9" x2="18" y2="9"/><line x1="13" y1="14" x2="20" y2="14"/>'),
   abcd:sv('<path d="M4 18l5-9 5 6 6-11"/>'),
   dbltop:sv('<path d="M4 18l4-10 4 7 4-7 4 10"/>'),
   dblbot:sv('<path d="M4 6l4 10 4-7 4 7 4-10"/>'),
@@ -987,16 +1051,16 @@ const ICONS={
   pricenote:sv('<line x1="3" y1="12" x2="12" y2="12"/><rect x="12" y="8" width="9" height="8" rx="1"/>'),
   table:sv('<rect x="4" y="5" width="16" height="14"/><path d="M4 10h16M4 15h16M10 5v14M10 10v9"/>'),
   free:sv('<path d="M4 20l1.2-4.2L16 5l3 3L8.2 18.8z"/>'),
-  vprofile:sv('<line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="12" x2="21" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/>'),
   trash:sv('<path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/>')};
 const TNAME={cursor:'Cursor',trend:'Trend line',ray:'Ray',arrow:'Arrow',hline:'Horiz line',
   hray:'Horiz ray',rect:'Rectangle',ellipse:'Ellipse',fib:'Fib retracement',fibext:'Fib extension',
   tbfib:'Trend-based fib',fan:'Speed resistance fan',circles:'Fib circles',tzones:'Fib time zones',
   pitchfork:"Andrews' pitchfork",pricerange:'Price range',daterange:'Date range',pricedate:'Price + date range',
+  vprofile:'Fixed range volume profile',vbs:'Buy/Sell volume',
   abcd:'AB=CD',dbltop:'Double top',dblbot:'Double bottom',hns:'Head & shoulders',ihns:'Inverted H&S',
   tri:'Triangle pattern',wedge:'Wedge pattern',projection:'Projection',forecast:'Forecast',
   long:'Long position',short:'Short position',text:'Text',comment:'Comment',callout:'Callout',
-  pin:'Pin',pricenote:'Price note',table:'Table',free:'Pencil',vprofile:'Volume profile'};
+  pin:'Pin',pricenote:'Price note',table:'Table',free:'Pencil'};
 const GROUPS=[
   {id:'cursor', name:'CURSOR', tools:['cursor']},
   {id:'lines',  name:'LINES',  tools:['trend','ray','arrow','hline','hray']},
@@ -1007,7 +1071,7 @@ const GROUPS=[
   {id:'forecast',name:'FORECAST',tools:['projection','forecast']},
   {id:'trade',  name:'TRADE',  tools:['long','short']},
   {id:'notes',  name:'NOTES',  tools:['text','comment','callout','pin','pricenote','table','free']},
-  {id:'study',  name:'STUDY',  tools:['vprofile']},
+  {id:'study',  name:'STUDY',  tools:['vprofile','vbs']},
 ];
 
 const toolChip=$('#toolChip');
@@ -1069,7 +1133,8 @@ function setTool(t){ tool=t;pending=null;cancelPlacing();cv.style.cursor='';
 function chipTxt(){
   if(!CHIP[tool]){toolChip.style.display='none';return;}
   let t=CHIP[tool];
-  if(pending&&NPTS[pending.type])t+=` · point ${pending.n+1}/${NPTS[pending.type]} · ESC cancels`;
+  if(pending&&NPTS[pending.type])
+    t+=NPTS[pending.type]===2?' · click end point · ESC cancels':` · point ${pending.n+1}/${NPTS[pending.type]} · ESC cancels`;
   toolChip.textContent=t;toolChip.style.display='block';
 }
 
@@ -1089,7 +1154,13 @@ function ensureScale(){ if(!SORDER.some(s=>scales[s]))scales.price=true; syncSca
 sclPop.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',()=>{
   scales[cb.dataset.scale]=cb.checked; ensureScale(); }));
 
-/* ------------- axis add (+) button: BUY / SELL / BASELINE ------------- */
+/* overlay toggles (FVG / V-WICK) */
+ $('#ovSeg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+  if(b.dataset.o==='fvg'){fvgOn=!fvgOn;b.classList.toggle('on',fvgOn);}
+  else{vwOn=!vwOn;b.classList.toggle('on',vwOn);}
+}));
+
+/* ------------- axis add (+) button ------------- */
 const axMenu=$('#axMenu');
 let placing=null, axMenuOpen=false;
 function openAxMenu(){ axMenu.style.left=Math.max(4,W-184)+'px'; axMenu.style.top='26px';
@@ -1360,7 +1431,7 @@ function commitPending(){
   const d=pending; pending=null; chipTxt();
   if(!d)return;
   const P=d.pts;
-  if(d.type==='vprofile'){
+  if(d.type==='vprofile'||d.type==='vbs'){
     const gm0=Math.min(P[0].gm,P[1].gm),gm1=Math.max(P[0].gm,P[1].gm);
     if(gm1-gm0<3){setTool('cursor');return;}
     d.pts=[{gm:gm0,p:0},{gm:gm1,p:0}];
@@ -1368,8 +1439,7 @@ function commitPending(){
     const same=P.every(q=>Math.abs(q.gm-P[0].gm)<1e-6&&Math.abs(q.p-P[0].p)<1e-9);
     if(same){setTool('cursor');return;}
     if(['fib','fibext','fan','pricerange','pricedate','forecast'].includes(d.type)&&Math.abs(P[0].p-P[1].p)<1e-9){setTool('cursor');return;}
-    if(d.type==='daterange'&&Math.abs(P[0].gm-P[1].gm)<1e-6){setTool('cursor');return;}
-    if(d.type==='tzones'&&Math.abs(P[0].gm-P[1].gm)<1e-6){setTool('cursor');return;}
+    if(['daterange','tzones'].includes(d.type)&&Math.abs(P[0].gm-P[1].gm)<1e-6){setTool('cursor');return;}
   }
   finishD(d);
 }
@@ -1613,6 +1683,69 @@ function frame(now){
       ctx.fillText(dayLbl[o.d],o.xi+5,plotH+TIME_H/2+1);ctx.textAlign='center';}
   }
 
+  /* ----- FVG overlay: solid boxes where price was skipped ----- */
+  if(fvgOn){
+    const list=getFVG();
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,plotW,priceH); ctx.clip();
+    let drawn=0;
+    for(let i=list.length-1;i>=0&&drawn<80;i--){
+      const f=list[i]; if(f.gone)continue;
+      const xs=X(f.gm); if(xs>plotW)continue;
+      const xe=f.fill?X(f.fill):Math.min(plotW,X(bars.length-1)+sp*0.6);
+      if(xe<0)continue;
+      const yT=Y(f.top), yB=Y(f.bot); if(yB-yT<1.5)continue;
+      const a=f.fill?0.055:0.11;
+      ctx.fillStyle=f.dir===1?`rgba(47,191,127,${a})`:`rgba(229,72,77,${a})`;
+      ctx.fillRect(xs,yT,Math.max(2,xe-xs),yB-yT);
+      ctx.strokeStyle=f.dir===1?'rgba(47,191,127,.2)':'rgba(229,72,77,.2)';
+      ctx.lineWidth=1; ctx.strokeRect(xs,cr(yT),Math.max(2,xe-xs),cr(yB)-cr(yT));
+      drawn++;
+    }
+    ctx.restore();
+  }
+
+  /* ----- V-WICK overlay: buy/sell horizontal wicks on high-volume bars ----- */
+  if(vwOn){
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,plotW,priceH); ctx.clip();
+    const wMax=clamp(sp*10,26,110);
+    const wick=(cx,hw,bar,vn)=>{
+      const r=bar.h-bar.l, bf=r>0?(bar.c-bar.l)/r:0.5;
+      const relv=clamp(bar.v/Math.max(1e-9,vn*0.85),0,1);
+      if(relv<=0.02)return;
+      const ty=Y((bar.h+bar.l+bar.c)/3), bw2=relv*wMax;
+      ctx.lineWidth=2.4; ctx.lineCap='round';
+      ctx.strokeStyle='rgba(47,191,127,.75)';
+      line(cx-hw-3,ty,cx-hw-3-bw2*bf,ty);
+      ctx.strokeStyle='rgba(229,72,77,.75)';
+      line(cx+hw+3,ty,cx+hw+3+bw2*(1-bf),ty);
+    };
+    if(effGhost&&la>0.02){
+      const win=30; let sIdx=Math.max(0,gA-win), sSum=0;
+      for(let k=sIdx;k<gA;k++)sSum+=bars[k].v;
+      for(let g=gA;g<=gB;g++){
+        const bar=bars[g];
+        const avg=sSum/Math.max(1,g-sIdx);
+        sSum+=bar.v; if(g-sIdx>=win){sSum-=bars[sIdx].v;sIdx++;}
+        if(bar.v<=avg*1.8)continue;
+        const cx=X(g+0.5); if(cx<-4||cx>plotW+4)continue;
+        wick(cx,gw/2,bar,volMax1);
+      }
+    }else{
+      const win=20; let sIdx=Math.max(0,b0-win), sSum=0;
+      for(let k=sIdx;k<b0;k++)sSum+=agg[k].v;
+      for(let b=b0;b<=b1;b++){
+        const k2=agg[b];
+        const avg=sSum/Math.max(1,b-sIdx);
+        sSum+=k2.v; if(b-sIdx>=win){sSum-=agg[sIdx].v;sIdx++;}
+        if(k2.v<=avg*1.8)continue;
+        const cx=(X(k2.g0)+X(k2.g1))/2; if(cx<-4||cx>plotW+4)continue;
+        wick(cx,(X(k2.g1)-X(k2.g0))*0.33,k2,volMax);
+      }
+    }
+    ctx.restore();
+  }
+
+  /* volume pane */
   const ghostVol=effGhost&&la>0.02;
   const aggA=ghostVol?0.22*(1-la):0.22;
   if(aggA>0.012){
@@ -1813,6 +1946,7 @@ function frame(now){
     }
   }
 
+  /* crosshair — pill shows ALL enabled scales (price + % + pts) */
   if(inPlot&&sb>=0){
     const cgm=tf>1?gi:agg[sb].g0;
     const sx=cr(X(cgm+0.5));
@@ -1821,8 +1955,13 @@ function frame(now){
     if(mouse.y<=priceH){
       line(0,cr(mouse.y),plotW,cr(mouse.y));
       const pv=clamp(priceAtY(mouse.y),Math.min(yLo,yHi),Math.max(yLo,yHi));
+      const parts=[scaleLabel(prim,pv)];
+      for(const s of SORDER){ if(s!==prim&&scales[s])parts.push(scaleLabel(s,pv)); }
+      const txt=parts.join('  ·  ');
       ctx.font='500 9.5px '+MONO;
-      pill(primX0+2,mouse.y-9,W-primX0-4,18,scaleLabel(prim,pv));
+      const pw=ctx.measureText(txt).width+14;
+      const px=Math.max(2,W-2-pw);
+      pill(px,mouse.y-9,pw,18,txt);
     }
     ctx.setLineDash([]);
     const txt=fmtHM(cgm), w=ctx.measureText(txt).width+14;
