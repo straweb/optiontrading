@@ -1,1051 +1,1185 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenAlgo · Composite Timeframe Chart</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-        rel="stylesheet">
-    <style>
-        :root {
-            --bg: #0c0e11;
-            --panel: #11141a;
-            --line: #1d232c;
-            --line2: #262e39;
-            --ink: #d6dae0;
-            --dim: #79828d;
-            --faint: #4a525d;
-            --up: #2fbf7f;
-            --dn: #e5484d;
-            --acc: #e0a63f;
-            --mono: 'IBM Plex Mono', monospace;
-            --sans: 'Archivo', sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
-
-        html,
-        body {
-            height: 100%
-        }
-
-        body {
-            background: var(--bg);
-            color: var(--ink);
-            font-family: var(--sans);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            overscroll-behavior: none
-        }
-
-        button {
-            font: inherit;
-            color: inherit;
-            background: none;
-            border: none;
-            cursor: pointer
-        }
-
-        button:focus-visible {
-            outline: 1px solid var(--acc);
-            outline-offset: 2px
-        }
-
-        /* ---------- header ---------- */
-        header {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            padding: 10px 18px;
-            border-bottom: 1px solid var(--line);
-            flex-wrap: wrap
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 11px
-        }
-
-        .brandName {
-            font-weight: 800;
-            font-size: 13px;
-            letter-spacing: .28em
-        }
-
-        .brandSub {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--faint);
-            letter-spacing: .14em;
-            margin-top: 2px
-        }
-
-        .vdiv {
-            width: 1px;
-            height: 30px;
-            background: var(--line)
-        }
-
-        .symName {
-            font-weight: 600;
-            font-size: 16px;
-            letter-spacing: .04em
-        }
-
-        .symSub {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--faint);
-            letter-spacing: .12em;
-            margin-top: 2px
-        }
-
-        .ltpBox {
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-
-        .ltp {
-            font-family: var(--mono);
-            font-size: 17px;
-            font-weight: 600;
-            transition: color .3s
-        }
-
-        .chg {
-            font-family: var(--mono);
-            font-size: 10.5px;
-            padding: 3px 8px;
-            border-radius: 6px;
-            border: 1px solid;
-            white-space: nowrap
-        }
-
-        .chg.up {
-            color: var(--up);
-            border-color: rgba(47, 191, 127, .35);
-            background: rgba(47, 191, 127, .07)
-        }
-
-        .chg.dn {
-            color: var(--dn);
-            border-color: rgba(229, 72, 77, .35);
-            background: rgba(229, 72, 77, .07)
-        }
-
-        .seg {
-            display: flex;
-            border: 1px solid var(--line2);
-            border-radius: 9px;
-            overflow: hidden
-        }
-
-        .seg button {
-            font-family: var(--mono);
-            font-size: 11.5px;
-            padding: 7px 14px;
-            color: var(--dim);
-            border-right: 1px solid var(--line);
-            letter-spacing: .03em;
-            transition: color .15s, background .15s
-        }
-
-        .seg button:last-child {
-            border-right: none
-        }
-
-        .seg button:hover {
-            color: var(--ink)
-        }
-
-        .seg button.on {
-            color: var(--acc);
-            background: rgba(224, 166, 63, .10)
-        }
-
-        .seg.mini button {
-            padding: 4px 9px;
-            font-size: 9.5px
-        }
-
-        .ghostCtl {
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-
-        .ghostCtl.dis {
-            opacity: .32;
-            pointer-events: none
-        }
-
-        .ctlLabel {
-            font-family: var(--mono);
-            font-size: 10px;
-            letter-spacing: .14em;
-            color: var(--dim);
-            display: flex;
-            align-items: center;
-            gap: 6px
-        }
-
-        .toggle {
-            width: 34px;
-            height: 18px;
-            border-radius: 9px;
-            background: #20262f;
-            border: 1px solid var(--line2);
-            position: relative;
-            transition: .18s;
-            flex: none
-        }
-
-        .toggle::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--dim);
-            transition: .18s
-        }
-
-        .toggle.on {
-            background: rgba(224, 166, 63, .16);
-            border-color: rgba(224, 166, 63, .5)
-        }
-
-        .toggle.on::after {
-            left: 18px;
-            background: var(--acc)
-        }
-
-        .right {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 12px
-        }
-
-        .live {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            font-family: var(--mono);
-            font-size: 10px;
-            letter-spacing: .12em;
-            color: var(--up)
-        }
-
-        .live .dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: currentColor;
-            animation: blink 1.4s ease-in-out infinite
-        }
-
-        @keyframes blink {
-
-            0%,
-            100% {
-                opacity: 1
-            }
-
-            50% {
-                opacity: .25
-            }
-        }
-
-        .live.paused {
-            color: var(--dim)
-        }
-
-        .live.paused .dot {
-            animation: none;
-            opacity: .5
-        }
-
-        .iconBtn {
-            width: 30px;
-            height: 30px;
-            border: 1px solid var(--line2);
-            border-radius: 8px;
-            display: grid;
-            place-items: center;
-            color: var(--dim);
-            transition: .15s
-        }
-
-        .iconBtn:hover {
-            color: var(--ink);
-            border-color: #39424f
-        }
-
-        .iconBtn svg {
-            width: 14px;
-            height: 14px
-        }
-
-        /* ---------- chart ---------- */
-        main {
-            position: relative;
-            flex: 1;
-            min-height: 0
-        }
-
-        canvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            display: block;
-            cursor: crosshair;
-            touch-action: none;
-            user-select: none
-        }
-
-        canvas.grabbing {
-            cursor: grabbing
-        }
-
-        #legend {
-            position: absolute;
-            top: 12px;
-            left: 14px;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-width: calc(100% - 90px)
-        }
-
-        .lgRow {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            font-family: var(--mono);
-            font-size: 11px;
-            background: rgba(13, 16, 20, .74);
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 6px 11px;
-            backdrop-filter: blur(6px);
-            width: max-content;
-            max-width: 100%;
-            flex-wrap: wrap
-        }
-
-        .lgRow .k {
-            color: var(--faint);
-            font-size: 9px;
-            letter-spacing: .06em
-        }
-
-        .lgRow .v {
-            color: var(--ink)
-        }
-
-        .chipTf {
-            font-size: 10px;
-            color: var(--acc);
-            border: 1px solid rgba(224, 166, 63, .45);
-            border-radius: 5px;
-            padding: 1px 7px;
-            letter-spacing: .08em
-        }
-
-        #lgRow2 {
-            color: var(--dim);
-            font-size: 10px;
-            letter-spacing: .02em
-        }
-
-        #lgRow2 b {
-            color: var(--ink);
-            font-weight: 500
-        }
-
-        #lgRow2 .u {
-            color: var(--up)
-        }
-
-        #lgRow2 .d {
-            color: var(--dn)
-        }
-
-        #wm {
-            position: absolute;
-            inset: 0;
-            display: grid;
-            place-content: center;
-            text-align: center;
-            pointer-events: none;
-            user-select: none
-        }
-
-        #wm .wm1 {
-            font-weight: 800;
-            font-size: clamp(28px, 5vw, 48px);
-            letter-spacing: .34em;
-            color: rgba(255, 255, 255, .032);
-            padding-left: .34em
-        }
-
-        #wm .wm2 {
-            font-family: var(--mono);
-            font-size: 10.5px;
-            letter-spacing: .42em;
-            color: rgba(255, 255, 255, .05);
-            margin-top: 8px;
-            padding-left: .42em
-        }
-
-        #latestBtn {
-            position: absolute;
-            right: 86px;
-            bottom: 46px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: var(--mono);
-            font-size: 10.5px;
-            letter-spacing: .08em;
-            color: var(--acc);
-            background: rgba(17, 20, 26, .92);
-            border: 1px solid rgba(224, 166, 63, .5);
-            border-radius: 8px;
-            padding: 7px 12px;
-            opacity: 0;
-            transform: translateY(6px);
-            pointer-events: none;
-            transition: .25s
-        }
-
-        #latestBtn.show {
-            opacity: 1;
-            transform: none;
-            pointer-events: auto
-        }
-
-        #latestBtn:hover {
-            background: rgba(224, 166, 63, .12)
-        }
-
-        footer {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            padding: 7px 18px;
-            border-top: 1px solid var(--line);
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--dim);
-            letter-spacing: .05em;
-            flex-wrap: wrap
-        }
-
-        footer .hints {
-            color: var(--faint)
-        }
-
-        footer .hints b {
-            color: var(--dim);
-            font-weight: 500
-        }
-
-        @media (max-width:920px) {
-
-            .brandSub,
-            .symSub,
-            .hints,
-            .vdiv.h2 {
-                display: none
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenAlgo · Composite Timeframe Chart</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0e11; --panel:#11141a; --line:#1d232c; --line2:#262e39;
+    --ink:#d6dae0; --dim:#79828d; --faint:#4a525d;
+    --up:#2fbf7f; --dn:#e5484d; --acc:#e0a63f;
+    --mono:'IBM Plex Mono',monospace; --sans:'Archivo',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  button:focus-visible{outline:1px solid var(--acc);outline-offset:2px}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:18px;padding:10px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brandName{font-weight:800;font-size:13px;letter-spacing:.28em}
+  .brandSub{font-family:var(--mono);font-size:9px;color:var(--faint);letter-spacing:.14em;margin-top:2px}
+  .vdiv{width:1px;height:30px;background:var(--line)}
+  .symName{font-weight:600;font-size:16px;letter-spacing:.04em}
+  .symSub{font-family:var(--mono);font-size:9px;color:var(--faint);letter-spacing:.12em;margin-top:2px}
+  .ltpBox{display:flex;align-items:center;gap:10px}
+  .ltp{font-family:var(--mono);font-size:17px;font-weight:600;transition:color .3s}
+  .chg{font-family:var(--mono);font-size:10.5px;padding:3px 8px;border-radius:6px;border:1px solid;white-space:nowrap}
+  .chg.up{color:var(--up);border-color:rgba(47,191,127,.35);background:rgba(47,191,127,.07)}
+  .chg.dn{color:var(--dn);border-color:rgba(229,72,77,.35);background:rgba(229,72,77,.07)}
+
+  .seg{display:flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+  .seg button{font-family:var(--mono);font-size:11.5px;padding:7px 14px;color:var(--dim);border-right:1px solid var(--line);letter-spacing:.03em;transition:color .15s,background .15s}
+  .seg button:last-child{border-right:none}
+  .seg button:hover{color:var(--ink)}
+  .seg button.on{color:var(--acc);background:rgba(224,166,63,.10)}
+  .seg.mini button{padding:4px 9px;font-size:9.5px}
+
+  .ghostCtl{display:flex;align-items:center;gap:10px}
+  .ghostCtl.dis{opacity:.32;pointer-events:none}
+  .ctlLabel{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--dim);display:flex;align-items:center;gap:6px}
+  .toggle{width:34px;height:18px;border-radius:9px;background:#20262f;border:1px solid var(--line2);position:relative;transition:.18s;flex:none}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--dim);transition:.18s}
+  .toggle.on{background:rgba(224,166,63,.16);border-color:rgba(224,166,63,.5)}
+  .toggle.on::after{left:18px;background:var(--acc)}
+
+  .right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .live{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--up)}
+  .live .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:blink 1.4s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .live.paused{color:var(--dim)}
+  .live.paused .dot{animation:none;opacity:.5}
+  .iconBtn{width:30px;height:30px;border:1px solid var(--line2);border-radius:8px;display:grid;place-items:center;color:var(--dim);transition:.15s}
+  .iconBtn:hover{color:var(--ink);border-color:#39424f}
+  .iconBtn svg{width:14px;height:14px}
+  .hdrBtn{height:30px;display:flex;align-items:center;gap:7px;border:1px solid var(--line2);border-radius:8px;padding:0 11px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--dim);transition:.15s}
+  .hdrBtn:hover{color:var(--ink);border-color:#39424f}
+  .hdrBtn svg{width:13px;height:13px}
+
+  /* indicators popover */
+  .popWrap{position:relative}
+  .pop{position:absolute;top:calc(100% + 8px);right:0;background:#11141a;border:1px solid var(--line2);border-radius:10px;padding:7px;min-width:200px;z-index:40;box-shadow:0 14px 34px rgba(0,0,0,.55)}
+  .pop label{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;font-family:var(--mono);font-size:11px;color:var(--dim);cursor:pointer}
+  .pop label:hover{background:#171c23;color:var(--ink)}
+  .pop input{accent-color:var(--acc);width:13px;height:13px;flex:none}
+  .pop .param{margin-left:auto;font-size:9px;color:var(--faint)}
+
+  /* ---------- chart ---------- */
+  main{position:relative;flex:1;min-height:0}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:none;user-select:none}
+  canvas.grabbing{cursor:grabbing}
+
+  /* drawing toolbar */
+  #tools{position:absolute;left:10px;top:12px;z-index:6;display:flex;flex-direction:column;gap:1px;background:rgba(13,16,20,.86);border:1px solid var(--line);border-radius:10px;padding:5px;backdrop-filter:blur(8px);max-height:calc(100% - 24px);overflow-y:auto;user-select:none;scrollbar-width:none}
+  #tools::-webkit-scrollbar{display:none}
+  .tbtn{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--dim);transition:.12s;flex:none}
+  .tbtn:hover{color:var(--ink);background:#181d25}
+  .tbtn.on{color:var(--acc);background:rgba(224,166,63,.13)}
+  .tbtn svg{width:16px;height:16px}
+  .tsep{height:1px;background:var(--line);margin:3px 2px;flex:none}
+
+  #toolChip{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--acc);background:rgba(17,20,26,.92);border:1px solid rgba(224,166,63,.45);border-radius:8px;padding:6px 12px;display:none;z-index:6;pointer-events:none;white-space:nowrap}
+
+  #txtIn{position:absolute;display:none;z-index:20;background:#141922;border:1px solid rgba(224,166,63,.55);border-radius:7px;color:var(--ink);font:500 12px var(--sans);padding:6px 9px;width:190px;outline:none;box-shadow:0 8px 22px rgba(0,0,0,.5)}
+
+  #legend{position:absolute;top:12px;left:60px;pointer-events:none;display:flex;flex-direction:column;gap:6px;max-width:calc(100% - 90px)}
+  .lgRow{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;background:rgba(13,16,20,.74);border:1px solid var(--line);border-radius:8px;padding:6px 11px;backdrop-filter:blur(6px);width:max-content;max-width:100%;flex-wrap:wrap}
+  .lgRow .k{color:var(--faint);font-size:9px;letter-spacing:.06em}
+  .lgRow .v{color:var(--ink)}
+  .chipTf{font-size:10px;color:var(--acc);border:1px solid rgba(224,166,63,.45);border-radius:5px;padding:1px 7px;letter-spacing:.08em}
+  #lgRow2{color:var(--dim);font-size:10px;letter-spacing:.02em}
+  #lgRow2 b{color:var(--ink);font-weight:500}
+  #lgRow2 .u{color:var(--up)}
+  #lgRow2 .d{color:var(--dn)}
+
+  #wm{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none;user-select:none}
+  #wm .wm1{font-weight:800;font-size:clamp(28px,5vw,48px);letter-spacing:.34em;color:rgba(255,255,255,.032);padding-left:.34em}
+  #wm .wm2{font-family:var(--mono);font-size:10.5px;letter-spacing:.42em;color:rgba(255,255,255,.05);margin-top:8px;padding-left:.42em}
+
+  #latestBtn{position:absolute;right:86px;bottom:46px;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--acc);background:rgba(17,20,26,.92);border:1px solid rgba(224,166,63,.5);border-radius:8px;padding:7px 12px;opacity:0;transform:translateY(6px);pointer-events:none;transition:.25s;z-index:5}
+  #latestBtn.show{opacity:1;transform:none;pointer-events:auto}
+  #latestBtn:hover{background:rgba(224,166,63,.12)}
+
+  footer{display:flex;justify-content:space-between;gap:16px;padding:7px 18px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.05em;flex-wrap:wrap}
+  footer .hints{color:var(--faint)}
+  footer .hints b{color:var(--dim);font-weight:500}
+  @media (max-width:920px){ .brandSub,.symSub,.hints,.vdiv.h2{display:none} }
+</style>
 </head>
-
 <body>
 
-    <header>
-        <div class="brand">
-            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-                <line x1="4.5" y1="2" x2="4.5" y2="18" stroke="#2fbf7f" stroke-width="1.4" />
-                <rect x="2.5" y="7" width="4" height="6" fill="#2fbf7f" />
-                <line x1="10.5" y1="1" x2="10.5" y2="14" stroke="#e5484d" stroke-width="1.4" />
-                <rect x="8.5" y="4" width="4" height="6" fill="none" stroke="#e5484d" stroke-width="1.4" />
-                <line x1="16.5" y1="4" x2="16.5" y2="19" stroke="#2fbf7f" stroke-width="1.4" />
-                <rect x="14.5" y="9" width="4" height="6" fill="#2fbf7f" />
-            </svg>
-            <div>
-                <div class="brandName">OPENALGO</div>
-                <div class="brandSub">COMPOSITE CHART · SIM FEED</div>
-            </div>
-        </div>
-        <div class="vdiv"></div>
-        <div>
-            <div class="symName">RELIANCE</div>
-            <div class="symSub">NSE · EQ</div>
-        </div>
-        <div class="ltpBox">
-            <div class="ltp" id="ltp">—</div>
-            <div class="chg up" id="chg">—</div>
-        </div>
+<header>
+  <div class="brand">
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+      <line x1="4.5" y1="2" x2="4.5" y2="18" stroke="#2fbf7f" stroke-width="1.4"/><rect x="2.5" y="7" width="4" height="6" fill="#2fbf7f"/>
+      <line x1="10.5" y1="1" x2="10.5" y2="14" stroke="#e5484d" stroke-width="1.4"/><rect x="8.5" y="4" width="4" height="6" fill="none" stroke="#e5484d" stroke-width="1.4"/>
+      <line x1="16.5" y1="4" x2="16.5" y2="19" stroke="#2fbf7f" stroke-width="1.4"/><rect x="14.5" y="9" width="4" height="6" fill="#2fbf7f"/>
+    </svg>
+    <div><div class="brandName">OPENALGO</div><div class="brandSub">COMPOSITE CHART · SIM FEED</div></div>
+  </div>
+  <div class="vdiv"></div>
+  <div><div class="symName">RELIANCE</div><div class="symSub">NSE · EQ</div></div>
+  <div class="ltpBox"><div class="ltp" id="ltp">—</div><div class="chg up" id="chg">—</div></div>
 
-        <div class="seg" id="tfSeg" role="tablist" aria-label="timeframe">
-            <button data-tf="1" title="1 minute (key 1)">1m</button>
-            <button data-tf="3" title="3 minutes, auto-aggregated (key 2)">3m</button>
-            <button data-tf="5" class="on" title="5 minutes, auto-aggregated (key 3)">5m</button>
-            <button data-tf="15" title="15 minutes, auto-aggregated (key 4)">15m</button>
-        </div>
+  <div class="seg" id="tfSeg" role="tablist" aria-label="timeframe">
+    <button data-tf="1" title="1 minute (key 1)">1m</button>
+    <button data-tf="3" title="3 minutes, auto-aggregated (key 2)">3m</button>
+    <button data-tf="5" class="on" title="5 minutes, auto-aggregated (key 3)">5m</button>
+    <button data-tf="15" title="15 minutes, auto-aggregated (key 4)">15m</button>
+  </div>
 
-        <div class="ghostCtl" id="ghostCtl"
-            title="Show the 1-minute candles that built each aggregated candle, drawn hollow/faded behind it">
-            <span class="ctlLabel"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
-                    stroke-width="1.8" stroke-linejoin="round">
-                    <path d="M12 3l9 5-9 5-9-5z" />
-                    <path d="M3 13l9 5 9-5" opacity=".55" />
-                </svg>1M GHOST</span>
-            <button class="toggle on" id="ghostToggle" aria-pressed="true"
-                aria-label="toggle 1m ghost candles"></button>
-            <div class="seg mini" id="styleSeg">
-                <button data-s="hollow" class="on" title="outline only">HOLLOW</button>
-                <button data-s="fade" title="outline + transparent fill">FADE</button>
-            </div>
-        </div>
+  <div class="ghostCtl" id="ghostCtl" title="Show the 1-minute candles that built each aggregated candle, drawn hollow/faded behind it">
+    <span class="ctlLabel"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5" opacity=".55"/></svg>1M GHOST</span>
+    <button class="toggle on" id="ghostToggle" aria-pressed="true" aria-label="toggle 1m ghost candles"></button>
+    <div class="seg mini" id="styleSeg">
+      <button data-s="hollow" class="on" title="outline only">HOLLOW</button>
+      <button data-s="fade" title="outline + transparent fill">FADE</button>
+    </div>
+  </div>
 
-        <div class="right">
-            <div class="live" id="live"><span class="dot"></span><span id="liveTxt">LIVE · ×10</span></div>
-            <button class="iconBtn" id="pauseBtn" title="pause / resume sim (space)">
-                <svg id="icPause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                    stroke-linecap="round">
-                    <path d="M9 5v14M15 5v14" />
-                </svg>
-                <svg id="icPlay" viewBox="0 0 24 24" fill="currentColor" style="display:none">
-                    <path d="M8 5.5v13l11-6.5z" />
-                </svg>
-            </button>
-            <button class="iconBtn" id="resetBtn" title="reset view (R / double-click)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <path
-                        d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4" />
-                </svg>
-            </button>
-        </div>
-    </header>
+  <div class="right">
+    <div class="popWrap">
+      <button class="hdrBtn" id="indBtn" title="toggle indicator panes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h13M20 18h0.01"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>
+        INDICATORS
+      </button>
+      <div class="pop" id="indPop" hidden>
+        <label><input type="checkbox" data-pane="rsi" checked><span>RSI</span><span class="param">14 · close</span></label>
+        <label><input type="checkbox" data-pane="macd" checked><span>MACD</span><span class="param">12 · 26 · 9</span></label>
+        <label><input type="checkbox" data-pane="adx"><span>ADX / DMI</span><span class="param">14</span></label>
+      </div>
+    </div>
+    <div class="live" id="live"><span class="dot"></span><span id="liveTxt">LIVE · ×10</span></div>
+    <button class="iconBtn" id="pauseBtn" title="pause / resume sim (space)">
+      <svg id="icPause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 5v14M15 5v14"/></svg>
+      <svg id="icPlay" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M8 5.5v13l11-6.5z"/></svg>
+    </button>
+    <button class="iconBtn" id="resetBtn" title="reset view (R / double-click)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4"/></svg>
+    </button>
+  </div>
+</header>
 
-    <main id="wrap">
-        <canvas id="chart"></canvas>
-        <div id="wm">
-            <div class="wm1">RELIANCE</div>
-            <div class="wm2" id="wm2">RELIANCE · 5m · SIM FEED</div>
-        </div>
-        <div id="legend">
-            <div class="lgRow">
-                <span class="chipTf" id="lgTf">5m</span>
-                <span class="k">O</span><span class="v" id="lgO">—</span>
-                <span class="k">H</span><span class="v" id="lgH">—</span>
-                <span class="k">L</span><span class="v" id="lgL">—</span>
-                <span class="k">C</span><span class="v" id="lgC">—</span>
-                <span class="k">Δ</span><span class="v" id="lgChg">—</span>
-                <span class="k">VOL</span><span class="v" id="lgV">—</span>
-            </div>
-            <div class="lgRow" id="lgRow2">—</div>
-        </div>
-        <button id="latestBtn"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
-                stroke-width="2.4" stroke-linecap="round">
-                <path d="M9 5l7 7-7 7" />
-            </svg>LATEST</button>
-    </main>
+<main id="wrap">
+  <canvas id="chart"></canvas>
 
-    <footer>
-        <div id="aggInfo">—</div>
-        <div class="hints"><b>DRAG</b> pan · <b>WHEEL</b> zoom · <b>1–4</b> timeframe · <b>G</b> ghost · <b>SPACE</b>
-            pause</div>
-    </footer>
+  <div id="tools">
+    <button class="tbtn on" data-tool="cursor" title="Cursor / select / move (ESC)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3l12 8.5-5.2 1.2L10.5 19z"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tool="trend" title="Trend line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="5" y1="19" x2="19" y2="5"/><circle cx="5" cy="19" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="5" r="1.7" fill="currentColor" stroke="none"/></svg></button>
+    <button class="tbtn" data-tool="ray" title="Ray — extends from origin through second point"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="6" y1="18" x2="21" y2="5"/><circle cx="6" cy="18" r="1.8" fill="currentColor" stroke="none"/></svg></button>
+    <button class="tbtn" data-tool="arrow" title="Arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="5" y1="19" x2="18" y2="6"/><path d="M18 6l-5 .9M18 6l-.9 5"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tool="hline" title="Horizontal line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
+    <button class="tbtn" data-tool="hray" title="Horizontal ray — extends right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><line x1="5" y1="12" x2="21" y2="12"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tool="rect" title="Rectangle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="6" width="16" height="12"/></svg></button>
+    <button class="tbtn" data-tool="ellipse" title="Ellipse / curve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tool="fib" title="Fib retracement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tool="long" title="Long position — entry / stop / target box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V6M12 6l-5 5M12 6l5 5"/><line x1="5" y1="21" x2="19" y2="21"/></svg></button>
+    <button class="tbtn" data-tool="short" title="Short position — entry / stop / target box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v14M12 18l-5-5M12 18l5-5"/><line x1="5" y1="3" x2="19" y2="3"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tool="text" title="Text annotation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg></button>
+    <button class="tbtn" data-tool="free" title="Freehand pencil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 20l1.2-4.2L16 5l3 3L8.2 18.8z"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tool="vprofile" title="Fixed range volume profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="12" x2="21" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" id="trashBtn" title="Clear all drawings (undo with Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg></button>
+  </div>
 
-    <script>
-        'use strict';
-        /* ============================ utils ============================ */
-        const $ = s => document.querySelector(s);
-        const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-        const lerp = (a, b, t) => a + (b - a) * t;
-        const easeOut = t => 1 - Math.pow(1 - t, 3);
-        const cr = v => Math.round(v) + 0.5;                       // crisp 1px lines
-        function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296 } }
-        const rng = mulberry32(0xC0FFEE);
-        let gSpare = null;
-        function gauss() {
-            if (gSpare !== null) { const v = gSpare; gSpare = null; return v }
-            let u = 0, v = 0; while (u === 0) u = rng(); while (v === 0) v = rng();
-            const m = Math.sqrt(-2 * Math.log(u)), a = 2 * Math.PI * v;
-            gSpare = m * Math.sin(a); return m * Math.cos(a);
-        }
+  <div id="toolChip"></div>
+  <input id="txtIn" type="text" maxlength="90" placeholder="Type text · Enter to place" spellcheck="false">
 
-        const fmtP = p => p.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const fmtV = v => v >= 1e7 ? (v / 1e7).toFixed(2) + 'Cr' : v >= 1e5 ? (v / 1e5).toFixed(2) + 'L' : v >= 1e3 ? (v / 1e3).toFixed(1) + 'K' : '' + Math.round(v);
+  <div id="wm"><div class="wm1">RELIANCE</div><div class="wm2" id="wm2">RELIANCE · 5m · SIM FEED</div></div>
+  <div id="legend">
+    <div class="lgRow">
+      <span class="chipTf" id="lgTf">5m</span>
+      <span class="k">O</span><span class="v" id="lgO">—</span>
+      <span class="k">H</span><span class="v" id="lgH">—</span>
+      <span class="k">L</span><span class="v" id="lgL">—</span>
+      <span class="k">C</span><span class="v" id="lgC">—</span>
+      <span class="k">Δ</span><span class="v" id="lgChg">—</span>
+      <span class="k">VOL</span><span class="v" id="lgV">—</span>
+    </div>
+    <div class="lgRow" id="lgRow2">—</div>
+  </div>
+  <button id="latestBtn"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>LATEST</button>
+</main>
 
-        /* ============================ data ============================= */
-        /* Base series = 1-minute OHLCV. bars[] is dense: bars[gm], gm = global
-           session-minute index (day*375 + minuteSinceOpen). Everything else —
-           3m / 5m / 15m candles — is aggregated from this on the fly.        */
-        const SESSION = 375, OPEN_MIN = 555;                     // 09:15 → 15:30, 375 min
-        const COL = {
-            bg: '#0c0e11', grid: 'rgba(255,255,255,.045)', gridStrong: 'rgba(255,255,255,.11)',
-            ink: '#d6dae0', dim: '#79828d', up: '#2fbf7f', dn: '#e5484d', acc: '#e0a63f'
-        };
-        const AXIS_W = 64, TIME_H = 26;
+<footer>
+  <div id="aggInfo">—</div>
+  <div class="hints"><b>DRAG</b> pan · <b>WHEEL</b> zoom · <b>1–4</b> TF · <b>G</b> ghost · <b>SPACE</b> pause · <b>DEL</b> rm drawing · <b>CTRL+Z</b> undo · <b>ESC</b> cancel</div>
+</footer>
 
-        let tf = 5, ghostOn = true, ghostStyle = 'hollow', paused = false;
-        const bars = [], dayLbl = [];
-        let price = 2847.55, liveDrift = 0;
-        let bornGM = -1, bornAt = 0;                             // new-bar bloom animation
-        let switchT0 = performance.now();                      // timeframe-switch bloom
+<script>
+'use strict';
+/* ============================ utils ============================ */
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const easeOut=t=>1-Math.pow(1-t,3);
+const cr=v=>Math.round(v)+0.5;                       // crisp 1px lines
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const rng=mulberry32(0xC0FFEE);
+let gSpare=null;
+function gauss(){ if(gSpare!==null){const v=gSpare;gSpare=null;return v}
+  let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();
+  const m=Math.sqrt(-2*Math.log(u)),a=2*Math.PI*v;
+  gSpare=m*Math.sin(a);return m*Math.cos(a); }
 
-        const dates = []; const d0 = new Date();
-        while (dates.length < 3) { d0.setDate(d0.getDate() - 1); const w = d0.getDay(); if (w !== 0 && w !== 6) dates.push(new Date(d0)); }
-        dates.reverse();
-        const fmtDate = dt => dt.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase();
-        dates.forEach((dt, i) => { dayLbl.push(fmtDate(dt)); genDay(i); });
-        let lastDate = dates[dates.length - 1];
-        function nextDayLabel() { do { lastDate.setDate(lastDate.getDate() + 1); } while (lastDate.getDay() === 0 || lastDate.getDay() === 6); return fmtDate(lastDate); }
+const fmtP=p=>p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtV=v=>v>=1e7?(v/1e7).toFixed(2)+'Cr':v>=1e5?(v/1e5).toFixed(2)+'L':v>=1e3?(v/1e3).toFixed(1)+'K':''+Math.round(v);
+function distSeg(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy;
+  let t=L2?((px-x1)*dx+(py-y1)*dy)/L2:0;t=clamp(t,0,1);
+  return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));}
 
-        function genDay() {
-            price *= 1 + gauss() * 0.0011;                           // overnight gap
-            let regimeLeft = 0, drift = 0;
-            for (let m = 0; m < SESSION; m++) {
-                if (regimeLeft <= 0) { regimeLeft = 25 + (rng() * 45 | 0); drift = (rng() - 0.48) * 0.0009; if (rng() < 0.06) drift *= 4; }
-                const smile = 1 + 1.5 * Math.exp(-m / 45) + 1.05 * Math.exp(-(SESSION - m) / 55); // U-shaped intraday vol
-                const vol = 0.00042 * smile, va = price * vol;
-                const o = price, c = o * (1 + drift + gauss() * vol);
-                const h = Math.max(o, c) + va * (0.15 + rng() * 0.85);
-                const l = Math.min(o, c) - va * (0.15 + rng() * 0.85);
-                const v = Math.round(4600 * smile * (0.5 + rng()) * (1 + Math.abs(c - o) / (va || 1e-9) * 0.35));
-                bars.push({ o, h, l, c, v }); price = c;
-            }
-        }
-        const prevCloseRef = () => { const day = Math.floor((bars.length - 1) / 375); return day > 0 ? bars[day * 375 - 1].c : bars[0].o; };
+/* ============================ data ============================= */
+/* Base series = 1-minute OHLCV. bars[] is dense: bars[gm], gm = global
+   session-minute index (day*375 + minuteSinceOpen). Everything else —
+   3m / 5m / 15m candles — is aggregated from this on the fly.        */
+const SESSION=375, OPEN_MIN=555;                     // 09:15 → 15:30, 375 min
+const COL={bg:'#0c0e11',grid:'rgba(255,255,255,.045)',gridStrong:'rgba(255,255,255,.11)',
+  ink:'#d6dae0',dim:'#79828d',up:'#2fbf7f',dn:'#e5484d',acc:'#e0a63f'};
+const AXIS_W=64, TIME_H=26;
 
-        /* -------- aggregation: 1m → 3m / 5m / 15m (auto) -------- */
-        let aggDirty = true; const aggCache = new Map();
-        function buildAgg(t) {
-            const arr = [], n = Math.ceil(bars.length / t);
-            for (let b = 0; b < n; b++) {
-                const g0 = b * t, g1 = Math.min(g0 + t, bars.length);
-                let h = -1e18, l = 1e18, v = 0;
-                for (let g = g0; g < g1; g++) { const x = bars[g]; if (x.h > h) h = x.h; if (x.l < l) l = x.l; v += x.v; }
-                arr.push({ g0, g1, o: bars[g0].o, h, l, c: bars[g1 - 1].c, v });
-            }
-            return arr;
-        }
-        function getAgg(t) { if (aggDirty) { aggCache.clear(); aggDirty = false; } if (!aggCache.has(t)) aggCache.set(t, buildAgg(t)); return aggCache.get(t); }
+let tf=5, ghostOn=true, ghostStyle='hollow', paused=false;
+const bars=[], dayLbl=[];
+let price=2847.55, liveDrift=0, dataVer=0;
+let bornGM=-1, bornAt=0;                             // new-bar bloom animation
+let switchT0=performance.now();                      // timeframe-switch bloom
 
-        /* ============================ view ============================= */
-        /* The view is expressed in base-1m units, so switching timeframe keeps
-           the exact same time window — candles just re-granulate in place.   */
-        const view = { r: bars.length + 42, v: 260 };
-        let viewAnim = null;
-        function animateView(tr, tv) { viewAnim = { t0: performance.now(), dur: 520, fr: view.r, fv: view.v, tr, tv }; }
-        const clampR = r => { const hi = bars.length + 90; return clamp(r, Math.min(view.v - 30, hi), hi); };
+const dates=[]; const d0=new Date();
+while(dates.length<3){ d0.setDate(d0.getDate()-1); const w=d0.getDay(); if(w!==0&&w!==6) dates.push(new Date(d0)); }
+dates.reverse();
+const fmtDate=dt=>dt.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase();
+dates.forEach((dt,i)=>{ dayLbl.push(fmtDate(dt)); genDay(i); });
+let lastDate=dates[dates.length-1];
+function nextDayLabel(){ do{ lastDate.setDate(lastDate.getDate()+1); }while(lastDate.getDay()===0||lastDate.getDay()===6); return fmtDate(lastDate); }
 
-        const cv = $('#chart'), ctx = cv.getContext('2d');
-        let W = 0, H = 0, dpr = 1;
-        function resize() { dpr = window.devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
-        new ResizeObserver(resize).observe($('#wrap')); resize();
-        const geo = { sp: 0, plotW: 1, plotH: 1, priceH: 1, volH: 1 };
+function genDay(){
+  price*=1+gauss()*0.0011;                           // overnight gap
+  let regimeLeft=0, drift=0;
+  for(let m=0;m<SESSION;m++){
+    if(regimeLeft<=0){ regimeLeft=25+(rng()*45|0); drift=(rng()-0.48)*0.0009; if(rng()<0.06)drift*=4; }
+    const smile=1+1.5*Math.exp(-m/45)+1.05*Math.exp(-(SESSION-m)/55); // U-shaped intraday vol
+    const vol=0.00042*smile, va=price*vol;
+    const o=price, c=o*(1+drift+gauss()*vol);
+    const h=Math.max(o,c)+va*(0.15+rng()*0.85);
+    const l=Math.min(o,c)-va*(0.15+rng()*0.85);
+    const v=Math.round(4600*smile*(0.5+rng())*(1+Math.abs(c-o)/(va||1e-9)*0.35));
+    bars.push({o,h,l,c,v}); price=c;
+  }
+}
+const prevCloseRef=()=>{const day=Math.floor((bars.length-1)/375);return day>0?bars[day*375-1].c:bars[0].o;};
 
-        let mouse = { x: 0, y: 0, in: false }, dragging = false, dragX = 0, dragR = 0;
-        cv.addEventListener('pointerdown', e => { e.preventDefault(); dragging = true; dragX = e.offsetX; dragR = view.r; viewAnim = null; cv.classList.add('grabbing'); cv.setPointerCapture(e.pointerId); });
-        cv.addEventListener('pointermove', e => {
-            mouse.x = e.offsetX; mouse.y = e.offsetY; mouse.in = true;
-            if (dragging) { view.r = clampR(dragR - (e.offsetX - dragX) / geo.sp); }
-        });
-        const endDrag = () => { dragging = false; cv.classList.remove('grabbing'); };
-        cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
-        cv.addEventListener('pointerleave', () => { mouse.in = false; });
-        cv.addEventListener('wheel', e => {
-            e.preventDefault(); if (!geo.sp) return; viewAnim = null;
-            if (e.shiftKey) { view.r = clampR(view.r + (e.deltaY + e.deltaX) * 0.6 / geo.sp); return; }
-            const anchor = view.r - (geo.plotW - e.offsetX) / geo.sp;
-            const nv = clamp(view.v * Math.exp(e.deltaY * 0.0011), 40, 2400);
-            const nsp = geo.plotW / nv;
-            view.r = clampR(anchor + (geo.plotW - e.offsetX) / nsp); view.v = nv;
-        }, { passive: false });
-        cv.addEventListener('dblclick', () => animateView(bars.length + 42, 260));
+/* -------- aggregation: 1m → 3m / 5m / 15m (auto) -------- */
+let aggDirty=true; const aggCache=new Map();
+function buildAgg(t){
+  const arr=[], n=Math.ceil(bars.length/t);
+  for(let b=0;b<n;b++){
+    const g0=b*t, g1=Math.min(g0+t,bars.length);
+    let h=-1e18,l=1e18,v=0;
+    for(let g=g0;g<g1;g++){const x=bars[g]; if(x.h>h)h=x.h; if(x.l<l)l=x.l; v+=x.v;}
+    arr.push({g0,g1,o:bars[g0].o,h,l,c:bars[g1-1].c,v});
+  }
+  return arr;
+}
+function getAgg(t){ if(aggDirty){aggCache.clear();aggDirty=false;} if(!aggCache.has(t))aggCache.set(t,buildAgg(t)); return aggCache.get(t); }
 
-        /* ============================ DOM refs ============================ */
-        const ltpEl = $('#ltp'), chgEl = $('#chg'), liveEl = $('#live'), liveTxt = $('#liveTxt');
-        const lgTf = $('#lgTf'), lgO = $('#lgO'), lgH = $('#lgH'), lgL = $('#lgL'), lgC = $('#lgC'), lgChg = $('#lgChg'), lgV = $('#lgV'), lgRow2 = $('#lgRow2');
-        const wm2 = $('#wm2'), aggInfo = $('#aggInfo'), latestBtn = $('#latestBtn');
-        const tfSeg = $('#tfSeg'), ghostCtl = $('#ghostCtl'), ghostToggle = $('#ghostToggle'), styleSeg = $('#styleSeg');
+/* ======================= indicator math ======================== */
+/* All indicators are computed on the aggregated candles of the active
+   timeframe, so RSI/MACD/ADX re-granulate with the TF switch.        */
+function emaArr(src,n){const out=new Array(src.length).fill(null);const k=2/(n+1);let sum=0,e=null;
+  for(let i=0;i<src.length;i++){ if(i<n){sum+=src[i];if(i===n-1){e=sum/n;out[i]=e;}}
+    else{e=src[i]*k+e*(1-k);out[i]=e;} } return out;}
+function emaNull(src,n){const out=new Array(src.length).fill(null);let i0=-1;
+  for(let i=0;i<src.length;i++)if(src[i]!=null){i0=i;break;}
+  if(i0<0)return out; const k=2/(n+1);let sum=0,e=null;
+  for(let i=i0;i<src.length;i++){ if(i-i0<n){sum+=src[i];if(i-i0===n-1){e=sum/n;out[i]=e;}}
+    else{e=src[i]*k+e*(1-k);out[i]=e;} } return out;}
+function rsiArr(c,n){const out=new Array(c.length).fill(null);let ag=0,al=0;
+  for(let i=1;i<c.length;i++){const ch=c[i]-c[i-1],g=Math.max(ch,0),l=Math.max(-ch,0);
+    if(i<=n){ag+=g;al+=l;if(i===n){ag/=n;al/=n;out[i]=al===0?100:100-100/(1+ag/al);}}
+    else{ag=(ag*(n-1)+g)/n;al=(al*(n-1)+l)/n;out[i]=al===0?100:100-100/(1+ag/al);}}return out;}
+function macdArr(c){const f=emaArr(c,12),s=emaArr(c,26);
+  const m=c.map((_,i)=>f[i]!=null&&s[i]!=null?f[i]-s[i]:null);
+  const sg=emaNull(m,9);const h=m.map((v,i)=>v!=null&&sg[i]!=null?v-sg[i]:null);
+  return{m,s:sg,h};}
+function adxArr(h,l,c,n){const len=h.length;
+  const pdi=Array(len).fill(null),mdi=Array(len).fill(null),adx=Array(len).fill(null),dx=Array(len).fill(null);
+  let trS=0,pS=0,mS=0;
+  for(let i=1;i<len;i++){
+    const up=h[i]-h[i-1],dn=l[i-1]-l[i];
+    const pdm=(up>dn&&up>0)?up:0,mdm=(dn>up&&dn>0)?dn:0;
+    const tr=Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1]));
+    if(i<=n){trS+=tr;pS+=pdm;mS+=mdm;}
+    else{trS=trS-trS/n+tr;pS=pS-pS/n+pdm;mS=mS-mS/n+mdm;}
+    if(i>=n&&trS>0){pdi[i]=100*pS/trS;mdi[i]=100*mS/trS;
+      const s2=pdi[i]+mdi[i];dx[i]=s2>0?100*Math.abs(pdi[i]-mdi[i])/s2:0;}}
+  let sum=0,cnt=0;
+  for(let i=n;i<len;i++){ if(dx[i]==null){sum=0;cnt=0;continue;}
+    if(cnt<n){sum+=dx[i];cnt++;if(cnt===n)adx[i]=sum/n;}
+    else adx[i]=(adx[i-1]*(n-1)+dx[i])/n;}
+  return{p:pdi,m:mdi,a:adx};}
 
-        function renderHeader() {
-            ltpEl.textContent = fmtP(price);
-            const pc = prevCloseRef(), d = price - pc;
-            chgEl.textContent = `${d >= 0 ? '+' : '−'}${fmtP(Math.abs(d))} · ${d >= 0 ? '+' : '−'}${Math.abs(d / pc * 100).toFixed(2)}%`;
-            chgEl.className = 'chg ' + (d >= 0 ? 'up' : 'dn');
-        }
-        let lastPrice = price, flashTO = null;
-        function flashHeader() {
-            renderHeader();
-            ltpEl.style.color = price >= lastPrice ? COL.up : COL.dn;
-            clearTimeout(flashTO); flashTO = setTimeout(() => ltpEl.style.color = '', 260);
-            lastPrice = price;
-        }
-        function updateAggInfo() {
-            aggInfo.textContent = `BASE 1m · ${bars.length.toLocaleString('en-IN')} bars · AUTO-AGG ×${tf} → ${getAgg(tf).length} candles · ${dayLbl.length} SESSIONS · 09:15–15:30 IST`;
-        }
-        function setTF(t) {
-            if (t === tf) return; tf = t; switchT0 = performance.now();
-            tfSeg.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.tf === t));
-            ghostCtl.classList.toggle('dis', t === 1);
-            wm2.textContent = `RELIANCE · ${t}m · SIM FEED`;
-            updateAggInfo();
-        }
-        tfSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => setTF(+b.dataset.tf)));
-        ghostToggle.addEventListener('click', () => {
-            ghostOn = !ghostOn; ghostToggle.classList.toggle('on', ghostOn);
-            ghostToggle.setAttribute('aria-pressed', ghostOn); switchT0 = performance.now();
-        });
-        styleSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
-            ghostStyle = b.dataset.s; switchT0 = performance.now();
-            styleSeg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-        }));
-        $('#pauseBtn').addEventListener('click', () => {
-            paused = !paused;
-            $('#icPause').style.display = paused ? 'none' : 'block';
-            $('#icPlay').style.display = paused ? 'block' : 'none';
-            liveEl.classList.toggle('paused', paused);
-            liveTxt.textContent = paused ? 'PAUSED' : 'LIVE · ×10';
-        });
-        $('#resetBtn').addEventListener('click', () => animateView(bars.length + 42, 260));
-        latestBtn.addEventListener('click', () => animateView(bars.length + 42, 260));
-        addEventListener('keydown', e => {
-            if (e.key === '1') setTF(1); else if (e.key === '2') setTF(3);
-            else if (e.key === '3') setTF(5); else if (e.key === '4') setTF(15);
-            else if (e.key === 'g' || e.key === 'G') { if (tf > 1) ghostToggle.click(); }
-            else if (e.key === ' ') { e.preventDefault(); $('#pauseBtn').click(); }
-            else if (e.key === 'r' || e.key === 'R') animateView(bars.length + 42, 260);
-        });
+let indCache={tf:-1,ver:-1,d:null};
+function getInd(){ if(indCache.tf===tf&&indCache.ver===dataVer&&indCache.d)return indCache.d;
+  const A=getAgg(tf);const c=A.map(k=>k.c),h=A.map(k=>k.h),l=A.map(k=>k.l);
+  const d={rsi:rsiArr(c,14),macd:macdArr(c),adx:adxArr(h,l,c,14)};
+  indCache={tf,ver:dataVer,d};return d;}
 
-        /* ============================ live sim ============================ */
-        /* Virtual clock runs ×10: one 1m bar forms every ~5.9s, micro-ticks
-           every 280ms. Higher timeframes update automatically via re-aggregation. */
-        function tick() {
-            const b = bars[bars.length - 1], m = (bars.length - 1) % SESSION;
-            const smile = 1 + 1.2 * Math.exp(-m / 45) + 0.8 * Math.exp(-(SESSION - m) / 55);
-            const step = price * 0.00042 * smile * 0.36;
-            const nc = b.c + liveDrift * price * 0.3 + gauss() * step;
-            b.c = nc; if (nc > b.h) b.h = nc; if (nc < b.l) b.l = nc;
-            b.v += Math.round(50 + rng() * 180);
-            price = nc; aggDirty = true; flashHeader();
-        }
-        function newBar() {
-            const last = bars[bars.length - 1];
-            let o;
-            if (bars.length % SESSION === 0) {                       // session roll → next weekday
-                dayLbl.push(nextDayLabel());
-                o = last.c * (1 + gauss() * 0.0011);
-                liveDrift = (rng() - 0.48) * 0.0009;
-            } else {
-                if (rng() < 0.05) liveDrift = (rng() - 0.48) * 0.0011;
-                o = last.c;
-            }
-            bars.push({ o, h: o, l: o, c: o, v: Math.round(300 + rng() * 350) });
-            bornGM = bars.length - 1; bornAt = performance.now();
-            aggDirty = true; updateAggInfo();
-        }
-        let tickN = 0;
-        setInterval(() => { if (paused) return; tickN++; tick(); if (tickN % 21 === 0) newBar(); }, 280);
+const PANE_DEFS=[
+  {id:'rsi', on:true, title:'RSI 14'},
+  {id:'macd',on:true, title:'MACD 12 26 9'},
+  {id:'adx', on:false,title:'ADX 14 · DMI'},
+];
 
-        /* ============================ helpers ============================ */
-        const fmtHM = gm => {
-            const m = ((gm % SESSION) + SESSION) % SESSION, t = OPEN_MIN + m;
-            return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
-        };
-        const fmtEnd = gm => gm % SESSION === 0 ? '15:30' : fmtHM(gm);   // exclusive bucket end
-        function line(x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
-        function rr(x, y, w, h, r) {
-            r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y);
-            ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-            ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
-        }
-        function pill(x, y, w, h, txt) {
-            ctx.fillStyle = '#171c23'; ctx.strokeStyle = 'rgba(255,255,255,.16)';
-            rr(x, y, w, h, 4); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = COL.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(txt, x + w / 2, y + h / 2 + 0.5);
-        }
-        const MONO = '"IBM Plex Mono", monospace';
+/* ============================ view ============================= */
+const view={r:bars.length+42, v:260};
+let viewAnim=null;
+function animateView(tr,tv){viewAnim={t0:performance.now(),dur:520,fr:view.r,fv:view.v,tr,tv};}
+const clampR=r=>{const hi=bars.length+90;return clamp(r,Math.min(view.v-30,hi),hi);};
 
-        /* ============================ render loop ============================ */
-        let yLo = null, yHi = null, volMax = null, volMax1 = null;
-        function frame(now) {
-            requestAnimationFrame(frame);
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.fillStyle = COL.bg; ctx.fillRect(0, 0, W, H);
-            if (W < 60 || H < 60) return;
+const cv=$('#chart'), ctx=cv.getContext('2d');
+let W=0,H=0,dpr=1;
+function resize(){dpr=window.devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+new ResizeObserver(resize).observe($('#wrap')); resize();
+/* geo carries last-frame transforms so hit-testing works between frames */
+const geo={sp:0,plotW:1,priceH:1,volH:1,volBot:1,X:x=>x,Y:y=>y,yLo:0,yHi:1};
 
-            const plotW = W - AXIS_W, plotH = H - TIME_H;
-            const volH = Math.max(30, plotH * 0.15), priceH = plotH - volH;
-            if (viewAnim) {
-                const p = Math.min(1, (now - viewAnim.t0) / viewAnim.dur), e = easeOut(p);
-                view.r = lerp(viewAnim.fr, viewAnim.tr, e); view.v = lerp(viewAnim.fv, viewAnim.tv, e);
-                if (p >= 1) viewAnim = null;
-            }
-            const sp = plotW / view.v;
-            geo.sp = sp; geo.plotW = plotW; geo.plotH = plotH; geo.priceH = priceH; geo.volH = volH;
+let mouse={x:0,y:0,in:false}, dragging=false, dragX=0, dragR=0;
 
-            const agg = getAgg(tf), leftGM = view.r - view.v;
-            const effGhost = ghostOn && tf > 1;
+/* ======================= drawings & tools ====================== */
+const DCOL={def:'#5fb0d8',fib:'#e0a63f',text:'#d6dae0',free:'#cfd6de'};
+const FIBL=[0,.236,.382,.5,.618,.786,1];
+const twoPoint=new Set(['trend','ray','arrow','rect','ellipse','fib','vprofile']);
+const CHIP={trend:'TREND LINE — click start, click end',ray:'RAY — click origin, click direction',
+  arrow:'ARROW — click start, click end',hline:'H LINE — click to place',hray:'H RAY — click to place',
+  rect:'RECTANGLE — click two corners',ellipse:'ELLIPSE — click two corners',
+  fib:'FIB RETRACE — click swing high & low',long:'LONG POSITION — click entry',
+  short:'SHORT POSITION — click entry',text:'TEXT — click to type',free:'PENCIL — draw freehand',
+  vprofile:'VOLUME PROFILE — click range start & end'};
 
-            /* hover / snap */
-            const gmAt = view.r - (plotW - mouse.x) / sp;
-            const inPlot = mouse.in && !dragging && mouse.x >= 0 && mouse.x <= plotW && mouse.y >= 0 && mouse.y <= plotH;
-            const sb = inPlot ? clamp(Math.floor(gmAt / tf), 0, agg.length - 1) : -1;
-            const gi = (tf > 1 && sb >= 0) ? clamp(Math.floor(gmAt), 0, bars.length - 1) : -1;   // inner 1m minute under cursor
+let tool='cursor', pending=null, selId=null, drag=null, downPt=null;
+let drawings=[], uidC=1;
+const undoStack=[];
+function pushUndo(){undoStack.push(drawings.slice());if(undoStack.length>80)undoStack.shift();}
+function dataAt(x,y){ if(!geo.sp)return{gm:0,p:0};
+  const yy=clamp(y,0,Math.max(1,geo.priceH-1));
+  return {gm:view.r-(geo.plotW-x)/geo.sp, p:geo.yHi-(yy/geo.priceH)*(geo.yHi-geo.yLo)}; }
+function snap(d){return JSON.parse(JSON.stringify(d));}
+function finishD(d){d.id=uidC++;pushUndo();drawings.push(d);selId=d.id;setTool('cursor');}
 
-            /* ghost-layer shared params (density fade, body width, bloom) */
-            const la = clamp((sp - 1.5) / 1.8, 0, 1);
-            const gw = Math.max(1.2, sp * 0.46);                    // 1m ghost body width
-            const bp = easeOut(clamp((now - switchT0) / 420, 0, 1));   // switch bloom
+function computeVP(gm0,gm1){
+  const g0=Math.max(0,Math.floor(gm0)), g1=Math.min(bars.length-1,Math.ceil(gm1));
+  if(g1<g0)return null;
+  let lo=1e18,hi=-1e18,tv=0;
+  for(let g=g0;g<=g1;g++){const b=bars[g];if(b.l<lo)lo=b.l;if(b.h>hi)hi=b.h;tv+=b.v;}
+  if(tv===0||hi<=lo)return null;
+  const N=26, bins=new Array(N).fill(0), bh=(hi-lo)/N;
+  for(let g=g0;g<=g1;g++){const b=bars[g];
+    let bi=Math.floor(((b.h+b.l+b.c)/3-lo)/bh);bi=clamp(bi,0,N-1);bins[bi]+=b.v;}
+  let poc=0;for(let i=1;i<N;i++)if(bins[i]>bins[poc])poc=i;
+  let cum=bins[poc],a=poc,b2=poc;
+  while(cum<tv*0.7&&(a>0||b2<N-1)){ const va=a>0?bins[a-1]:-1,vb=b2<N-1?bins[b2+1]:-1;
+    if(vb>=va){b2++;cum+=bins[b2];}else{a--;cum+=bins[a];} }
+  return{lo,hi,bins,N,poc,a,b2};
+}
 
-            /* y autoscale from the 1m series (covers every ghost wick) */
-            const gA = Math.max(0, Math.floor(leftGM)), gB = Math.min(bars.length - 1, Math.ceil(view.r));
-            let lo = 1e18, hi = -1e18, vmax = 0, vmax1 = 0;
-            for (let g = gA; g <= gB; g++) { const x = bars[g]; if (x.l < lo) lo = x.l; if (x.h > hi) hi = x.h; if (effGhost && x.v > vmax1) vmax1 = x.v; }
-            const b0 = Math.max(0, Math.floor(leftGM / tf)), b1 = Math.min(agg.length - 1, Math.floor(view.r / tf));
-            for (let b = b0; b <= b1; b++) { if (agg[b].v > vmax) vmax = agg[b].v; }
-            const pad = (hi - lo) * 0.08 + price * 0.0003, tLo = lo - pad, tHi = hi + pad;
-            if (yLo === null) { yLo = tLo; yHi = tHi; volMax = vmax || 1; volMax1 = vmax1 || 1; }
-            else { yLo += (tLo - yLo) * 0.22; yHi += (tHi - yHi) * 0.22; volMax += ((vmax || 1) - volMax) * 0.22; volMax1 += ((vmax1 || 1) - volMax1) * 0.22; }
-            const Y = p => (1 - (p - yLo) / (yHi - yLo)) * priceH;
-            const X = gm => plotW - (view.r - gm) * sp;
+function handlesOf(d){ const out=[],X=geo.X,Y=geo.Y;
+  const add=(x,y,kind,i)=>out.push({x,y,kind,i});
+  switch(d.type){
+    case 'trend':case 'ray':case 'arrow':case 'rect':case 'ellipse':case 'fib':
+      d.pts.forEach((p,i)=>add(X(p.gm),Y(p.p),'pt',i));break;
+    case 'hline': add(X(d.pts[0].gm),Y(d.pts[0].p),'hlp',0);break;
+    case 'hray':  add(X(d.pts[0].gm),Y(d.pts[0].p),'pt',0);break;
+    case 'vprofile':{const vp=computeVP(d.pts[0].gm,d.pts[1].gm);
+      const ym=Y(vp?(vp.lo+vp.hi)/2:0);
+      add(X(d.pts[0].gm),ym,'gm0',0);add(X(d.pts[1].gm),ym,'gm1',1);break;}
+    case 'pos':
+      add(X(d.gm0),Y(d.pE),'t0');add(X(d.gm1),Y(d.pE),'t1');
+      add(X(d.gm1),Y(d.pS),'stop');add(X(d.gm1),Y(d.pT),'tgt');break;
+  } return out;
+}
 
-            /* axis strips */
-            ctx.fillStyle = 'rgba(255,255,255,.014)';
-            ctx.fillRect(plotW, 0, AXIS_W, plotH); ctx.fillRect(0, plotH, W, TIME_H);
+function hitDrawing(d,mx,my){
+  const X=geo.X,Y=geo.Y;
+  for(const h of handlesOf(d)) if(Math.abs(mx-h.x)<7&&Math.abs(my-h.y)<7)return{h};
+  const near=(x1,y1,x2,y2,tol=6)=>distSeg(mx,my,x1,y1,x2,y2)<tol;
+  switch(d.type){
+    case 'trend':case 'arrow':
+      return near(X(d.pts[0].gm),Y(d.pts[0].p),X(d.pts[1].gm),Y(d.pts[1].p))?{}:null;
+    case 'ray':
+      return near(X(d.pts[0].gm),Y(d.pts[0].p),X(d.pts[1].gm),Y(d.pts[1].p))?{}:null;
+    case 'hline': return Math.abs(my-Y(d.pts[0].p))<5?{}:null;
+    case 'hray':  return (mx>=X(d.pts[0].gm)-4&&Math.abs(my-Y(d.pts[0].p))<5)?{}:null;
+    case 'rect':{ const xa=X(d.pts[0].gm),xb=X(d.pts[1].gm),ya=Y(d.pts[0].p),yb=Y(d.pts[1].p);
+      const x0=Math.min(xa,xb),x1=Math.max(xa,xb),y0=Math.min(ya,yb),y1=Math.max(ya,yb);
+      return (mx>x0&&mx<x1&&my>y0&&my<y1)||near(x0,y0,x1,y0)||near(x0,y1,x1,y1)||near(x0,y0,x0,y1)||near(x1,y0,x1,y1)?{}:null;}
+    case 'ellipse':{ const xa=X(d.pts[0].gm),xb=X(d.pts[1].gm),ya=Y(d.pts[0].p),yb=Y(d.pts[1].p);
+      const cx=(xa+xb)/2,cy=(ya+yb)/2,rx=Math.abs(xb-xa)/2,ry=Math.abs(yb-ya)/2;
+      if(rx<3||ry<3)return null;
+      const r=Math.hypot((mx-cx)/rx,(my-cy)/ry),tol=clamp(6/Math.min(rx,ry),.06,.4);
+      return Math.abs(r-1)<tol?{}:null;}
+    case 'fib':{ const xa=Math.min(X(d.pts[0].gm),X(d.pts[1].gm)),xb=Math.max(X(d.pts[0].gm),X(d.pts[1].gm));
+      if(mx<xa-4||mx>xb+4)return null;
+      const p0=d.pts[0].p,p1=d.pts[1].p;
+      for(const lv of FIBL) if(Math.abs(my-Y(p1+(p0-p1)*lv))<5)return{};
+      return null;}
+    case 'text':{ ctx.font='600 12px Archivo, sans-serif';
+      const w=ctx.measureText(d.text).width,x=X(d.pts[0].gm),y=Y(d.pts[0].p);
+      return (mx>x-12&&mx<x+w+8&&my>y-18&&my<y+6)?{}:null;}
+    case 'free':{ for(let i=1;i<d.pts.length;i++)
+        if(near(X(d.pts[i-1].gm),Y(d.pts[i-1].p),X(d.pts[i].gm),Y(d.pts[i].p),5))return{};
+      return null;}
+    case 'vprofile':{ const vp=computeVP(d.pts[0].gm,d.pts[1].gm);if(!vp)return null;
+      const x0=Math.min(X(d.pts[0].gm),X(d.pts[1].gm)),x1=Math.max(X(d.pts[0].gm),X(d.pts[1].gm));
+      return (mx>x0&&mx<x1&&my>Y(vp.hi)&&my<Y(vp.lo))?{}:null;}
+    case 'pos':{ const x0=Math.min(X(d.gm0),X(d.gm1)),x1=Math.max(X(d.gm0),X(d.gm1));
+      const yT=Math.min(Y(d.pE),Y(d.pS),Y(d.pT)),yB=Math.max(Y(d.pE),Y(d.pS),Y(d.pT));
+      return (mx>x0&&mx<x1&&my>yT&&my<yB)?{}:null;}
+  } return null;
+}
+function hitTopmost(mx,my){ if(!geo.sp||mx>geo.plotW||mx<0||my<0||my>geo.priceH)return null;
+  for(let i=drawings.length-1;i>=0;i--){const d=drawings[i];const r=hitDrawing(d,mx,my);if(r)return{d,...r};}
+  return null; }
 
-            /* price grid + labels */
-            const range = yHi - yLo, raw = range / 6;
-            const pow = Math.pow(10, Math.floor(Math.log10(raw)));
-            const step = (raw / pow < 1.5 ? 1 : raw / pow < 3.5 ? 2 : raw / pow < 7.5 ? 5 : 10) * pow;
-            ctx.font = '10px ' + MONO; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-            ctx.strokeStyle = COL.grid; ctx.lineWidth = 1; ctx.fillStyle = COL.dim;
-            for (let i = Math.ceil(yLo / step); i * step <= yHi; i++) {
-                const p = i * step, gy = cr(Y(p));
-                line(0, gy, plotW, gy);
-                ctx.fillText(p.toFixed(2), plotW + 9, gy);
-            }
+function applyHandle(d,h,md){
+  switch(h.kind){
+    case 'pt': d.pts[h.i]={gm:md.gm,p:md.p};break;
+    case 'hlp': d.pts[0].p=md.p;break;
+    case 'gm0': d.pts[0].gm=Math.min(md.gm,d.pts[1].gm-2);break;
+    case 'gm1': d.pts[1].gm=Math.max(md.gm,d.pts[0].gm+2);break;
+    case 't0': d.gm0=Math.min(md.gm,d.gm1-5);break;
+    case 't1': d.gm1=Math.max(md.gm,d.gm0+5);break;
+    case 'stop': d.pS=md.p;break;
+    case 'tgt': d.pT=md.p;break;
+  }
+}
+function applyMove(d,orig,dgm,dp){
+  if(d.type==='pos'){ d.gm0=orig.gm0+dgm;d.gm1=orig.gm1+dgm;
+    d.pE=orig.pE+dp;d.pS=orig.pS+dp;d.pT=orig.pT+dp;return true;}
+  d.pts=orig.pts.map(pt=>d.type==='vprofile'?{gm:pt.gm+dgm,p:pt.p}:{gm:pt.gm+dgm,p:pt.p+dp});
+  return dgm!==0||dp!==0;
+}
 
-            /* day separators + time labels */
-            const dayXs = [];
-            for (let d = Math.max(0, Math.ceil(leftGM / SESSION)); d * SESSION < bars.length && d * SESSION <= view.r; d++)
-                dayXs.push({ gm: d * SESSION, xi: X(d * SESSION), d });
-            let stepT = [5, 10, 15, 30, 60, 120, 240, 480].find(s => s * sp >= 64) || 480;
-            ctx.textAlign = 'center';
-            for (let gmT = Math.max(0, Math.ceil(leftGM / stepT) * stepT); gmT <= view.r; gmT += stepT) {
-                if (gmT >= bars.length) break;
-                const xi = X(gmT);
-                if (dayXs.some(o => Math.abs(o.xi - xi) < 30)) continue;
-                ctx.strokeStyle = COL.grid; line(cr(xi), 0, cr(xi), plotH);
-                ctx.fillStyle = COL.dim; ctx.fillText(fmtHM(gmT), xi, plotH + TIME_H / 2 + 1);
-            }
-            for (const o of dayXs) {
-                ctx.strokeStyle = COL.gridStrong; line(cr(o.xi), 0, cr(o.xi), plotH);
-                if (dayLbl[o.d]) {
-                    ctx.fillStyle = '#9aa3ae'; ctx.font = '600 10px ' + MONO; ctx.textAlign = 'left';
-                    ctx.fillText(dayLbl[o.d], o.xi + 5, plotH + TIME_H / 2 + 1); ctx.textAlign = 'center';
-                }
-            }
+let axisTags=[];
+function renderDrawing(d,o={}){
+  const X=geo.X,Y=geo.Y, prev=!!o.preview;
+  const C=d.type==='fib'?DCOL.fib:d.type==='text'?DCOL.text:d.type==='free'?DCOL.free:DCOL.def;
+  ctx.save();
+  if(prev){ctx.globalAlpha=.9;ctx.setLineDash([5,4]);}
+  const P=d.pts;
+  switch(d.type){
+    case 'trend':{ ctx.strokeStyle=C;ctx.lineWidth=1.3;
+      line(X(P[0].gm),Y(P[0].p),X(P[1].gm),Y(P[1].p));break;}
+    case 'ray':{ const x0=X(P[0].gm),y0=Y(P[0].p),x1=X(P[1].gm),y1=Y(P[1].p);
+      const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1,k=3000/L;
+      ctx.strokeStyle=C;ctx.lineWidth=1.3;line(x0,y0,x0+dx*k,y0+dy*k);
+      ctx.fillStyle=C;ctx.beginPath();ctx.arc(x0,y0,2.4,0,7);ctx.fill();break;}
+    case 'arrow':{ const x0=X(P[0].gm),y0=Y(P[0].p),x1=X(P[1].gm),y1=Y(P[1].p);
+      ctx.strokeStyle=C;ctx.lineWidth=1.3;line(x0,y0,x1,y1);
+      const a=Math.atan2(y1-y0,x1-x0);
+      for(const s of[-1,1]){ctx.beginPath();ctx.moveTo(x1,y1);
+        ctx.lineTo(x1-9*Math.cos(a+s*.42),y1-9*Math.sin(a+s*.42));ctx.stroke();}break;}
+    case 'hline':{ const y=cr(Y(P[0].p));ctx.strokeStyle=C;ctx.lineWidth=1.2;
+      line(0,y,geo.plotW,y);axisTags.push({y,text:fmtP(P[0].p),c:C});break;}
+    case 'hray':{ const x=X(P[0].gm),y=cr(Y(P[0].p));ctx.strokeStyle=C;ctx.lineWidth=1.2;
+      line(x,y,geo.plotW,y);ctx.fillStyle=C;ctx.beginPath();ctx.arc(x,y,2.4,0,7);ctx.fill();
+      axisTags.push({y,text:fmtP(P[0].p),c:C});break;}
+    case 'rect':{ const xa=X(P[0].gm),xb=X(P[1].gm),ya=Y(P[0].p),yb=Y(P[1].p);
+      const x0=Math.min(xa,xb),y0=Math.min(ya,yb),w=Math.abs(xb-xa),h=Math.abs(yb-ya);
+      ctx.fillStyle='rgba(95,176,216,.07)';ctx.fillRect(x0,y0,w,h);
+      ctx.strokeStyle=C;ctx.lineWidth=1.3;ctx.strokeRect(x0,y0,w,h);break;}
+    case 'ellipse':{ const xa=X(P[0].gm),xb=X(P[1].gm),ya=Y(P[0].p),yb=Y(P[1].p);
+      ctx.beginPath();ctx.ellipse((xa+xb)/2,(ya+yb)/2,Math.abs(xb-xa)/2,Math.abs(yb-ya)/2,0,0,7);
+      ctx.fillStyle='rgba(95,176,216,.06)';ctx.fill();
+      ctx.strokeStyle=C;ctx.lineWidth=1.3;ctx.stroke();break;}
+    case 'fib':{ const xa=Math.min(X(P[0].gm),X(P[1].gm)),xb=Math.max(X(P[0].gm),X(P[1].gm));
+      const p0=P[0].p,p1=P[1].p;
+      const yA=Y(p1+(p0-p1)*.382),yB=Y(p1+(p0-p1)*.618);
+      ctx.fillStyle='rgba(224,166,63,.07)';
+      ctx.fillRect(xa,Math.min(yA,yB),xb-xa,Math.abs(yB-yA));
+      ctx.textAlign='left';ctx.textBaseline='bottom';ctx.font='500 9.5px '+MONO;
+      for(const lv of FIBL){ const pr=p1+(p0-p1)*lv,y=cr(Y(pr));
+        const strong=(lv===0||lv===1||lv===.618);
+        ctx.strokeStyle=`rgba(224,166,63,${strong?.85:.45})`;ctx.lineWidth=strong?1.3:1;
+        ctx.setLineDash(lv===.5?[5,4]:[]);line(xa,y,xb,y);ctx.setLineDash([]);
+        ctx.fillStyle=`rgba(224,166,63,${strong?.95:.7})`;
+        ctx.fillText(`${lv.toFixed(3)}  ${fmtP(pr)}`,xa+5,y-2);}break;}
+    case 'text':{ const x=X(P[0].gm),y=Y(P[0].p);
+      ctx.font='600 12px Archivo, sans-serif';ctx.fillStyle=DCOL.text;
+      ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(d.text,x,y);
+      ctx.fillStyle=DCOL.fib;ctx.beginPath();ctx.arc(x-7,y-4,2.4,0,7);ctx.fill();break;}
+    case 'free':{ if(P.length<2)break;
+      ctx.strokeStyle=DCOL.free;ctx.lineWidth=1.6;ctx.lineJoin='round';ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(X(P[0].gm),Y(P[0].p));
+      for(let i=1;i<P.length;i++)ctx.lineTo(X(P[i].gm),Y(P[i].p));
+      ctx.stroke();break;}
+    case 'vprofile':{ const vp=computeVP(P[0].gm,P[1].gm);if(!vp)break;
+      const x0=Math.min(X(P[0].gm),X(P[1].gm)),x1=Math.max(X(P[0].gm),X(P[1].gm));
+      const maxW=Math.min(Math.max(40,(x1-x0)*.55),180),mb=Math.max(...vp.bins)||1,bh=(vp.hi-vp.lo)/vp.N;
+      for(let i=0;i<vp.N;i++){ const w=vp.bins[i]/mb*maxW;if(w<.5)continue;
+        const yT=Y(vp.hi-(i+1)*bh),hh=Math.max(1,Math.abs(Y(vp.hi-i*bh)-yT));
+        ctx.fillStyle=i===vp.poc?'rgba(224,166,63,.95)':(i>=vp.a&&i<=vp.b2)?'rgba(224,166,63,.4)':'rgba(224,166,63,.16)';
+        ctx.fillRect(x0,yT,w,hh);}
+      const yP=cr(Y(vp.lo+(vp.poc+.5)*bh));
+      ctx.strokeStyle='rgba(224,166,63,.8)';ctx.setLineDash([2,3]);ctx.lineWidth=1;
+      line(x0,yP,x1,yP);ctx.setLineDash([]);
+      ctx.strokeStyle='rgba(255,255,255,.2)';ctx.setLineDash([3,4]);
+      line(cr(x0),Y(vp.hi),cr(x0),Y(vp.lo));line(cr(x1),Y(vp.hi),cr(x1),Y(vp.lo));ctx.setLineDash([]);
+      ctx.font='500 9.5px '+MONO;ctx.fillStyle='rgba(224,166,63,.9)';
+      ctx.textAlign='left';ctx.textBaseline='alphabetic';
+      ctx.fillText(`VP · POC ${fmtP(vp.lo+(vp.poc+.5)*bh)}`,x0+4,Y(vp.hi)-5);break;}
+    case 'pos':{ const x0=Math.min(X(d.gm0),X(d.gm1)),x1=Math.max(X(d.gm0),X(d.gm1));
+      const yE=Y(d.pE),yS=Y(d.pS),yT=Y(d.pT);
+      ctx.fillStyle='rgba(229,72,77,.13)';ctx.fillRect(x0,Math.min(yE,yS),x1-x0,Math.abs(yS-yE));
+      ctx.fillStyle='rgba(47,191,127,.13)';ctx.fillRect(x0,Math.min(yE,yT),x1-x0,Math.abs(yT-yE));
+      const yT2=Math.min(yE,yS,yT),yB2=Math.max(yE,yS,yT);
+      ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=1;
+      line(cr(x0),yT2,cr(x0),yB2);line(cr(x1),yT2,cr(x1),yB2);
+      ctx.lineWidth=1.1;
+      ctx.strokeStyle=COL.dn;line(x0,cr(yS),x1,cr(yS));
+      ctx.strokeStyle=COL.up;line(x0,cr(yT),x1,cr(yT));
+      ctx.strokeStyle=COL.ink;ctx.lineWidth=1.3;line(x0,cr(yE),x1,cr(yE));
+      const rrV=(d.pE-d.pS)!==0?Math.abs((d.pT-d.pE)/(d.pE-d.pS)):0;
+      ctx.font='500 9px '+MONO;ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillStyle=d.dir>0?COL.up:COL.dn;
+      rr(x0+4,yE-14,13,13,3);ctx.fill();
+      ctx.fillStyle='#0c0e11';ctx.textAlign='center';
+      ctx.fillText(d.dir>0?'L':'S',x0+10.5,yE-7.4);
+      ctx.textAlign='left';
+      ctx.fillStyle='#d6dae0';ctx.fillText(`ENTRY ${fmtP(d.pE)}`,x0+21,yE-7);
+      ctx.fillStyle=COL.dn;ctx.fillText(`STOP ${Math.abs((d.pS-d.pE)/d.pE*100).toFixed(2)}%`,x0+5,yS>yE?yS+8:yS-7);
+      ctx.fillStyle=COL.up;ctx.fillText(`TGT ${Math.abs((d.pT-d.pE)/d.pE*100).toFixed(2)}% · 1:${rrV.toFixed(1)}`,x0+5,yT<yE?yT-7:yT+8);
+      break;}
+  }
+  if(prev&&P&&P[0]){ ctx.setLineDash([]);ctx.fillStyle=C;
+    ctx.beginPath();ctx.arc(X(P[0].gm),Y(P[0].p),3,0,7);ctx.fill(); }
+  ctx.restore();
+}
 
-            /* ----- volume pane -----
-               Ghost mode → 1m-resolution bars, each centered under its own ghost
-               candle (same x, same body width), normalized to the 1m volume max.
-               Zoomed out past the ghost density threshold → cross-fades back to
-               aggregate (shell) volume bars so the pane is never empty.          */
-            const ghostVol = effGhost && la > 0.02;
-            const aggA = ghostVol ? 0.22 * (1 - la) : 0.22;
-            if (aggA > 0.012) {
-                ctx.globalAlpha = aggA;
-                for (let b = b0; b <= b1; b++) {
-                    const k = agg[b], x0 = X(k.g0), x1 = X(k.g1), ins = (x1 - x0) * 0.17;
-                    const w = Math.max(1, (x1 - x0) * 0.66), vh = Math.max(1, k.v / volMax * (volH - 8));
-                    ctx.fillStyle = k.c >= k.o ? COL.up : COL.dn;
-                    ctx.fillRect(x0 + ins, plotH - vh, w, vh);
-                }
-            }
-            if (ghostVol) {
-                for (let b = b0; b <= b1; b++) {
-                    const e0 = agg[b].g0;
-                    for (let g = Math.max(gA, e0), ge = Math.min(gB, agg[b].g1 - 1); g <= ge; g++) {
-                        const bar = bars[g], cx = X(g + 0.5);
-                        if (cx < -4 || cx > plotW + 4) continue;
-                        const cascade = clamp((now - switchT0 - (g - e0) * 16) / 200, 0, 1) * bp;
-                        const a = (g === gi ? 0.85 : 0.38) * la * cascade; if (a <= 0.015) continue;
-                        const vh = Math.max(1, bar.v / volMax1 * (volH - 8));
-                        ctx.globalAlpha = a; ctx.fillStyle = bar.c >= bar.o ? COL.up : COL.dn;
-                        ctx.fillRect(cx - gw / 2, plotH - vh, gw, vh);
-                    }
-                }
-            }
-            ctx.globalAlpha = 1;
+/* ==================== text annotation input ==================== */
+const txtIn=$('#txtIn'); let txtCtx=null;
+function openText(md,editD,val){
+  txtCtx={pt:md,editD:editD||null};
+  txtIn.style.display='block';
+  txtIn.style.left=clamp(geo.X(md.gm),4,geo.plotW-200)+'px';
+  txtIn.style.top=clamp(geo.Y(md.p)+(editD?-30:8),4,H-44)+'px';
+  txtIn.value=val||'';txtIn.focus();txtIn.select();
+}
+function closeText(commit){
+  if(!txtCtx)return; const v=txtIn.value.trim();
+  if(commit&&v){
+    if(txtCtx.editD){pushUndo();txtCtx.editD.text=v;}
+    else finishD({type:'text',pts:[txtCtx.pt],text:v});
+  }
+  txtIn.style.display='none';txtCtx=null;
+}
+txtIn.addEventListener('keydown',e=>{ e.stopPropagation();
+  if(e.key==='Enter')closeText(true); else if(e.key==='Escape')closeText(false); });
+txtIn.addEventListener('blur',()=>closeText(false));
 
-            /* ----- 1m GHOST layer: hollow / transparent candles behind shells -----
-               Wick is drawn ONLY outside the body: high→body-top and body-bottom→low. */
-            if (effGhost && la > 0.02) {
-                for (let b = b0; b <= b1; b++) {
-                    const emph = (b === sb);
-                    for (let g = Math.max(gA, agg[b].g0), e0 = agg[b].g0; g <= Math.min(gB, agg[b].g1 - 1); g++) {
-                        const bar = bars[g], cx = X(g + 0.5);
-                        if (cx < -6 || cx > plotW + 6) continue;
-                        const up = bar.c >= bar.o, col = up ? COL.up : COL.dn;
-                        const cascade = clamp((now - switchT0 - (g - e0) * 16) / 200, 0, 1) * bp; // staggered fill-in
-                        const isInner = (g === gi);
-                        const a = (isInner ? 1 : emph ? 0.85 : 0.62) * la * cascade; if (a <= 0.015) continue;
-                        const yH = Y(bar.h), yL = Y(bar.l), yO = Y(bar.o), yC = Y(bar.c);
-                        const top = Math.min(yO, yC), bot = Math.max(yO, yC), bh = Math.max(1, bot - top);
-                        ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.fillStyle = col;
-                        ctx.lineWidth = isInner ? 1.8 : emph ? 1.4 : 1;
-                        if (gw >= 2.6) {
-                            if (top - yH > 0.3) line(cr(cx), yH, cr(cx), top + 0.5);   // upper wick stub
-                            if (yL - bot > 0.3) line(cr(cx), bot - 0.5, cr(cx), yL);   // lower wick stub
-                            if (ghostStyle === 'fade') { ctx.globalAlpha = a * 0.16; ctx.fillRect(cx - gw / 2, top, gw, bh); ctx.globalAlpha = a; }
-                            ctx.strokeRect(cx - gw / 2, top, gw, bh);               // HOLLOW body
-                        } else ctx.fillRect(cx - gw / 2, top, gw, bh);             // too small → solid tick
-                    }
-                }
-                ctx.globalAlpha = 1;
-            }
+/* ===================== toolbar / popover UI ==================== */
+const toolChip=$('#toolChip'), tfSeg=$('#tfSeg'), ghostCtl=$('#ghostCtl');
+const toolBtns=[...document.querySelectorAll('#tools .tbtn[data-tool]')];
+function setTool(t){ tool=t;pending=null;cv.style.cursor='';
+  toolBtns.forEach(b=>b.classList.toggle('on',b.dataset.tool===t));
+  chipTxt(); }
+function chipTxt(){
+  if(!CHIP[tool]){toolChip.style.display='none';return;}
+  let t=CHIP[tool];
+  if(pending&&twoPoint.has(pending.type))t+=' · click end point · ESC cancels';
+  toolChip.textContent=t;toolChip.style.display='block';
+}
+toolBtns.forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
+ $('#trashBtn').addEventListener('click',()=>{ if(!drawings.length)return;
+  pushUndo();drawings=[];selId=null; });
 
-            /* ----- main timeframe candles (shell mode when ghost is on) ----- */
-            for (let b = b0; b <= b1; b++) {
-                const k = agg[b];
-                const born = (bornGM >= 0 && b === Math.floor(bornGM / tf)) ? easeOut(clamp((now - bornAt) / 380, 0, 1)) : 1;
-                const e = clamp(bp * born, 0, 1);                      // bloom from close line
-                const oV = lerp(k.c, k.o, e), hV = lerp(k.c, k.h, e), lV = lerp(k.c, k.l, e);
-                const up = k.c >= k.o, col = up ? COL.up : COL.dn;
-                const x0 = X(k.g0), x1 = X(k.g1), ins = (x1 - x0) * 0.17;
-                const bx = x0 + ins, bw = Math.max(1, (x1 - x0) * 0.66), cx = (x0 + x1) / 2;
-                const emph = effGhost && b === sb;
-                const yHv = Y(hV), yLv = Y(lV);
-                const top = Y(Math.max(oV, k.c)), yBo = Y(Math.min(oV, k.c)), bh = Math.max(1, yBo - top);
-                ctx.strokeStyle = col; ctx.fillStyle = col;
-                ctx.lineWidth = 1; ctx.globalAlpha = effGhost ? (emph ? 1 : 0.85) : 1;
-                if (bw < 2.6) {
-                    line(cr(cx), yHv, cr(cx), yLv);                   // full wick (solid micro-tick)
-                    ctx.globalAlpha = effGhost ? 0.9 : 1; ctx.lineWidth = Math.max(2, bw);
-                    line(cr(cx), top, cr(cx), top + bh);
-                } else if (effGhost) {                              // SHELL: wick outside body only
-                    if (top - yHv > 0.3) line(cr(cx), yHv, cr(cx), top + 0.5);       // upper wick stub
-                    if (yLv - yBo > 0.3) line(cr(cx), yBo - 0.5, cr(cx), yLv);       // lower wick stub
-                    ctx.globalAlpha = emph ? 0.34 : 0.17; ctx.fillRect(bx, top, bw, bh);
-                    ctx.globalAlpha = emph ? 1 : 0.9; ctx.lineWidth = emph ? 2 : 1.5;
-                    ctx.strokeRect(bx, top, bw, bh);
-                } else {
-                    ctx.globalAlpha = 1;
-                    line(cr(cx), yHv, cr(cx), yLv);                   // SOLID candle: full wick,
-                    ctx.fillRect(bx, top, bw, bh);                    // interior hidden by fill
-                }
-            }
-            ctx.globalAlpha = 1;
+const indPop=$('#indPop');
+ $('#indBtn').addEventListener('click',e=>{e.stopPropagation();indPop.hidden=!indPop.hidden;});
+document.addEventListener('click',e=>{ if(!indPop.hidden&&!indPop.contains(e.target)&&!e.target.closest('#indBtn'))indPop.hidden=true; });
+indPop.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',()=>{
+  PANE_DEFS.find(p=>p.id===cb.dataset.pane).on=cb.checked; }));
 
-            /* parent ring while inspecting a shell */
-            if (tf > 1 && sb >= 0 && agg[sb] && agg[sb].g0 < bars.length) {
-                const k = agg[sb], x0 = X(k.g0), x1 = X(k.g1), ins = (x1 - x0) * 0.17;
-                ctx.strokeStyle = COL.acc; ctx.lineWidth = 1.4; ctx.globalAlpha = .9;
-                rr(x0 + ins - 5, Y(k.h) - 5, (x1 - x0 - 2 * ins) + 10, (Y(k.l) - Y(k.h)) + 10, 6); ctx.stroke();
-                ctx.globalAlpha = 1;
-            }
+/* ============================ DOM refs ============================ */
+const ltpEl=$('#ltp'),chgEl=$('#chg'),liveEl=$('#live'),liveTxt=$('#liveTxt');
+const lgTf=$('#lgTf'),lgO=$('#lgO'),lgH=$('#lgH'),lgL=$('#lgL'),lgC=$('#lgC'),lgChg=$('#lgChg'),lgV=$('#lgV'),lgRow2=$('#lgRow2');
+const wm2=$('#wm2'),aggInfo=$('#aggInfo'),latestBtn=$('#latestBtn');
+const ghostToggle=$('#ghostToggle'),styleSeg=$('#styleSeg');
 
-            /* 1m inspect marker when ghosts are hidden: accent band + hollow candle
-               so you can see exactly which minute the legend is reading */
-            if (tf > 1 && sb >= 0 && !effGhost && gi >= 0) {
-                const ib = bars[gi], cxm = X(gi + 0.5);
-                ctx.fillStyle = 'rgba(224,166,63,.055)'; ctx.fillRect(X(gi), 0, sp, plotH);
-                const yH = Y(ib.h), yL = Y(ib.l), yO = Y(ib.o), yC = Y(ib.c);
-                const t2 = Math.min(yO, yC), b2 = Math.max(yO, yC);
-                const wb = Math.max(3, Math.min(gw * 1.3, sp * 0.7));
-                ctx.strokeStyle = COL.acc; ctx.globalAlpha = .95; ctx.lineWidth = 1.5;
-                if (t2 - yH > 0.3) line(cr(cxm), yH, cr(cxm), t2 + 0.5);
-                if (yL - b2 > 0.3) line(cr(cxm), b2 - 0.5, cr(cxm), yL);
-                ctx.strokeRect(cxm - wb / 2, t2, wb, Math.max(1, b2 - t2));
-                ctx.globalAlpha = 1;
-            }
+function renderHeader(){
+  ltpEl.textContent=fmtP(price);
+  const pc=prevCloseRef(),d=price-pc;
+  chgEl.textContent=`${d>=0?'+':'−'}${fmtP(Math.abs(d))} · ${d>=0?'+':'−'}${Math.abs(d/pc*100).toFixed(2)}%`;
+  chgEl.className='chg '+(d>=0?'up':'dn');
+}
+let lastPrice=price, flashTO=null;
+function flashHeader(){
+  renderHeader();
+  ltpEl.style.color=price>=lastPrice?COL.up:COL.dn;
+  clearTimeout(flashTO); flashTO=setTimeout(()=>ltpEl.style.color='',260);
+  lastPrice=price;
+}
+function updateAggInfo(){
+  aggInfo.textContent=`BASE 1m · ${bars.length.toLocaleString('en-IN')} bars · AUTO-AGG ×${tf} → ${getAgg(tf).length} candles · ${dayLbl.length} SESSIONS · 09:15–15:30 IST`;
+}
+function setTF(t){
+  if(t===tf)return; tf=t; switchT0=performance.now();
+  tfSeg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.tf===t));
+  ghostCtl.classList.toggle('dis',t===1);
+  wm2.textContent=`RELIANCE · ${t}m · SIM FEED`;
+  updateAggInfo();
+}
+tfSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>setTF(+b.dataset.tf)));
+ghostToggle.addEventListener('click',()=>{
+  ghostOn=!ghostOn; ghostToggle.classList.toggle('on',ghostOn);
+  ghostToggle.setAttribute('aria-pressed',ghostOn); switchT0=performance.now();
+});
+styleSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+  ghostStyle=b.dataset.s; switchT0=performance.now();
+  styleSeg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+}));
+ $('#pauseBtn').addEventListener('click',()=>{
+  paused=!paused;
+  $('#icPause').style.display=paused?'none':'block';
+  $('#icPlay').style.display=paused?'block':'none';
+  liveEl.classList.toggle('paused',paused);
+  liveTxt.textContent=paused?'PAUSED':'LIVE · ×10';
+});
+ $('#resetBtn').addEventListener('click',()=>animateView(bars.length+42,260));
+latestBtn.addEventListener('click',()=>animateView(bars.length+42,260));
 
-            /* last traded price line + tag */
-            const lp = bars[bars.length - 1].c, ly = Y(lp);
-            if (ly > -8 && ly < priceH + 8) {
-                ctx.strokeStyle = COL.acc; ctx.globalAlpha = .55; ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
-                line(0, cr(ly), plotW, cr(ly)); ctx.setLineDash([]); ctx.globalAlpha = 1;
-                ctx.fillStyle = COL.acc; rr(plotW + 3, ly - 9, AXIS_W - 7, 18, 4); ctx.fill();
-                ctx.fillStyle = '#10131a'; ctx.font = '600 10.5px ' + MONO;
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(fmtP(lp), plotW + 3 + (AXIS_W - 7) / 2, ly + 0.5);
-            }
+addEventListener('keydown',e=>{
+  if(e.target&&e.target.tagName==='INPUT')return;
+  if(e.key==='1')setTF(1); else if(e.key==='2')setTF(3);
+  else if(e.key==='3')setTF(5); else if(e.key==='4')setTF(15);
+  else if(e.key==='g'||e.key==='G'){if(tf>1)ghostToggle.click();}
+  else if(e.key===' '){e.preventDefault();$('#pauseBtn').click();}
+  else if(e.key==='r'||e.key==='R')animateView(bars.length+42,260);
+  else if(e.key==='Escape'){
+    if(txtCtx)closeText(false);
+    else if(indPop.hidden===false)indPop.hidden=true;
+    else if(pending){pending=null;chipTxt();}
+    else if(tool!=='cursor')setTool('cursor');
+    else selId=null;
+  }
+  else if((e.key==='Delete'||e.key==='Backspace')&&selId!=null){
+    pushUndo();drawings=drawings.filter(d=>d.id!==selId);selId=null;
+  }
+  else if((e.key==='z'||e.key==='Z')&&(e.ctrlKey||e.metaKey)){
+    e.preventDefault();
+    if(undoStack.length){drawings=undoStack.pop();selId=null;pending=null;chipTxt();}
+  }
+});
 
-            /* crosshair — vertical line snaps to the inner 1m minute (tf>1),
-               so the time tag names the exact minute being read */
-            if (inPlot && sb >= 0) {
-                const cgm = tf > 1 ? gi : agg[sb].g0;
-                const sx = cr(X(cgm + 0.5));
-                ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
-                line(sx, 0, sx, plotH);
-                const my = Math.min(mouse.y, plotH); line(0, cr(my), plotW, cr(my));
-                ctx.setLineDash([]);
-                const pv = clamp(yHi - (my / priceH) * (yHi - yLo), yLo, yHi);
-                ctx.font = '500 10px ' + MONO;
-                pill(plotW + 3, Math.min(mouse.y, priceH) - 9, AXIS_W - 7, 18, fmtP(pv));
-                const txt = fmtHM(cgm), w = ctx.measureText(txt).width + 14;
-                pill(clamp(X(cgm + 0.5) - w / 2, 2, plotW - w - 2), plotH + 4, w, TIME_H - 8, txt);
-            }
+/* ===================== pointer interaction ===================== */
+function updateCursorStyle(mx,my){
+  let c='crosshair';
+  const hit=hitTopmost(mx,my);
+  if(hit)c=hit.h?'pointer':'move';
+  if(cv.style.cursor!==c)cv.style.cursor=c;
+}
+cv.addEventListener('pointerdown',e=>{
+  e.preventDefault(); viewAnim=null;
+  const mx=e.offsetX,my=e.offsetY;
+  if(tool==='cursor'){
+    const hit=hitTopmost(mx,my);
+    if(hit){ selId=hit.d.id; pushUndo();
+      drag={d:hit.d,h:hit.h||null,ox:mx,oy:my,orig:snap(hit.d),moved:false};
+    }else{ selId=null; dragging=true; dragX=mx; dragR=view.r; }
+    cv.classList.add('grabbing'); cv.setPointerCapture(e.pointerId); return;
+  }
+  if(tool==='free'){
+    const md=dataAt(mx,my);
+    pending={type:'free',pts:[md],_lx:mx,_ly:my};
+    cv.setPointerCapture(e.pointerId); return;
+  }
+  if(tool==='text'||tool==='hline'||tool==='hray'||tool==='long'||tool==='short'){
+    downPt={x:mx,y:my}; cv.setPointerCapture(e.pointerId); return;
+  }
+  /* two-point tools: click-move-click (or drag-release) */
+  const md=dataAt(mx,my);
+  if(pending&&twoPoint.has(pending.type)){ pending.pts[1]=md; commitPending(); }
+  else if(twoPoint.has(tool)) pending={type:tool,pts:[md,{gm:md.gm,p:md.p}]};
+  chipTxt();
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove',e=>{
+  const mx=e.offsetX,my=e.offsetY;
+  mouse.x=mx;mouse.y=my;mouse.in=true;
+  if(drag&&drag.d){
+    if(drag.h){ applyHandle(drag.d,drag.h,dataAt(mx,my)); drag.moved=true; }
+    else{ const dgm=(mx-drag.ox)/geo.sp, dp=-(my-drag.oy)/geo.priceH*(geo.yHi-geo.yLo);
+      if(applyMove(drag.d,drag.orig,dgm,dp))drag.moved=true; }
+    return;
+  }
+  if(dragging){ view.r=clampR(dragR-(mx-dragX)/geo.sp); return; }
+  if(tool==='free'&&pending){
+    if(Math.hypot(mx-pending._lx,my-pending._ly)>3){
+      pending.pts.push(dataAt(mx,my));pending._lx=mx;pending._ly=my;}
+    return;
+  }
+  if(pending&&twoPoint.has(pending.type)) pending.pts[1]=dataAt(mx,my);
+  if(tool==='cursor') updateCursorStyle(mx,my);
+});
+cv.addEventListener('pointerup',e=>{
+  const mx=e.offsetX,my=e.offsetY;
+  if(drag){ if(!drag.moved)undoStack.pop(); drag=null; cv.classList.remove('grabbing'); return; }
+  if(dragging){ dragging=false;cv.classList.remove('grabbing'); return; }
+  if(tool==='free'&&pending){
+    if(pending.pts.length>1)finishD({type:'free',pts:pending.pts});
+    pending=null; return;
+  }
+  if(downPt){
+    if(Math.hypot(mx-downPt.x,my-downPt.y)<6){
+      const md=dataAt(mx,my);
+      if(tool==='hline')finishD({type:'hline',pts:[md]});
+      else if(tool==='hray')finishD({type:'hray',pts:[md]});
+      else if(tool==='long'||tool==='short'){
+        const dir=tool==='long'?1:-1, pE=md.p;
+        const pS=dir>0?pE*0.996:pE*1.004, pT=dir>0?pE*1.008:pE*0.992;
+        finishD({type:'pos',dir,gm0:clamp(md.gm-40,0,bars.length),
+          gm1:clamp(md.gm+40,0,bars.length+240),pE,pS,pT});
+      }
+      else if(tool==='text') openText(md);
+    }
+    downPt=null; return;
+  }
+  if(pending&&twoPoint.has(pending.type)){
+    const a=pending.pts[0], sx=geo.X(a.gm), sy=geo.Y(a.p);
+    if(Math.hypot(mx-sx,my-sy)>24){ pending.pts[1]=dataAt(mx,my); commitPending(); }
+  }
+});
+function commitPending(){
+  const d=pending; pending=null; chipTxt();
+  if(!d)return;
+  const [p0,p1]=d.pts;
+  if(d.type==='vprofile'){
+    const gm0=Math.min(p0.gm,p1.gm),gm1=Math.max(p0.gm,p1.gm);
+    if(gm1-gm0<3){setTool('cursor');return;}
+    d.pts=[{gm:gm0,p:0},{gm:gm1,p:0}];
+  }else{
+    if(Math.abs(p0.gm-p1.gm)<1e-6&&Math.abs(p0.p-p1.p)<1e-9){setTool('cursor');return;}
+    if(d.type==='fib'&&Math.abs(p0.p-p1.p)<1e-9){setTool('cursor');return;}
+  }
+  finishD(d);
+}
+cv.addEventListener('pointercancel',()=>{drag=null;dragging=false;downPt=null;cv.classList.remove('grabbing');});
+cv.addEventListener('pointerleave',()=>{mouse.in=false;});
+cv.addEventListener('wheel',e=>{
+  e.preventDefault(); if(!geo.sp)return; viewAnim=null;
+  if(e.shiftKey){view.r=clampR(view.r+(e.deltaY+e.deltaX)*0.6/geo.sp);return;}
+  const anchor=view.r-(geo.plotW-e.offsetX)/geo.sp;
+  const nv=clamp(view.v*Math.exp(e.deltaY*0.0011),40,2400);
+  const nsp=geo.plotW/nv;
+  view.r=clampR(anchor+(geo.plotW-e.offsetX)/nsp); view.v=nv;
+},{passive:false});
+cv.addEventListener('dblclick',e=>{
+  if(tool==='cursor'&&!pending){
+    const hit=hitTopmost(e.offsetX,e.offsetY);
+    if(hit&&hit.d.type==='text'){ openText(hit.d.pts[0],hit.d,hit.d.text); return; }
+  }
+  animateView(bars.length+42,260);
+});
+cv.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  if(txtCtx){closeText(false);return;}
+  if(pending){pending=null;chipTxt();}
+  else if(tool!=='cursor')setTool('cursor');
+  else selId=null;
+});
 
-            /* axis separators */
-            ctx.strokeStyle = '#20262f'; ctx.lineWidth = 1;
-            line(cr(plotW), 0, cr(plotW), H); line(0, cr(plotH), W, cr(plotH));
+/* ============================ live sim ============================ */
+/* Virtual clock runs ×10: one 1m bar forms every ~5.9s, micro-ticks
+   every 280ms. Higher timeframes + indicators update automatically.  */
+function tick(){
+  const b=bars[bars.length-1], m=(bars.length-1)%SESSION;
+  const smile=1+1.2*Math.exp(-m/45)+0.8*Math.exp(-(SESSION-m)/55);
+  const step=price*0.00042*smile*0.36;
+  const nc=b.c+liveDrift*price*0.3+gauss()*step;
+  b.c=nc; if(nc>b.h)b.h=nc; if(nc<b.l)b.l=nc;
+  b.v+=Math.round(50+rng()*180);
+  price=nc; aggDirty=true; dataVer++; flashHeader();
+}
+function newBar(){
+  const last=bars[bars.length-1];
+  let o;
+  if(bars.length%SESSION===0){
+    dayLbl.push(nextDayLabel());
+    o=last.c*(1+gauss()*0.0011);
+    liveDrift=(rng()-0.48)*0.0009;
+  }else{
+    if(rng()<0.05)liveDrift=(rng()-0.48)*0.0011;
+    o=last.c;
+  }
+  bars.push({o,h:o,l:o,c:o,v:Math.round(300+rng()*350)});
+  bornGM=bars.length-1; bornAt=performance.now();
+  aggDirty=true; dataVer++; updateAggInfo();
+}
+let tickN=0;
+setInterval(()=>{ if(paused)return; tickN++; tick(); if(tickN%21===0)newBar(); },280);
 
-            /* legend (DOM) — top row: hovered shell · bottom row: inner 1m minute */
-            const show = sb >= 0 ? agg[sb] : agg[agg.length - 1];
-            const up = show.c >= show.o, cc = up ? COL.up : COL.dn;
-            const prev = sb > 0 ? agg[sb - 1].c : show.o, dC = show.c - prev, dP = prev ? dC / prev * 100 : 0;
-            lgTf.textContent = tf + 'm';
-            lgO.textContent = fmtP(show.o); lgH.textContent = fmtP(show.h);
-            lgL.textContent = fmtP(show.l); lgC.textContent = fmtP(show.c);
-            lgChg.textContent = (dC >= 0 ? '+' : '−') + Math.abs(dP).toFixed(2) + '%';
-            lgV.textContent = fmtV(show.v);
-            [lgO, lgH, lgL, lgC, lgChg, lgV].forEach(el => el.style.color = cc);
-            let html;
-            if (tf > 1 && sb >= 0) {
-                const ib = bars[gi], iu = ib.c >= ib.o ? 'u' : 'd';
-                html = `INNER 1m · <b>${fmtHM(gi)}</b> · O <b>${fmtP(ib.o)}</b> H <b class="${iu}">${fmtP(ib.h)}</b> L <b class="${iu}">${fmtP(ib.l)}</b> C <b class="${iu}">${fmtP(ib.c)}</b> · VOL <b>${fmtV(ib.v)}</b> · SHELL ${tf}m ${fmtHM(agg[sb].g0)}–${fmtEnd(agg[sb].g1)}`;
-            } else if (sb >= 0) {
-                html = tf > 1 ? `SHELL ${tf}m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g1)}</b> · ${tf} × 1m aggregated`
-                    : `1m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g0 + 1)}</b>`;
-            } else {
-                html = tf > 1 ? `${tf}m view · hover any candle — legend reads the ${tf}m shell and the exact 1m minute inside it`
-                    : `drag to pan · wheel to zoom · keys 1 2 3 4 = timeframes · G ghost · SPACE pause`;
-            }
-            if (lgRow2.dataset.h !== html) { lgRow2.innerHTML = html; lgRow2.dataset.h = html; }
+/* ============================ helpers ============================ */
+const fmtHM=gm=>{const m=((gm%SESSION)+SESSION)%SESSION,t=OPEN_MIN+m;
+  return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');};
+const fmtEnd=gm=>gm%SESSION===0?'15:30':fmtHM(gm);
+function line(x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function pill(x,y,w,h,txt){ctx.fillStyle='#171c23';ctx.strokeStyle='rgba(255,255,255,.16)';
+  rr(x,y,w,h,4);ctx.fill();ctx.stroke();
+  ctx.fillStyle=COL.ink;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(txt,x+w/2,y+h/2+0.5);}
+const MONO='"IBM Plex Mono", monospace';
 
-            latestBtn.classList.toggle('show', view.r < bars.length - 2);
-        }
+/* ============================ render loop ============================ */
+let yLo=null,yHi=null,volMax=null,volMax1=null;
+function frame(now){
+  requestAnimationFrame(frame);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle=COL.bg; ctx.fillRect(0,0,W,H);
+  if(W<60||H<60)return;
 
-        /* ============================ boot ============================ */
-        renderHeader(); updateAggInfo();
-        requestAnimationFrame(frame);
-    </script>
+  const plotW=W-AXIS_W, plotH=H-TIME_H;
+  const volH=Math.max(30,plotH*0.15);
+
+  /* pane layout: price pane + volume strip + indicator panes */
+  const act=PANE_DEFS.filter(p=>p.on);
+  let PH=0;
+  if(act.length){ PH=clamp(Math.round((plotH-volH)*0.16),54,120);
+    const avail=plotH-volH-150;
+    if(act.length*PH>avail)PH=Math.max(36,Math.floor(avail/act.length)); }
+  let indH=PH*act.length;
+  const avail2=plotH-volH-120;
+  if(indH>avail2){ indH=Math.max(0,avail2); PH=act.length?indH/act.length:0; }
+  const priceH=Math.max(120,plotH-volH-indH);
+  const volBot=priceH+volH;
+
+  if(viewAnim){const p=Math.min(1,(now-viewAnim.t0)/viewAnim.dur),e=easeOut(p);
+    view.r=lerp(viewAnim.fr,viewAnim.tr,e);view.v=lerp(viewAnim.fv,viewAnim.tv,e);
+    if(p>=1)viewAnim=null;}
+  const sp=plotW/view.v;
+
+  const agg=getAgg(tf), leftGM=view.r-view.v;
+  const effGhost=ghostOn&&tf>1;
+
+  /* hover / snap */
+  const gmAt=view.r-(plotW-mouse.x)/sp;
+  const inPlot=mouse.in&&!dragging&&!drag&&mouse.x>=0&&mouse.x<=plotW&&mouse.y>=0&&mouse.y<=plotH;
+  const sb=inPlot?clamp(Math.floor(gmAt/tf),0,agg.length-1):-1;
+  const gi=(tf>1&&sb>=0)?clamp(Math.floor(gmAt),0,bars.length-1):-1;
+
+  const la=clamp((sp-1.5)/1.8,0,1);
+  const gw=Math.max(1.2,sp*0.46);
+  const bp=easeOut(clamp((now-switchT0)/420,0,1));
+
+  /* y autoscale from the 1m series (covers every ghost wick) */
+  const gA=Math.max(0,Math.floor(leftGM)), gB=Math.min(bars.length-1,Math.ceil(view.r));
+  let lo=1e18,hi=-1e18,vmax=0,vmax1=0;
+  for(let g=gA;g<=gB;g++){const x=bars[g];if(x.l<lo)lo=x.l;if(x.h>hi)hi=x.h;if(effGhost&&x.v>vmax1)vmax1=x.v;}
+  const b0=Math.max(0,Math.floor(leftGM/tf)), b1=Math.min(agg.length-1,Math.floor(view.r/tf));
+  for(let b=b0;b<=b1;b++){if(agg[b].v>vmax)vmax=agg[b].v;}
+  const pad=(hi-lo)*0.08+price*0.0003, tLo=lo-pad, tHi=hi+pad;
+  if(yLo===null){yLo=tLo;yHi=tHi;volMax=vmax||1;volMax1=vmax1||1;}
+  else{yLo+=(tLo-yLo)*0.22;yHi+=(tHi-yHi)*0.22;volMax+=((vmax||1)-volMax)*0.22;volMax1+=((vmax1||1)-volMax1)*0.22;}
+  const Y=p=>(1-(p-yLo)/(yHi-yLo))*priceH;
+  const X=gm=>plotW-(view.r-gm)*sp;
+  geo.sp=sp;geo.plotW=plotW;geo.priceH=priceH;geo.volH=volH;geo.volBot=volBot;
+  geo.X=X;geo.Y=Y;geo.yLo=yLo;geo.yHi=yHi;
+
+  /* axis strips */
+  ctx.fillStyle='rgba(255,255,255,.014)';
+  ctx.fillRect(plotW,0,AXIS_W,plotH); ctx.fillRect(0,plotH,W,TIME_H);
+
+  /* price grid + labels */
+  const range=yHi-yLo, raw=range/6;
+  const pow=Math.pow(10,Math.floor(Math.log10(raw)));
+  const step=(raw/pow<1.5?1:raw/pow<3.5?2:raw/pow<7.5?5:10)*pow;
+  ctx.font='10px '+MONO; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.strokeStyle=COL.grid; ctx.lineWidth=1; ctx.fillStyle=COL.dim;
+  for(let i=Math.ceil(yLo/step);i*step<=yHi;i++){
+    const p=i*step, gy=cr(Y(p));
+    line(0,gy,plotW,gy);
+    ctx.fillText(p.toFixed(2),plotW+9,gy);
+  }
+
+  /* day separators + time labels */
+  const dayXs=[];
+  for(let d=Math.max(0,Math.ceil(leftGM/SESSION));d*SESSION<bars.length&&d*SESSION<=view.r;d++)
+    dayXs.push({gm:d*SESSION,xi:X(d*SESSION),d});
+  let stepT=[5,10,15,30,60,120,240,480].find(s=>s*sp>=64)||480;
+  ctx.textAlign='center';
+  for(let gmT=Math.max(0,Math.ceil(leftGM/stepT)*stepT);gmT<=view.r;gmT+=stepT){
+    if(gmT>=bars.length)break;
+    const xi=X(gmT);
+    if(dayXs.some(o=>Math.abs(o.xi-xi)<30))continue;
+    ctx.strokeStyle=COL.grid; line(cr(xi),0,cr(xi),plotH);
+    ctx.fillStyle=COL.dim; ctx.fillText(fmtHM(gmT),xi,plotH+TIME_H/2+1);
+  }
+  for(const o of dayXs){
+    ctx.strokeStyle=COL.gridStrong; line(cr(o.xi),0,cr(o.xi),plotH);
+    if(dayLbl[o.d]){ctx.fillStyle='#9aa3ae';ctx.font='600 10px '+MONO;ctx.textAlign='left';
+      ctx.fillText(dayLbl[o.d],o.xi+5,plotH+TIME_H/2+1);ctx.textAlign='center';}
+  }
+
+  /* volume pane — 1m bars aligned to ghosts in ghost mode, aggregate otherwise */
+  const ghostVol=effGhost&&la>0.02;
+  const aggA=ghostVol?0.22*(1-la):0.22;
+  if(aggA>0.012){
+    ctx.globalAlpha=aggA;
+    for(let b=b0;b<=b1;b++){
+      const k=agg[b], x0=X(k.g0), x1=X(k.g1), ins=(x1-x0)*0.17;
+      const w=Math.max(1,(x1-x0)*0.66), vh=Math.max(1,k.v/volMax*(volH-8));
+      ctx.fillStyle=k.c>=k.o?COL.up:COL.dn;
+      ctx.fillRect(x0+ins,volBot-vh,w,vh);
+    }
+  }
+  if(ghostVol){
+    for(let b=b0;b<=b1;b++){
+      const e0=agg[b].g0;
+      for(let g=Math.max(gA,e0),ge=Math.min(gB,agg[b].g1-1);g<=ge;g++){
+        const bar=bars[g], cx=X(g+0.5);
+        if(cx<-4||cx>plotW+4)continue;
+        const cascade=clamp((now-switchT0-(g-e0)*16)/200,0,1)*bp;
+        const a=(g===gi?0.85:0.38)*la*cascade; if(a<=0.015)continue;
+        const vh=Math.max(1,bar.v/volMax1*(volH-8));
+        ctx.globalAlpha=a; ctx.fillStyle=bar.c>=bar.o?COL.up:COL.dn;
+        ctx.fillRect(cx-gw/2,volBot-vh,gw,vh);
+      }
+    }
+  }
+  ctx.globalAlpha=1;
+
+  /* 1m GHOST layer: wick stubs outside body only */
+  if(effGhost&&la>0.02){
+    for(let b=b0;b<=b1;b++){
+      const emph=(b===sb);
+      for(let g=Math.max(gA,agg[b].g0),e0=agg[b].g0;g<=Math.min(gB,agg[b].g1-1);g++){
+        const bar=bars[g], cx=X(g+0.5);
+        if(cx<-6||cx>plotW+6)continue;
+        const up=bar.c>=bar.o, col=up?COL.up:COL.dn;
+        const cascade=clamp((now-switchT0-(g-e0)*16)/200,0,1)*bp;
+        const isInner=(g===gi);
+        const a=(isInner?1:emph?0.85:0.62)*la*cascade; if(a<=0.015)continue;
+        const yH=Y(bar.h),yL=Y(bar.l),yO=Y(bar.o),yC=Y(bar.c);
+        const top=Math.min(yO,yC), bot=Math.max(yO,yC), bh=Math.max(1,bot-top);
+        ctx.globalAlpha=a; ctx.strokeStyle=col; ctx.fillStyle=col;
+        ctx.lineWidth=isInner?1.8:emph?1.4:1;
+        if(gw>=2.6){
+          if(top-yH>0.3) line(cr(cx),yH,cr(cx),top+0.5);
+          if(yL-bot>0.3) line(cr(cx),bot-0.5,cr(cx),yL);
+          if(ghostStyle==='fade'){ctx.globalAlpha=a*0.16;ctx.fillRect(cx-gw/2,top,gw,bh);ctx.globalAlpha=a;}
+          ctx.strokeRect(cx-gw/2,top,gw,bh);
+        }else ctx.fillRect(cx-gw/2,top,gw,bh);
+      }
+    }
+    ctx.globalAlpha=1;
+  }
+
+  /* main timeframe candles (shell mode when ghost on) */
+  for(let b=b0;b<=b1;b++){
+    const k=agg[b];
+    const born=(bornGM>=0&&b===Math.floor(bornGM/tf))?easeOut(clamp((now-bornAt)/380,0,1)):1;
+    const e=clamp(bp*born,0,1);
+    const oV=lerp(k.c,k.o,e), hV=lerp(k.c,k.h,e), lV=lerp(k.c,k.l,e);
+    const up=k.c>=k.o, col=up?COL.up:COL.dn;
+    const x0=X(k.g0), x1=X(k.g1), ins=(x1-x0)*0.17;
+    const bx=x0+ins, bw=Math.max(1,(x1-x0)*0.66), cx=(x0+x1)/2;
+    const emph=effGhost&&b===sb;
+    const yHv=Y(hV), yLv=Y(lV);
+    const top=Y(Math.max(oV,k.c)), yBo=Y(Math.min(oV,k.c)), bh=Math.max(1,yBo-top);
+    ctx.strokeStyle=col; ctx.fillStyle=col;
+    ctx.lineWidth=1; ctx.globalAlpha=effGhost?(emph?1:0.85):1;
+    if(bw<2.6){
+      line(cr(cx),yHv,cr(cx),yLv);
+      ctx.globalAlpha=effGhost?0.9:1; ctx.lineWidth=Math.max(2,bw);
+      line(cr(cx),top,cr(cx),top+bh);
+    }else if(effGhost){
+      if(top-yHv>0.3) line(cr(cx),yHv,cr(cx),top+0.5);
+      if(yLv-yBo>0.3) line(cr(cx),yBo-0.5,cr(cx),yLv);
+      ctx.globalAlpha=emph?0.34:0.17; ctx.fillRect(bx,top,bw,bh);
+      ctx.globalAlpha=emph?1:0.9; ctx.lineWidth=emph?2:1.5;
+      ctx.strokeRect(bx,top,bw,bh);
+    }else{
+      ctx.globalAlpha=1;
+      line(cr(cx),yHv,cr(cx),yLv);
+      ctx.fillRect(bx,top,bw,bh);
+    }
+  }
+  ctx.globalAlpha=1;
+
+  /* parent ring while inspecting a shell */
+  if(tf>1&&sb>=0&&agg[sb]&&agg[sb].g0<bars.length){
+    const k=agg[sb], x0=X(k.g0), x1=X(k.g1), ins=(x1-x0)*0.17;
+    ctx.strokeStyle=COL.acc; ctx.lineWidth=1.4; ctx.globalAlpha=.9;
+    rr(x0+ins-5,Y(k.h)-5,(x1-x0-2*ins)+10,(Y(k.l)-Y(k.h))+10,6); ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  /* 1m inspect marker when ghosts hidden */
+  if(tf>1&&sb>=0&&!effGhost&&gi>=0){
+    const ib=bars[gi], cxm=X(gi+0.5);
+    ctx.fillStyle='rgba(224,166,63,.055)'; ctx.fillRect(X(gi),0,sp,priceH);
+    const yH=Y(ib.h),yL=Y(ib.l),yO=Y(ib.o),yC=Y(ib.c);
+    const t2=Math.min(yO,yC), b2=Math.max(yO,yC);
+    const wb=Math.max(3,Math.min(gw*1.3,sp*0.7));
+    ctx.strokeStyle=COL.acc; ctx.globalAlpha=.95; ctx.lineWidth=1.5;
+    if(t2-yH>0.3) line(cr(cxm),yH,cr(cxm),t2+0.5);
+    if(yL-b2>0.3) line(cr(cxm),b2-0.5,cr(cxm),yL);
+    ctx.strokeRect(cxm-wb/2,t2,wb,Math.max(1,b2-t2));
+    ctx.globalAlpha=1;
+  }
+
+  /* ----- drawings layer (clipped to price pane) ----- */
+  axisTags=[];
+  ctx.save(); ctx.beginPath(); ctx.rect(0,0,plotW,priceH); ctx.clip();
+  for(const d of drawings) renderDrawing(d,{selected:d.id===selId});
+  if(pending) renderDrawing(pending,{preview:true});
+  if(selId!=null){ const sd=drawings.find(d=>d.id===selId);
+    if(sd) for(const h of handlesOf(sd)){
+      ctx.fillStyle='#e8ecf1'; ctx.strokeStyle='#0c0e11'; ctx.lineWidth=1.2;
+      ctx.fillRect(h.x-3.5,h.y-3.5,7,7); ctx.strokeRect(h.x-2.5,h.y-2.5,5,5); } }
+  ctx.restore();
+  for(const t of axisTags){
+    ctx.fillStyle=t.c; rr(plotW+3,t.y-8,AXIS_W-7,16,4); ctx.fill();
+    ctx.fillStyle='#0c0e11'; ctx.font='600 9.5px '+MONO;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(t.text,plotW+3+(AXIS_W-7)/2,t.y);
+  }
+
+  /* last traded price line + tag */
+  const lp=bars[bars.length-1].c, ly=Y(lp);
+  if(ly>-8&&ly<priceH+8){
+    ctx.strokeStyle=COL.acc; ctx.globalAlpha=.55; ctx.setLineDash([3,4]); ctx.lineWidth=1;
+    line(0,cr(ly),plotW,cr(ly)); ctx.setLineDash([]); ctx.globalAlpha=1;
+    ctx.fillStyle=COL.acc; rr(plotW+3,ly-9,AXIS_W-7,18,4); ctx.fill();
+    ctx.fillStyle='#10131a'; ctx.font='600 10.5px '+MONO;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(fmtP(lp),plotW+3+(AXIS_W-7)/2,ly+0.5);
+  }
+
+  /* ----- indicator panes ----- */
+  if(act.length){
+    const IND=getInd();
+    let top=volBot;
+    for(const p of act){
+      ctx.strokeStyle='#1d232c'; ctx.lineWidth=1; line(0,cr(top),W,cr(top));
+      const padT=9,padB=7, ph=PH-padT-padB;
+      let plo=0,phi=1,levels=[],series=[],histD=null;
+      if(p.id==='rsi'){ plo=0;phi=100;
+        levels=[{v:70,dash:[3,4],c:'rgba(229,72,77,.35)',l:'70'},{v:50,c:'rgba(255,255,255,.05)'},{v:30,dash:[3,4],c:'rgba(47,191,127,.35)',l:'30'}];
+        series=[{d:IND.rsi,c:COL.acc,w:1.4}]; }
+      else if(p.id==='macd'){ let m=1e-9;
+        for(let b=b0;b<=b1;b++)m=Math.max(m,Math.abs(IND.macd.m[b]||0),Math.abs(IND.macd.s[b]||0),Math.abs(IND.macd.h[b]||0));
+        plo=-m*1.18;phi=m*1.18;levels=[{v:0,c:'rgba(255,255,255,.10)'}];
+        histD=IND.macd.h;
+        series=[{d:IND.macd.m,c:'#5fb0d8',w:1.3},{d:IND.macd.s,c:COL.acc,w:1.1}]; }
+      else{ let m=1e-9;
+        for(let b=b0;b<=b1;b++)m=Math.max(m,IND.adx.a[b]||0,IND.adx.p[b]||0,IND.adx.m[b]||0);
+        plo=0;phi=Math.max(30,m*1.18);
+        levels=[{v:20,c:'rgba(255,255,255,.05)',l:'20'},{v:40,c:'rgba(255,255,255,.05)',l:'40'}];
+        series=[{d:IND.adx.p,c:COL.up,w:1.1},{d:IND.adx.m,c:COL.dn,w:1.1},{d:IND.adx.a,c:COL.acc,w:1.5}]; }
+      const PY=v=>top+padT+(1-(v-plo)/(phi-plo))*ph;
+      ctx.font='9px '+MONO; ctx.textAlign='left'; ctx.textBaseline='middle';
+      for(const L of levels){ const y=cr(PY(L.v));
+        ctx.strokeStyle=L.c; ctx.setLineDash(L.dash||[]); line(0,y,plotW,y); ctx.setLineDash([]);
+        if(L.l){ctx.fillStyle='#4a525d';ctx.fillText(L.l,plotW+8,y);} }
+      ctx.save(); ctx.beginPath(); ctx.rect(0,top+1,plotW,PH-1); ctx.clip();
+      if(histD){ for(let b=b0;b<=b1;b++){ const v=histD[b]; if(v==null)continue;
+          const w=Math.max(1,(X(agg[b].g1)-X(agg[b].g0))*0.42);
+          const y0=PY(0),y1=PY(v);
+          ctx.fillStyle=v>=0?'rgba(47,191,127,.45)':'rgba(229,72,77,.45)';
+          ctx.fillRect(X(agg[b].g0+tf/2)-w/2,Math.min(y0,y1),w,Math.max(1,Math.abs(y1-y0))); } }
+      for(const s of series){ ctx.strokeStyle=s.c; ctx.lineWidth=s.w;
+        ctx.beginPath(); let st=false;
+        for(let b=b0;b<=b1;b++){ const v=s.d[b]; if(v==null){st=false;continue;}
+          const x=X(agg[b].g0+tf/2), y=PY(v);
+          if(!st){ctx.moveTo(x,y);st=true;} else ctx.lineTo(x,y); }
+        ctx.stroke(); }
+      ctx.restore();
+      /* label + values at hover (or last) */
+      const idx=sb>=0?sb:agg.length-1;
+      const fv=a=>{for(let i=Math.min(idx,a.length-1);i>=0;i--)if(a[i]!=null)return a[i];return null;};
+      let vs='',vc=COL.ink;
+      if(p.id==='rsi'){ const v=fv(IND.rsi); vs=v==null?'—':v.toFixed(2);
+        vc=v==null?COL.ink:v>70?COL.dn:v<30?COL.up:COL.ink; }
+      else if(p.id==='macd'){ const m=fv(IND.macd.m),s=fv(IND.macd.s),h=fv(IND.macd.h);
+        vs=`M ${m==null?'—':m.toFixed(2)}  S ${s==null?'—':s.toFixed(2)}  H ${h==null?'—':h.toFixed(2)}`;
+        vc=h==null?COL.ink:h>=0?COL.up:COL.dn; }
+      else{ const a=fv(IND.adx.a),pp=fv(IND.adx.p),mm=fv(IND.adx.m);
+        vs=`ADX ${a==null?'—':a.toFixed(1)}  +DI ${pp==null?'—':pp.toFixed(1)}  −DI ${mm==null?'—':mm.toFixed(1)}`; }
+      ctx.font='600 9.5px '+MONO;
+      const tw=ctx.measureText(p.title).width, vw2=ctx.measureText(vs).width;
+      ctx.fillStyle='rgba(12,14,17,.72)'; rr(6,top+4,tw+vw2+26,15,4); ctx.fill();
+      ctx.fillStyle='#79828d'; ctx.textAlign='left'; ctx.fillText(p.title,12,top+12);
+      ctx.fillStyle=vc; ctx.fillText(vs,12+tw+8,top+12);
+      /* hover value pill in pane axis */
+      if(inPlot&&mouse.y>top&&mouse.y<top+PH){
+        const v=plo+(1-(mouse.y-top-padT)/ph)*(phi-plo);
+        pill(plotW+3,clamp(mouse.y,top+2,top+PH-20),AXIS_W-7,18,clamp(v,plo,phi).toFixed(2));
+      }
+      top+=PH;
+    }
+  }
+
+  /* crosshair — vertical spans all panes, horizontal only in price pane */
+  if(inPlot&&sb>=0){
+    const cgm=tf>1?gi:agg[sb].g0;
+    const sx=cr(X(cgm+0.5));
+    ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+    line(sx,0,sx,plotH);
+    if(mouse.y<=priceH){
+      line(0,cr(mouse.y),plotW,cr(mouse.y));
+      const pv=clamp(yHi-(mouse.y/priceH)*(yHi-yLo),yLo,yHi);
+      ctx.font='500 10px '+MONO;
+      pill(plotW+3,mouse.y-9,AXIS_W-7,18,fmtP(pv));
+    }
+    ctx.setLineDash([]);
+    const txt=fmtHM(cgm), w=ctx.measureText(txt).width+14;
+    pill(clamp(X(cgm+0.5)-w/2,2,plotW-w-2),plotH+4,w,TIME_H-8,txt);
+  }
+
+  /* axis separators */
+  ctx.strokeStyle='#20262f'; ctx.lineWidth=1;
+  line(cr(plotW),0,cr(plotW),H); line(0,cr(plotH),W,cr(plotH));
+
+  /* legend (DOM) */
+  const show=sb>=0?agg[sb]:agg[agg.length-1];
+  const up=show.c>=show.o, cc=up?COL.up:COL.dn;
+  const prev=sb>0?agg[sb-1].c:show.o, dC=show.c-prev, dP=prev?dC/prev*100:0;
+  lgTf.textContent=tf+'m';
+  lgO.textContent=fmtP(show.o); lgH.textContent=fmtP(show.h);
+  lgL.textContent=fmtP(show.l); lgC.textContent=fmtP(show.c);
+  lgChg.textContent=(dC>=0?'+':'−')+Math.abs(dP).toFixed(2)+'%';
+  lgV.textContent=fmtV(show.v);
+  [lgO,lgH,lgL,lgC,lgChg,lgV].forEach(el=>el.style.color=cc);
+  let html;
+  if(tf>1&&sb>=0){
+    const ib=bars[gi], iu=ib.c>=ib.o?'u':'d';
+    html=`INNER 1m · <b>${fmtHM(gi)}</b> · O <b>${fmtP(ib.o)}</b> H <b class="${iu}">${fmtP(ib.h)}</b> L <b class="${iu}">${fmtP(ib.l)}</b> C <b class="${iu}">${fmtP(ib.c)}</b> · VOL <b>${fmtV(ib.v)}</b> · SHELL ${tf}m ${fmtHM(agg[sb].g0)}–${fmtEnd(agg[sb].g1)}`;
+  }else if(sb>=0){
+    html=tf>1?`SHELL ${tf}m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g1)}</b> · ${tf} × 1m aggregated`
+             :`1m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g0+1)}</b>`;
+  }else{
+    html=tf>1?`${tf}m view · hover any candle — legend reads the ${tf}m shell and the exact 1m minute inside it`
+             :`drag to pan · wheel to zoom · keys 1 2 3 4 = timeframes · G ghost · SPACE pause`;
+  }
+  if(lgRow2.dataset.h!==html){lgRow2.innerHTML=html;lgRow2.dataset.h=html;}
+
+  latestBtn.classList.toggle('show',view.r<bars.length-2);
+}
+
+/* ============================ boot ============================ */
+renderHeader(); updateAggInfo();
+requestAnimationFrame(frame);
+</script>
 </body>
-
 </html>
