@@ -60,7 +60,6 @@
   .hdrBtn:hover{color:var(--ink);border-color:#39424f}
   .hdrBtn svg{width:13px;height:13px}
 
-  /* indicators popover */
   .popWrap{position:relative}
   .pop{position:absolute;top:calc(100% + 8px);right:0;background:#11141a;border:1px solid var(--line2);border-radius:10px;padding:7px;min-width:200px;z-index:40;box-shadow:0 14px 34px rgba(0,0,0,.55)}
   .pop label{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;font-family:var(--mono);font-size:11px;color:var(--dim);cursor:pointer}
@@ -73,7 +72,6 @@
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:none;user-select:none}
   canvas.grabbing{cursor:grabbing}
 
-  /* drawing toolbar */
   #tools{position:absolute;left:10px;top:12px;z-index:6;display:flex;flex-direction:column;gap:1px;background:rgba(13,16,20,.86);border:1px solid var(--line);border-radius:10px;padding:5px;backdrop-filter:blur(8px);max-height:calc(100% - 24px);overflow-y:auto;user-select:none;scrollbar-width:none}
   #tools::-webkit-scrollbar{display:none}
   .tbtn{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--dim);transition:.12s;flex:none}
@@ -158,7 +156,7 @@
       <svg id="icPause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 5v14M15 5v14"/></svg>
       <svg id="icPlay" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M8 5.5v13l11-6.5z"/></svg>
     </button>
-    <button class="iconBtn" id="resetBtn" title="reset view (R / double-click)">
+    <button class="iconBtn" id="resetBtn" title="reset view — time + price auto-fit (R / double-click)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4"/></svg>
     </button>
   </div>
@@ -214,7 +212,7 @@
 
 <footer>
   <div id="aggInfo">—</div>
-  <div class="hints"><b>DRAG</b> pan · <b>WHEEL</b> zoom · <b>1–4</b> TF · <b>G</b> ghost · <b>SPACE</b> pause · <b>DEL</b> rm drawing · <b>CTRL+Z</b> undo · <b>ESC</b> cancel</div>
+  <div class="hints"><b>WHEEL</b> time zoom · <b>PRICE AXIS</b> wheel/drag = price scale · <b>TIME AXIS</b> wheel/drag · <b>ALT+WHEEL</b> price · <b>DBL-CLICK AXIS</b> auto-fit · <b>1–4</b> TF · <b>G</b> ghost · <b>SPACE</b> pause · <b>DEL</b> · <b>CTRL+Z</b> · <b>ESC</b></div>
 </footer>
 
 <script>
@@ -240,9 +238,6 @@ function distSeg(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy;
   return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));}
 
 /* ============================ data ============================= */
-/* Base series = 1-minute OHLCV. bars[] is dense: bars[gm], gm = global
-   session-minute index (day*375 + minuteSinceOpen). Everything else —
-   3m / 5m / 15m candles — is aggregated from this on the fly.        */
 const SESSION=375, OPEN_MIN=555;                     // 09:15 → 15:30, 375 min
 const COL={bg:'#0c0e11',grid:'rgba(255,255,255,.045)',gridStrong:'rgba(255,255,255,.11)',
   ink:'#d6dae0',dim:'#79828d',up:'#2fbf7f',dn:'#e5484d',acc:'#e0a63f'};
@@ -251,8 +246,8 @@ const AXIS_W=64, TIME_H=26;
 let tf=5, ghostOn=true, ghostStyle='hollow', paused=false;
 const bars=[], dayLbl=[];
 let price=2847.55, liveDrift=0, dataVer=0;
-let bornGM=-1, bornAt=0;                             // new-bar bloom animation
-let switchT0=performance.now();                      // timeframe-switch bloom
+let bornGM=-1, bornAt=0;
+let switchT0=performance.now();
 
 const dates=[]; const d0=new Date();
 while(dates.length<3){ d0.setDate(d0.getDate()-1); const w=d0.getDay(); if(w!==0&&w!==6) dates.push(new Date(d0)); }
@@ -263,11 +258,11 @@ let lastDate=dates[dates.length-1];
 function nextDayLabel(){ do{ lastDate.setDate(lastDate.getDate()+1); }while(lastDate.getDay()===0||lastDate.getDay()===6); return fmtDate(lastDate); }
 
 function genDay(){
-  price*=1+gauss()*0.0011;                           // overnight gap
+  price*=1+gauss()*0.0011;
   let regimeLeft=0, drift=0;
   for(let m=0;m<SESSION;m++){
     if(regimeLeft<=0){ regimeLeft=25+(rng()*45|0); drift=(rng()-0.48)*0.0009; if(rng()<0.06)drift*=4; }
-    const smile=1+1.5*Math.exp(-m/45)+1.05*Math.exp(-(SESSION-m)/55); // U-shaped intraday vol
+    const smile=1+1.5*Math.exp(-m/45)+1.05*Math.exp(-(SESSION-m)/55);
     const vol=0.00042*smile, va=price*vol;
     const o=price, c=o*(1+drift+gauss()*vol);
     const h=Math.max(o,c)+va*(0.15+rng()*0.85);
@@ -278,7 +273,6 @@ function genDay(){
 }
 const prevCloseRef=()=>{const day=Math.floor((bars.length-1)/375);return day>0?bars[day*375-1].c:bars[0].o;};
 
-/* -------- aggregation: 1m → 3m / 5m / 15m (auto) -------- */
 let aggDirty=true; const aggCache=new Map();
 function buildAgg(t){
   const arr=[], n=Math.ceil(bars.length/t);
@@ -293,8 +287,6 @@ function buildAgg(t){
 function getAgg(t){ if(aggDirty){aggCache.clear();aggDirty=false;} if(!aggCache.has(t))aggCache.set(t,buildAgg(t)); return aggCache.get(t); }
 
 /* ======================= indicator math ======================== */
-/* All indicators are computed on the aggregated candles of the active
-   timeframe, so RSI/MACD/ADX re-granulate with the TF switch.        */
 function emaArr(src,n){const out=new Array(src.length).fill(null);const k=2/(n+1);let sum=0,e=null;
   for(let i=0;i<src.length;i++){ if(i<n){sum+=src[i];if(i===n-1){e=sum/n;out[i]=e;}}
     else{e=src[i]*k+e*(1-k);out[i]=e;} } return out;}
@@ -346,14 +338,33 @@ let viewAnim=null;
 function animateView(tr,tv){viewAnim={t0:performance.now(),dur:520,fr:view.r,fv:view.v,tr,tv};}
 const clampR=r=>{const hi=bars.length+90;return clamp(r,Math.min(view.v-30,hi),hi);};
 
+/* ----- per-axis scale state -----
+   pMode 'auto'  → price range auto-fits the visible data every frame
+   pMode 'manual'→ mLo/mHi pinned by the user (wheel/drag on price axis);
+                   new data no longer moves the scale until auto-fit is
+                   restored (dbl-click axis / A / badge / reset).        */
+let pMode='auto', mLo=0, mHi=1, pzR0=1;
+function enterManual(){ if(pMode==='manual'||yLo==null)return;
+  pMode='manual'; mLo=yLo; mHi=yHi; pzR0=Math.max(1e-9,yHi-yLo); }
+function priceAuto(){ pMode='auto'; }                // targets recompute next frame → smooth glide
+function priceZoomAt(ypix,k){
+  if(!geo.priceH)return; const R=yHi-yLo; if(!(R>0))return;
+  enterManual(); if(pMode!=='manual')return;
+  const pc=yHi-(ypix/geo.priceH)*R;                  // price under the cursor stays fixed
+  const nR=clamp((mHi-mLo)*k, price*0.0006, price*1.5);
+  const kk=nR/(mHi-mLo);
+  mHi=pc+(mHi-pc)*kk; mLo=pc-(pc-mLo)*kk;
+}
+function resetAll(){ animateView(bars.length+42,260); priceAuto(); }
+
 const cv=$('#chart'), ctx=cv.getContext('2d');
 let W=0,H=0,dpr=1;
 function resize(){dpr=window.devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
 new ResizeObserver(resize).observe($('#wrap')); resize();
-/* geo carries last-frame transforms so hit-testing works between frames */
-const geo={sp:0,plotW:1,priceH:1,volH:1,volBot:1,X:x=>x,Y:y=>y,yLo:0,yHi:1};
+const geo={sp:0,plotW:1,priceH:1,volH:1,volBot:1,X:x=>x,Y:y=>y,yLo:0,yHi:1,badge:null};
 
 let mouse={x:0,y:0,in:false}, dragging=false, dragX=0, dragR=0;
+let axisDrag=null, suppressUp=false;
 
 /* ======================= drawings & tools ====================== */
 const DCOL={def:'#5fb0d8',fib:'#e0a63f',text:'#d6dae0',free:'#cfd6de'};
@@ -653,7 +664,7 @@ styleSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
   liveEl.classList.toggle('paused',paused);
   liveTxt.textContent=paused?'PAUSED':'LIVE · ×10';
 });
- $('#resetBtn').addEventListener('click',()=>animateView(bars.length+42,260));
+ $('#resetBtn').addEventListener('click',resetAll);
 latestBtn.addEventListener('click',()=>animateView(bars.length+42,260));
 
 addEventListener('keydown',e=>{
@@ -662,7 +673,8 @@ addEventListener('keydown',e=>{
   else if(e.key==='3')setTF(5); else if(e.key==='4')setTF(15);
   else if(e.key==='g'||e.key==='G'){if(tf>1)ghostToggle.click();}
   else if(e.key===' '){e.preventDefault();$('#pauseBtn').click();}
-  else if(e.key==='r'||e.key==='R')animateView(bars.length+42,260);
+  else if(e.key==='a'||e.key==='A')priceAuto();
+  else if(e.key==='r'||e.key==='R')resetAll();
   else if(e.key==='Escape'){
     if(txtCtx)closeText(false);
     else if(indPop.hidden===false)indPop.hidden=true;
@@ -689,6 +701,23 @@ function updateCursorStyle(mx,my){
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault(); viewAnim=null;
   const mx=e.offsetX,my=e.offsetY;
+
+  /* axis badge — click to restore price auto-fit */
+  if(geo.badge&&mx>=geo.badge.x&&mx<=geo.badge.x+geo.badge.w&&my>=geo.badge.y&&my<=geo.badge.y+geo.badge.h){
+    if(pMode==='manual')priceAuto();
+    return;
+  }
+  /* axis strips: wheel/drag operate on ONE scale only */
+  if(mx>=geo.plotW||my>=H-TIME_H){
+    if(!pending&&yLo!==null){
+      suppressUp=true;cv.classList.add('grabbing');cv.setPointerCapture(e.pointerId);
+      if(mx>=geo.plotW){ enterManual();
+        axisDrag={type:'price',y0:my,lo:mLo,hi:mHi,R:(mHi-mLo)||1};
+      }else axisDrag={type:'time',x0:mx,r0:view.r};
+    }
+    return;
+  }
+
   if(tool==='cursor'){
     const hit=hitTopmost(mx,my);
     if(hit){ selId=hit.d.id; pushUndo();
@@ -704,7 +733,6 @@ cv.addEventListener('pointerdown',e=>{
   if(tool==='text'||tool==='hline'||tool==='hray'||tool==='long'||tool==='short'){
     downPt={x:mx,y:my}; cv.setPointerCapture(e.pointerId); return;
   }
-  /* two-point tools: click-move-click (or drag-release) */
   const md=dataAt(mx,my);
   if(pending&&twoPoint.has(pending.type)){ pending.pts[1]=md; commitPending(); }
   else if(twoPoint.has(tool)) pending={type:tool,pts:[md,{gm:md.gm,p:md.p}]};
@@ -714,6 +742,14 @@ cv.addEventListener('pointerdown',e=>{
 cv.addEventListener('pointermove',e=>{
   const mx=e.offsetX,my=e.offsetY;
   mouse.x=mx;mouse.y=my;mouse.in=true;
+
+  if(axisDrag){
+    if(axisDrag.type==='price'){
+      const d=(my-axisDrag.y0)/geo.priceH*axisDrag.R;
+      mLo=axisDrag.lo+d; mHi=axisDrag.hi+d;
+    }else view.r=clampR(axisDrag.r0-(mx-axisDrag.x0)/geo.sp);
+    return;
+  }
   if(drag&&drag.d){
     if(drag.h){ applyHandle(drag.d,drag.h,dataAt(mx,my)); drag.moved=true; }
     else{ const dgm=(mx-drag.ox)/geo.sp, dp=-(my-drag.oy)/geo.priceH*(geo.yHi-geo.yLo);
@@ -727,9 +763,18 @@ cv.addEventListener('pointermove',e=>{
     return;
   }
   if(pending&&twoPoint.has(pending.type)) pending.pts[1]=dataAt(mx,my);
-  if(tool==='cursor') updateCursorStyle(mx,my);
+
+  /* hover cursor: axes → resize, badge → pointer, else tool logic */
+  let hc=null;
+  if(geo.badge&&mx>=geo.badge.x&&mx<=geo.badge.x+geo.badge.w&&my>=geo.badge.y&&my<=geo.badge.y+geo.badge.h)hc='pointer';
+  else if(mx>=geo.plotW)hc='ns-resize';
+  else if(my>=H-TIME_H)hc='ew-resize';
+  if(hc){ if(cv.style.cursor!==hc)cv.style.cursor=hc; }
+  else if(tool==='cursor') updateCursorStyle(mx,my);
+  else if(cv.style.cursor!=='crosshair')cv.style.cursor='crosshair';
 });
 cv.addEventListener('pointerup',e=>{
+  if(suppressUp){suppressUp=false;axisDrag=null;cv.classList.remove('grabbing');return;}
   const mx=e.offsetX,my=e.offsetY;
   if(drag){ if(!drag.moved)undoStack.pop(); drag=null; cv.classList.remove('grabbing'); return; }
   if(dragging){ dragging=false;cv.classList.remove('grabbing'); return; }
@@ -771,22 +816,36 @@ function commitPending(){
   }
   finishD(d);
 }
-cv.addEventListener('pointercancel',()=>{drag=null;dragging=false;downPt=null;cv.classList.remove('grabbing');});
+cv.addEventListener('pointercancel',()=>{drag=null;dragging=false;downPt=null;axisDrag=null;suppressUp=false;cv.classList.remove('grabbing');});
 cv.addEventListener('pointerleave',()=>{mouse.in=false;});
 cv.addEventListener('wheel',e=>{
   e.preventDefault(); if(!geo.sp)return; viewAnim=null;
+  const x=e.offsetX,y=e.offsetY;
+  /* PRICE axis only — or Alt+wheel anywhere */
+  if(x>=geo.plotW||e.altKey){ priceZoomAt(y,Math.exp(e.deltaY*0.0012)); return; }
+  /* TIME axis only — anchored at the time under the cursor */
+  if(y>=H-TIME_H){
+    const t=view.r-(geo.plotW-x)/geo.sp;
+    const nv=clamp(view.v*Math.exp(e.deltaY*0.0011),40,2400);
+    const nsp=geo.plotW/nv;
+    view.r=clampR(t+(geo.plotW-x)/nsp); view.v=nv; return;
+  }
+  /* chart body: time zoom as before (shift = strafe) */
   if(e.shiftKey){view.r=clampR(view.r+(e.deltaY+e.deltaX)*0.6/geo.sp);return;}
-  const anchor=view.r-(geo.plotW-e.offsetX)/geo.sp;
+  const anchor=view.r-(geo.plotW-x)/geo.sp;
   const nv=clamp(view.v*Math.exp(e.deltaY*0.0011),40,2400);
   const nsp=geo.plotW/nv;
-  view.r=clampR(anchor+(geo.plotW-e.offsetX)/nsp); view.v=nv;
+  view.r=clampR(anchor+(geo.plotW-x)/nsp); view.v=nv;
 },{passive:false});
 cv.addEventListener('dblclick',e=>{
+  const x=e.offsetX,y=e.offsetY;
+  if(x>=geo.plotW){ priceAuto(); return; }               // price axis → auto-fit price
+  if(y>=H-TIME_H){ animateView(bars.length+42,260); return; } // time axis → jump to latest
   if(tool==='cursor'&&!pending){
     const hit=hitTopmost(e.offsetX,e.offsetY);
     if(hit&&hit.d.type==='text'){ openText(hit.d.pts[0],hit.d,hit.d.text); return; }
   }
-  animateView(bars.length+42,260);
+  resetAll();
 });
 cv.addEventListener('contextmenu',e=>{
   e.preventDefault();
@@ -797,8 +856,6 @@ cv.addEventListener('contextmenu',e=>{
 });
 
 /* ============================ live sim ============================ */
-/* Virtual clock runs ×10: one 1m bar forms every ~5.9s, micro-ticks
-   every 280ms. Higher timeframes + indicators update automatically.  */
 function tick(){
   const b=bars[bars.length-1], m=(bars.length-1)%SESSION;
   const smile=1+1.2*Math.exp(-m/45)+0.8*Math.exp(-(SESSION-m)/55);
@@ -851,7 +908,6 @@ function frame(now){
   const plotW=W-AXIS_W, plotH=H-TIME_H;
   const volH=Math.max(30,plotH*0.15);
 
-  /* pane layout: price pane + volume strip + indicator panes */
   const act=PANE_DEFS.filter(p=>p.on);
   let PH=0;
   if(act.length){ PH=clamp(Math.round((plotH-volH)*0.16),54,120);
@@ -871,9 +927,8 @@ function frame(now){
   const agg=getAgg(tf), leftGM=view.r-view.v;
   const effGhost=ghostOn&&tf>1;
 
-  /* hover / snap */
   const gmAt=view.r-(plotW-mouse.x)/sp;
-  const inPlot=mouse.in&&!dragging&&!drag&&mouse.x>=0&&mouse.x<=plotW&&mouse.y>=0&&mouse.y<=plotH;
+  const inPlot=mouse.in&&!dragging&&!drag&&!axisDrag&&mouse.x>=0&&mouse.x<=plotW&&mouse.y>=0&&mouse.y<=plotH;
   const sb=inPlot?clamp(Math.floor(gmAt/tf),0,agg.length-1):-1;
   const gi=(tf>1&&sb>=0)?clamp(Math.floor(gmAt),0,bars.length-1):-1;
 
@@ -881,15 +936,19 @@ function frame(now){
   const gw=Math.max(1.2,sp*0.46);
   const bp=easeOut(clamp((now-switchT0)/420,0,1));
 
-  /* y autoscale from the 1m series (covers every ghost wick) */
+  /* y-scale targets: manual mode pins the range, auto fits visible data */
   const gA=Math.max(0,Math.floor(leftGM)), gB=Math.min(bars.length-1,Math.ceil(view.r));
   let lo=1e18,hi=-1e18,vmax=0,vmax1=0;
   for(let g=gA;g<=gB;g++){const x=bars[g];if(x.l<lo)lo=x.l;if(x.h>hi)hi=x.h;if(effGhost&&x.v>vmax1)vmax1=x.v;}
   const b0=Math.max(0,Math.floor(leftGM/tf)), b1=Math.min(agg.length-1,Math.floor(view.r/tf));
   for(let b=b0;b<=b1;b++){if(agg[b].v>vmax)vmax=agg[b].v;}
-  const pad=(hi-lo)*0.08+price*0.0003, tLo=lo-pad, tHi=hi+pad;
+  const manual=pMode==='manual'&&yLo!==null;
+  const pad=(hi-lo)*0.08+price*0.0003;
+  const tLo=manual?mLo:lo-pad, tHi=manual?mHi:hi+pad;
   if(yLo===null){yLo=tLo;yHi=tHi;volMax=vmax||1;volMax1=vmax1||1;}
-  else{yLo+=(tLo-yLo)*0.22;yHi+=(tHi-yHi)*0.22;volMax+=((vmax||1)-volMax)*0.22;volMax1+=((vmax1||1)-volMax1)*0.22;}
+  else{const sm=manual?0.5:0.22;
+    yLo+=(tLo-yLo)*sm;yHi+=(tHi-yHi)*sm;
+    volMax+=((vmax||1)-volMax)*0.22;volMax1+=((vmax1||1)-volMax1)*0.22;}
   const Y=p=>(1-(p-yLo)/(yHi-yLo))*priceH;
   const X=gm=>plotW-(view.r-gm)*sp;
   geo.sp=sp;geo.plotW=plotW;geo.priceH=priceH;geo.volH=volH;geo.volBot=volBot;
@@ -899,12 +958,13 @@ function frame(now){
   ctx.fillStyle='rgba(255,255,255,.014)';
   ctx.fillRect(plotW,0,AXIS_W,plotH); ctx.fillRect(0,plotH,W,TIME_H);
 
-  /* price grid + labels */
+  /* price grid + labels (tinted amber while scale is manual) */
   const range=yHi-yLo, raw=range/6;
   const pow=Math.pow(10,Math.floor(Math.log10(raw)));
   const step=(raw/pow<1.5?1:raw/pow<3.5?2:raw/pow<7.5?5:10)*pow;
   ctx.font='10px '+MONO; ctx.textAlign='left'; ctx.textBaseline='middle';
-  ctx.strokeStyle=COL.grid; ctx.lineWidth=1; ctx.fillStyle=COL.dim;
+  ctx.strokeStyle=COL.grid; ctx.lineWidth=1;
+  ctx.fillStyle=manual?'#c9a45c':COL.dim;
   for(let i=Math.ceil(yLo/step);i*step<=yHi;i++){
     const p=i*step, gy=cr(Y(p));
     line(0,gy,plotW,gy);
@@ -930,7 +990,7 @@ function frame(now){
       ctx.fillText(dayLbl[o.d],o.xi+5,plotH+TIME_H/2+1);ctx.textAlign='center';}
   }
 
-  /* volume pane — 1m bars aligned to ghosts in ghost mode, aggregate otherwise */
+  /* volume pane */
   const ghostVol=effGhost&&la>0.02;
   const aggA=ghostVol?0.22*(1-la):0.22;
   if(aggA>0.012){
@@ -958,7 +1018,7 @@ function frame(now){
   }
   ctx.globalAlpha=1;
 
-  /* 1m GHOST layer: wick stubs outside body only */
+  /* 1m GHOST layer */
   if(effGhost&&la>0.02){
     for(let b=b0;b<=b1;b++){
       const emph=(b===sb);
@@ -984,7 +1044,7 @@ function frame(now){
     ctx.globalAlpha=1;
   }
 
-  /* main timeframe candles (shell mode when ghost on) */
+  /* main timeframe candles */
   for(let b=b0;b<=b1;b++){
     const k=agg[b];
     const born=(bornGM>=0&&b===Math.floor(bornGM/tf))?easeOut(clamp((now-bornAt)/380,0,1)):1;
@@ -1038,10 +1098,10 @@ function frame(now){
     ctx.globalAlpha=1;
   }
 
-  /* ----- drawings layer (clipped to price pane) ----- */
+  /* drawings layer */
   axisTags=[];
   ctx.save(); ctx.beginPath(); ctx.rect(0,0,plotW,priceH); ctx.clip();
-  for(const d of drawings) renderDrawing(d,{selected:d.id===selId});
+  for(const d of drawings) renderDrawing(d,{});
   if(pending) renderDrawing(pending,{preview:true});
   if(selId!=null){ const sd=drawings.find(d=>d.id===selId);
     if(sd) for(const h of handlesOf(sd)){
@@ -1105,7 +1165,6 @@ function frame(now){
           if(!st){ctx.moveTo(x,y);st=true;} else ctx.lineTo(x,y); }
         ctx.stroke(); }
       ctx.restore();
-      /* label + values at hover (or last) */
       const idx=sb>=0?sb:agg.length-1;
       const fv=a=>{for(let i=Math.min(idx,a.length-1);i>=0;i--)if(a[i]!=null)return a[i];return null;};
       let vs='',vc=COL.ink;
@@ -1121,7 +1180,6 @@ function frame(now){
       ctx.fillStyle='rgba(12,14,17,.72)'; rr(6,top+4,tw+vw2+26,15,4); ctx.fill();
       ctx.fillStyle='#79828d'; ctx.textAlign='left'; ctx.fillText(p.title,12,top+12);
       ctx.fillStyle=vc; ctx.fillText(vs,12+tw+8,top+12);
-      /* hover value pill in pane axis */
       if(inPlot&&mouse.y>top&&mouse.y<top+PH){
         const v=plo+(1-(mouse.y-top-padT)/ph)*(phi-plo);
         pill(plotW+3,clamp(mouse.y,top+2,top+PH-20),AXIS_W-7,18,clamp(v,plo,phi).toFixed(2));
@@ -1130,7 +1188,7 @@ function frame(now){
     }
   }
 
-  /* crosshair — vertical spans all panes, horizontal only in price pane */
+  /* crosshair */
   if(inPlot&&sb>=0){
     const cgm=tf>1?gi:agg[sb].g0;
     const sx=cr(X(cgm+0.5));
@@ -1150,6 +1208,17 @@ function frame(now){
   /* axis separators */
   ctx.strokeStyle='#20262f'; ctx.lineWidth=1;
   line(cr(plotW),0,cr(plotW),H); line(0,cr(plotH),W,cr(plotH));
+
+  /* price-scale mode badge: AUTO ⇄ ×factor (click = restore auto) */
+  geo.badge={x:plotW+4,y:5,w:AXIS_W-8,h:15};
+  ctx.font='600 8.5px '+MONO;
+  const fac=pzR0/((mHi-mLo)||1);
+  ctx.fillStyle=manual?'rgba(224,166,63,.14)':'rgba(255,255,255,.04)';
+  ctx.strokeStyle=manual?'rgba(224,166,63,.55)':'rgba(255,255,255,.12)';
+  rr(geo.badge.x,geo.badge.y,geo.badge.w,geo.badge.h,4);ctx.fill();ctx.stroke();
+  ctx.fillStyle=manual?COL.acc:'#5a626d';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(manual?('×'+fac.toFixed(2)):'AUTO',geo.badge.x+geo.badge.w/2,geo.badge.y+8);
 
   /* legend (DOM) */
   const show=sb>=0?agg[sb]:agg[agg.length-1];
