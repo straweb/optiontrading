@@ -307,3 +307,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
 #latestBtn{z-index:4}
 #tools,#toolChip,#axMenu,#txtIn{z-index:6}
 .schedIn{width:180px;height:26px;font-size:10px}
+
+/* 5×5 layout matrix picker */
+#layPop{grid-template-columns:repeat(5,auto);max-height:70vh;overflow-y:auto}
+.layT{width:44px;height:32px;display:grid;gap:2px;padding:3px;border:1px solid var(--line2);border-radius:6px;cursor:pointer;background:#0d1016}
+.layT:hover{border-color:var(--acc)}
+.layT.on{border-color:var(--acc);background:rgba(224,166,63,.08)}
+.layT i{background:#1c232d;border-radius:2px}
+.layT i.f{background:var(--acc);opacity:.85}
+.layLbl{font:600 7.5px var(--mono);color:var(--faint);text-align:center;margin-top:1px}
+/* fno auto-grid: spot full-width top, CE|PE bottom */
+#grid.g2h .paneBox:first-child{grid-row:1}
+#grid.g3 .paneBox:first-child{grid-column:1/3}
