@@ -25,7 +25,7 @@
   <div class="right">
     <span class="achip" id="capChip">CAP <b>—</b></span>
     <span class="achip" id="pnlChip">P&amp;L <b>—</b></span>
-    <input type="range" id="capSlider" min="0" max="100" value="75" title="deploy % of capital">
+    <input type="range" id="capSlider" min="0" max="100" value="75" title="deploy % / ₹ of capital">
     <span class="achip" id="capPct">75%</span>
     <div class="seg" id="srcSeg"></div>
     <span id="srcDot"></span><span id="srcLbl">SIM</span>
@@ -126,6 +126,7 @@
         <div class="seg mini" id="bsSeg" style="flex:1.4"><button data-s="buyer" class="on">BUYER</button><button data-s="seller">SELLER</button></div>
       </div>
       <div class="crow"><input id="stIn" placeholder="custom strike" spellcheck="false"><button class="btn" id="stAdd" style="height:26px">ADD</button></div>
+      <div class="pnote">adds never touch the chart · click a strike / its LTP to open it · % sliders auto-normalize per side (CE total = 100%, PE total = 100%) · AUTO = LOTS/STRIKE from the bottom bar</div>
     </div>
   </aside>
 </div>
@@ -135,17 +136,28 @@
     <div class="tabs"><button data-t="pos" class="on">POSITIONS</button><button data-t="trd">TRADE BOOK</button></div>
     <div class="ticket">
       <span class="tsym" id="tkSym">—</span>
-      <input id="tkQty" type="number" min="1" value="1" title="quantity">
+      <span class="lotlbl" id="lotLbl">LOT</span>
+      <input id="tkQty" type="number" min="1" value="1" title="quantity in lots (or shares if no lot size)">
       <button class="btn buy" id="tkBuy">BUY</button>
       <button class="btn sell" id="tkSell">SELL</button>
-      <button class="btn" id="tkFlat">SQ-OFF ALL</button>
       <div class="seg mini" id="ordType"><button data-o="MKT" class="on">MKT</button><button data-o="LMT">LMT</button></div>
-      <input id="ordPx" type="number" step="0.05" placeholder="limit" style="width:62px;display:none" title="limit price">
+      <input id="ordPx" type="number" step="0.05" placeholder="limit" style="width:66px;display:none" title="limit price — empty = live">
+      <select id="prdSel" class="miniSel" title="product type">
+        <option value="MIS">MIS · intraday</option>
+        <option value="NRML">NRML · normal</option>
+        <option value="CNC">CNC · delivery</option>
+      </select>
+      <span class="lotlbl" title="AUTO rows deploy this many lots per strike">L/S</span>
+      <input id="defLots" type="number" min="1" value="1" style="width:44px" title="fixed lots per strike used by AUTO allocation">
+      <button class="btn" id="tkFlat">SQ-OFF ALL</button>
     </div>
     <div class="qwrap" style="margin-left:auto">
       <button class="qbtn g" id="qDCE">DEPLOY CE</button><button class="qbtn g" id="qDPE">DEPLOY PE</button>
+      <button class="qbtn a" id="qSCP">SWAP C→P</button><button class="qbtn a" id="qSPC">SWAP P→C</button>
       <button class="qbtn r" id="qCCE">CLOSE CE</button><button class="qbtn r" id="qCPE">CLOSE PE</button>
-      <button class="qbtn r" id="qCA">CLOSE ALL</button><button class="qbtn" id="qCXL">CANCEL</button>
+      <button class="qbtn r" id="qCA">CLOSE ALL</button>
+      <button class="qbtn a" id="qSched">⏰ SCHED <span id="schedCnt"></span></button>
+      <button class="qbtn" id="qCXL">CANCEL</button>
       <button class="btn" id="botMin" style="height:24px">▾</button>
     </div>
   </div>
@@ -158,6 +170,22 @@
     </tr></thead><tbody id="tbTrd"></tbody></table>
   </div>
 </section>
+
+<div id="schedPop" hidden>
+  <div class="sh">⏰ SCHEDULED ORDERS <span id="schedN"></span></div>
+  <div id="schedList" class="slist"></div>
+  <div class="crow" style="padding:6px 8px">
+    <select id="scAct" class="miniSel" style="flex:1.3;height:26px">
+      <option value="deployCE">DEPLOY CE</option><option value="deployPE">DEPLOY PE</option>
+      <option value="deployAtmCE">ATM CE</option><option value="deployAtmPE">ATM PE</option>
+      <option value="exitCE">EXIT CE</option><option value="exitPE">EXIT PE</option>
+      <option value="exitAll">EXIT ALL</option>
+    </select>
+    <input type="datetime-local" step="1" id="scAt" style="flex:1.6;height:26px;font-size:10px">
+    <button class="btn acc" id="scAdd" style="height:26px">ADD</button>
+  </div>
+  <div class="pnote" style="border:none">fires once at the set second (browser clock) · action runs against ☑-enabled strikes / current ATM</div>
+</div>
 
 <div class="modalBk" id="setModal">
   <div class="modal">
