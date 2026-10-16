@@ -1,5 +1,5 @@
 'use strict';
-let CFG=Object.assign({cap:100000,deployMode:'pct',deployVal:75,src:'sim',defLots:1,brokers:{},layout:'2v'},
+let CFG=Object.assign({cap:100000,deployMode:'pct',deployVal:75,src:'sim',defLots:1,brokers:{},layout:'3'},
   JSON.parse(localStorage.getItem('scalping_cfg')||'{}'));
 function saveCfg(){localStorage.setItem('scalping_cfg',JSON.stringify(CFG));}
 const bcfg=id=>CFG.brokers[id]||(CFG.brokers[id]={});
@@ -7,9 +7,9 @@ let SRC=CFG.src||'sim', apiOK=false, apiPolling=false;
 const activeBroker=()=>BROKERS[SRC]||BROKERS.sim;
 function usableFunds(){ return CFG.deployMode==='pct'?CFG.cap*(+CFG.deployVal||0)/100:(+CFG.deployVal||0); }
 let SYM=null, ticketKey=null, ordType='MKT', PRD='MIS', editRowId=null;
-let lastRoot=null;
+let lastRoot=null, curSpot=null, curOptExp=0;
 
-/* ---------- broker source segment ---------- */
+/* ---------- brokers ---------- */
 function buildSrcSeg(){
   const seg=qs('#srcSeg'); if(!seg)return;
   seg.innerHTML='';
@@ -17,9 +17,7 @@ function buildSrcSeg(){
     const bt=document.createElement('button');bt.textContent=b.label;bt.dataset.s=b.id;
     bt.classList.toggle('on',b.id===SRC);
     on(bt,'click',()=>selectSrc(b.id));
-    seg.appendChild(bt); });
-  if(Object.keys(BROKERS).length<3)
-    console.warn('[scalping] brokers missing — check js/brokers/* loaded (Network tab for 404)'); }
+    seg.appendChild(bt); }); }
 function setSrcDot(){ const d=qs('#srcDot'); if(!d)return;
   d.className=SRC==='sim'?'':(apiOK?'api':'err');
   qs('#srcLbl').textContent=SRC==='sim'?'SIM':(apiOK?BROKERS[SRC].label+' · LIVE':BROKERS[SRC].label+' · NO LINK'); }
@@ -35,30 +33,38 @@ function selectSrc(id){
     else toast(BROKERS[id].label+' selected — load a symbol'); }
   updateAcct(); refreshStrikes(); refreshPositions(); }
 
-/* ============ multi-pane layout + matrix picker ============ */
-let panes=[], activePane=0, layout=CFG.layout||'2v';
-const LAYOUTS=['1','2v','2h','3','4'];
-function paneCount(){ return layout==='1'?1:layout==='2v'||layout==='2h'?2:layout==='3'?3:4; }
+/* ============ layout: 1×1 → 5×5 matrix ============ */
+let panes=[], activePane=0, layout=CFG.layout||'3';
 function paneTitle(k){ if(!k)return '—';
   const m=resolveMeta(k);
   return m.type==='OPT'?`${m.root} ${m.strike}${m.optSide}`:m.type==='FUT'?m.root+' F':m.sym; }
-function buildLayout(){
-  const n=paneCount(), grid=qs('#grid'); if(!grid)return;
-  grid.className='g'+layout; grid.innerHTML='';
+function buildLayout(n){
+  n=n||+layout;
+  const grid=qs('#grid'); if(!grid)return;
+  layout=n; CFG.layout=n; saveCfg();
+  const old=panes;
+  grid.className='g'+n+'x'+n;
+  grid.innerHTML='';
   panes=[];
-  for(let i=0;i<n;i++){
+  for(let i=0;i<n*n;i++){
+    const prev=old[i];
     const box=document.createElement('div');box.className='paneBox';
     box.innerHTML=`<div class="ph"><span class="pn">—</span><span class="pl">—</span><span class="px" title="clear pane">✕</span></div><canvas></canvas>`;
     grid.appendChild(box);
     const cv=box.querySelector('canvas');
-    panes.push({key:null,tf:5,ghost:true,ghostStyle:'hollow',drawings:[],uidC:1,undo:[],selId:null,
-      view:null,pctBase:null,pMode:'auto',mLo:0,mHi:1,
-      box,cv,ctx:cv.getContext('2d'),dpr:1,W:0,H:0,
-      yLo:null,yHi:null,volMax:null,volMax1:null,
-      aggDirty:true,aggCache:new Map(),indCache:null,dataVer:0,
-      mouse:{x:0,y:0,in:false},_drag:null,_fvgVer:-1,_fvg:[]}); }
-  bindPaneEvents();
-  buildLayPop(); layoutUI(); syncPaneUI(); }
+    panes.push(prev&&prev._keep?{...prev,_keep:false}:
+      {key:null,tf:5,ghost:true,ghostStyle:'hollow',drawings:[],uidC:1,undo:[],selId:null,
+       view:null,pctBase:null,pMode:'auto',mLo:0,mHi:1,
+       box,cv,ctx:cv.getContext('2d'),dpr:1,W:0,H:0,
+       yLo:null,yHi:null,volMax:null,volMax1:null,
+       aggDirty:true,aggCache:new Map(),indCache:null,dataVer:0,
+       mouse:{x:0,y:0,in:false},_drag:null,_fvgVer:-1,_fvg:[]});
+    if(prev)prev._keep=false; }
+  /* preserve symbols/order when just resizing */
+  for(let i=0;i<Math.min(old.length,n*n);i++){
+    if(old[i]&&old[i].key&&panes[i]&&!panes[i].key)panes[i].key=old[i].key; }
+  panes.forEach(p=>{ if(p.key)p._keep=true; });
+  bindPaneEvents(); buildLayPop(); layoutUI(); syncPaneUI(); }
 function layoutUI(){
   const pt=qs('#paneTabs'); if(!pt)return;
   pt.innerHTML=panes.map((p,i)=>`<span class="ptab${i===activePane?' on':''}" data-i="${i}">P${i+1} · ${paneTitle(p.key)}</span>`).join('');
@@ -75,8 +81,8 @@ function syncPaneUI(){ panes.forEach((p,i)=>{
 on(document,'click',e=>{
   const px=e.target.closest?.('.paneBox .px'); if(!px)return;
   const box=px.closest('.paneBox'); const i=panes.findIndex(p=>p.box===box);
-  if(i>=0){ const p=panes[i]; p.key=null;p.drawings=[];p.undo=[];p.selId=null;p.yLo=p.yHi=null;
-    p.aggCache.clear();p.indCache=null;p.dataVer++;syncPaneUI();layoutUI(); } });
+  if(i>=0){ const p=panes[i]; p.key=null;p.drawings=[];p.undo=[];p.selId=null;
+    p.yLo=p.yHi=null;p.aggCache.clear();p.indCache=null;p.dataVer++;syncPaneUI();layoutUI(); } });
 function paneLoadSymbol(key){
   key=normKey(key);
   const p=activeP(); if(!p)return;
@@ -101,15 +107,28 @@ document.addEventListener('click',e=>{ const pop=qs('#layPop');
   if(pop&&!pop.hidden&&!pop.contains(e.target)&&e.target!==qs('#layBtn'))pop.hidden=true; });
 function buildLayPop(){
   const pop=qs('#layPop'); if(!pop)return;
-  const cells={1:[0],2v:[0,1],2h:[0,2],3:[0,1,2],4:[0,1,2,3]};
-  pop.innerHTML=LAYOUTS.map(id=>{
-    let s='';
-    for(let i=0;i<4;i++)s+=`<i class="${cells[id].includes(i)?'f':''}"></i>`;
-    return `<div class="layT" data-l="${id}" title="${id}">${s}</div>`; }).join('');
-  qsa('#layPop .layT').forEach(t=>on(t,'click',()=>{
-    layout=t.dataset.l; CFG.layout=layout; saveCfg();
-    qs('#layPop').hidden=true; buildLayout();
-    if(SYM)paneLoadSymbol(SYM.key); })); }
+  pop.innerHTML='';
+  for(let n=1;n<=5;n++){
+    for(let i=0;i<n*n;i++){
+      const cell=document.createElement('i');
+      cell.className='f';
+      cell.dataset.n=n; cell.dataset.k=i;
+      cell.style.display='none';
+      pop.appendChild(cell); } }
+  /* build 25 thumbnails: a thumb of size n shows n×n filled cells */
+  pop.innerHTML='';
+  for(let n=1;n<=5;n++){
+    const t=document.createElement('div');t.className='layT'+(n===+layout?' on':'');
+    t.dataset.n=n; t.title=`${n}×${n}`;
+    t.style.gridTemplateColumns=`repeat(${n},1fr)`;
+    t.style.gridTemplateRows=`repeat(${n},1fr)`;
+    for(let i=0;i<n*n;i++)t.appendChild(document.createElement('i')).className='f';
+    const lbl=document.createElement('div');lbl.className='layLbl';lbl.textContent=n+'×'+n;
+    const wrap=document.createElement('div');wrap.style.display='contents';
+    wrap.appendChild(t);wrap.appendChild(lbl);
+    pop.appendChild(wrap);
+    on(t,'click',()=>{ qs('#layPop').hidden=true; buildLayout(n);
+      if(curSpot)paneLoadSymbol(curSpot); }); } }
 qsa('#sclPop input').forEach(cb=>on(cb,'change',()=>{
   scales[cb.dataset.scale]=cb.checked;
   if(!SORDER.some(s=>scales[s]))scales.price=true;
@@ -309,52 +328,67 @@ function refreshWatch(){
     r.row.classList.toggle('on',!!SYM&&key===SYM.key); } }
 function persistWatch(){localStorage.setItem('scalping_watch',JSON.stringify(watch));}
 
-/* ============ EQ / FNO segments + expiries ============ */
-let inst='eq', inst2='spot', expIdx=0;
+/* ============ EQ / FNO + dual expiries + FNO auto-grid ============ */
+let inst='eq', expSpotIdx=0, expOptIdx=0;
 function rootOf(){
   if(SYM){ if(SYM.type==='OPT'||SYM.type==='FUT')return SYM.root;
     if(FNO_SET.has(SYM.sym))return SYM.sym; }
   return lastRoot; }
-function buildExpSel(){
-  const sel=qs('#expSel'); if(!sel)return;
-  sel.innerHTML='';
-  expAll.forEach((e,i)=>{ const o=document.createElement('option');
-    o.value=i; o.textContent=e.f+(e.kind==='monthly'?' ·M':'');
-    sel.appendChild(o); });
-  const def=inst2==='fut'?0:expAll.findIndex(e=>e.kind==='weekly');
-  expIdx=def>=0?def:0; sel.value=expIdx; }
+function buildExpSels(){
+  const ss=qs('#expSpot'), so=qs('#expOpt');
+  if(!ss||!so)return;
+  ss.innerHTML=''; so.innerHTML='';
+  expAll.forEach((e,i)=>{
+    let o=document.createElement('option');o.value=i;
+    o.textContent=e.f+(e.kind==='monthly'?' ·M':' (spot+fut)');
+    ss.appendChild(o);
+    o=document.createElement('option');o.value=i;
+    o.textContent=e.f+(e.kind==='monthly'?' ·M':'');
+    so.appendChild(o); });
+  const wk=expAll.findIndex(e=>e.kind==='weekly');
+  expSpotIdx=0; expOptIdx=wk>=0?wk:0;
+  ss.value=expSpotIdx; so.value=expOptIdx; }
 function applySegUI(){
   const root=rootOf(); const isFno=inst==='fno'&&!!root;
-  const sub=qs('#fnoSub'), ex=qs('#expSel');
-  if(sub)sub.style.display=isFno?'flex':'none';
-  if(ex)ex.style.display=isFno&&inst2!=='spot'?'':'none';
-  if(isFno){
-    qsa('#fnoSub button').forEach(b=>b.classList.toggle('on',b.dataset.s===inst2));
-    buildExpSel(); }
+  const ss=qs('#expSpot'), so=qs('#expOpt');
+  if(ss)ss.style.display=isFno?'':'none';
+  if(so)so.style.display=isFno?'':'none';
   qsa('#instSeg button').forEach(b=>b.classList.toggle('on',b.dataset.i===inst)); }
 qsa('#instSeg button').forEach(b=>on(b,'click',()=>{
   inst=b.dataset.i;
-  if(inst==='fno'&&!rootOf()){ toast('load an FNO symbol first (index / F&O stock)','err');
-    inst='eq'; applySegUI(); return; }
-  applySegUI();
-  if(inst==='eq'&&SYM&&SYM.type!=='EQ'&&SYM.type!=='INDEX'){
-    loadSymbol(SYM.underlying||'NSE:'+(SYM.root||SYM.sym)); }
-  else if(inst==='fno'){ segLoad(); ensureAtmRow(); }
+  if(inst==='fno'){
+    if(!rootOf()){ toast('search & load an FNO symbol (index / F&O stock) first','err');
+      inst='eq'; applySegUI(); return; }
+    applySegUI();
+    setupFnoPanes(); }
+  else{ applySegUI(); qs('#strikes').style.display='none';
+    if(SYM&&(SYM.type==='OPT'||SYM.type==='FUT'))loadSymbol(SYM.underlying||'NSE:'+(SYM.root||SYM.sym)); }
   refreshStrikes(); }));
-qsa('#fnoSub button').forEach(b=>on(b,'click',()=>{
-  inst2=b.dataset.s; applySegUI(); segLoad(); ensureAtmRow(); refreshStrikes(); }));
-on('#expSel','change',e=>{ expIdx=+e.target.value; segLoad(); refreshStrikes(); });
-function segLoad(){
-  const root=rootOf(); if(!root||inst!=='fno')return;
-  if(inst2==='spot')loadSymbol('NSE:'+root);
-  else if(inst2==='fut')loadSymbol('NFO:'+root+expAll[expIdx].f+'FUT');
-  else loadAtmChart(); }
-function loadAtmChart(){
+on('#expSpot','change',e=>{
+  expSpotIdx=+e.target.value; const root=rootOf(); if(!root)return;
+  paneLoadSymbol('NSE:'+root);
+  toast('spot+fut expiry → '+expAll[expSpotIdx].f); });
+on('#expOpt','change',e=>{
+  expOptIdx=+e.target.value; curOptExp=expOptIdx;
+  strikeSig=''; refreshStrikes(); setupFnoPanes(); });
+/* FNO default panes: [0]=spot, [1]=ATM CE, [2]=ATM PE */
+function setupFnoPanes(){
   const root=rootOf(); if(!root)return;
-  const spot=liveSpot(root), st=strikeStep(root,spot);
-  loadSymbol('NFO:'+root+expAll[expIdx].f+Math.round(spot/st)*st+(SYM&&SYM.type==='OPT'?SYM.optSide:'CE')); }
+  if(panes.length<3)buildLayout(2);          /* need ≥3 slots → 2×2 */
+  const spot=liveSpot(root), step=strikeStep(root,spot);
+  const atm=Math.round(spot/step)*step;
+  curSpot='NSE:'+root;
+  panes[0].key=curSpot;
+  panes[1].key=optKey(root,atm,'CE');
+  panes[2].key=optKey(root,atm,'PE');
+  panes.slice(0,3).forEach(p=>{ p.view=null;p.yLo=p.yHi=null;p.aggCache.clear();p.indCache=null;p.dataVer++;
+    ensureQuote(p.key); if(SRC==='sim')symbolData(p.key); });
+  curOptExp=expOptIdx;
+  activePane=0; layoutUI(); syncPaneUI(); syncGhostUI(); refreshStrikes();
+  ticketKey=curSpot; qs('#tkSym').textContent=disp(curSpot); updateLotLbl();
+  toast(`FNO: spot P1 · ATM ${atm} CE P2 · PE P3 (${expAll[expOptIdx].f})`,'ok'); }
 function updateStrikesVis(){
-  const root=rootOf(); const show=inst==='fno'&&inst2==='opt'&&!!root;
+  const root=rootOf(); const show=inst==='fno'&&!!root;
   const st=qs('#strikes'); if(st)st.style.display=show?'flex':'none';
   return show?root:null; }
 
@@ -364,12 +398,12 @@ const strikeLists=new Map();
 const rowRefs=new Map();
 let stSort='K', stFilt='ALL';
 function listFor(){ const root=rootOf(); if(!root)return null;
-  const k=root+'|'+expAll[expIdx].f;
+  const k=root+'|'+expAll[curOptExp].f;
   if(!strikeLists.has(k))strikeLists.set(k,[]);
   return strikeLists.get(k); }
 function optLtp(root,K,side){
-  return bs(liveSpot(root),K,tym(expAll[expIdx].f),IDX[root]?0.13:0.22,side==='CE'); }
-function optKey(root,K,side){ return 'NFO:'+root+expAll[expIdx].f+K+side; }
+  return bs(liveSpot(root),K,tym(expAll[curOptExp].f),IDX[root]?0.13:0.22,side==='CE'); }
+function optKey(root,K,side){ return 'NFO:'+root+expAll[curOptExp].f+K+side; }
 function netQty(key){ return positions.filter(p=>p.key===key).reduce((a,p)=>a+p.side*p.qty,0); }
 function syncDefaults(){
   qsa('#cpSeg button').forEach(b=>b.classList.toggle('on',b.dataset.s===optSide));
@@ -387,12 +421,12 @@ function addStrike(K,side,role){
   list.push({K,side:side||optSide,role:role||optRole,on:true,sl:'',tp:'',ent:'',amode:'auto',aval:0});
   list.sort((a,b)=>a.K-b.K); strikeSig=''; refreshStrikes(); }
 function ensureAtmRow(){
-  const root=rootOf(); if(!root||inst!=='fno'||inst2!=='opt')return;
+  const root=rootOf(); if(!root||inst!=='fno')return;
   if(listFor().length)return;
   const spot=liveSpot(root), step=strikeStep(root,spot);
   addStrike(Math.round(spot/step)*step,'CE','buyer'); }
 function loadOffset(n){
-  const root=rootOf(); if(!root){toast('switch to FNO · OPT first','err');return;}
+  const root=rootOf(); if(!root){toast('switch to FNO first','err');return;}
   const spot=liveSpot(root), step=strikeStep(root,spot);
   addStrike(Math.round(spot/step)*step+(n?offDir*n*step:0),optSide,optRole); }
 on('#qAtm','click',()=>loadOffset(null));
@@ -404,7 +438,7 @@ on('#stSort','change',e=>{stSort=e.target.value;strikeSig='';refreshStrikes();})
 on('#stFilt','change',e=>{stFilt=e.target.value;strikeSig='';refreshStrikes();});
 function normalizeAlloc(side,changedK,newPct){
   const root=rootOf(); if(!root)return;
-  const others=(strikeLists.get(root+'|'+expAll[expIdx].f)||[])
+  const others=(strikeLists.get(root+'|'+expAll[curOptExp].f)||[])
     .filter(r=>r.side===side&&r.amode==='pct'&&r.K!==changedK);
   const sum=others.reduce((s,r)=>s+(+r.aval||0),0);
   const rest=Math.max(0,100-newPct);
@@ -420,13 +454,13 @@ function rowAmt(r,root){
   return rowLots(r,root)*optLtp(root,r.K,r.side)*(LOTS[root]||1); }
 function sideInfo(side){
   const root=rootOf(); if(!root)return{n:0,amt:0,lots:0};
-  const list=(strikeLists.get(root+'|'+expAll[expIdx].f)||[]).filter(r=>r.side===side);
+  const list=(strikeLists.get(root+'|'+expAll[curOptExp].f)||[]).filter(r=>r.side===side);
   let amt=0,lots=0;
   list.forEach(r=>{ amt+=rowAmt(r,root); lots+=rowLots(r,root); });
   return{n:list.length,amt,lots}; }
 function deploy(sideOpt){
-  const root=rootOf(); if(!root){toast('switch to FNO · OPT first','err');return;}
-  const list=(strikeLists.get(root+'|'+expAll[expIdx].f)||[]).filter(r=>r.on&&r.side===sideOpt);
+  const root=rootOf(); if(!root){toast('switch to FNO first','err');return;}
+  const list=(strikeLists.get(root+'|'+expAll[curOptExp].f)||[]).filter(r=>r.on&&r.side===sideOpt);
   if(!list.length){toast(`no enabled ${sideOpt} strikes (☑)`,'err');return;}
   let n=0,sk=0;
   list.forEach(r=>{
@@ -444,13 +478,13 @@ function deployAtm(sideOpt){
   strikeSig=''; refreshStrikes(); deploy(sideOpt); }
 function closeSide(sideOpt){
   const root=rootOf(); if(!root)return;
-  const list=(strikeLists.get(root+'|'+expAll[expIdx].f)||[]).filter(r=>r.on&&r.side===sideOpt);
+  const list=(strikeLists.get(root+'|'+expAll[curOptExp].f)||[]).filter(r=>r.on&&r.side===sideOpt);
   let n=0;
   list.forEach(r=>positions.filter(p=>p.key===optKey(root,r.K,r.side)).forEach(p=>{squareOff(p.id);n++;}));
   toast(n?`closed ${n} ${sideOpt} position(s)`:`no open ${sideOpt} on enabled strikes`); }
 async function swapQuick(){
   const root=rootOf(); if(!root)return;
-  const list=(strikeLists.get(root+'|'+expAll[expIdx].f)||[]).filter(r=>r.on);
+  const list=(strikeLists.get(root+'|'+expAll[curOptExp].f)||[]).filter(r=>r.on);
   if(!list.length){toast('no enabled rows to swap','err');return;}
   let n=0;
   for(const r of list){
@@ -523,13 +557,17 @@ on('#stBody','click',e=>{
     als.disabled=r.amode==='auto';
     als.max=r.amode==='amt'?Math.max(1,Math.round(usableFunds())):100;
     als.step=r.amode==='amt'?1000:1;
-    updateStrikeCells(root,expAll[expIdx].f,listFor()); return; }
+    updateStrikeCells(root,expAll[curOptExp].f,listFor()); return; }
+  /* click strike / LTP → point that pane at the option (pane stays its own) */
   if(e.target.classList.contains('k')||e.target.classList.contains('lpx')){
     const key=optKey(root,K,r.side);
     ticketKey=key; qs('#tkSym').textContent=disp(key);
     qs('#tkQty').value=1; updateLotLbl();
     qsa('.srow').forEach(x=>x.classList.toggle('selRow',x===row));
-    loadSymbol(key); return; }
+    const pane=activeP();
+    if(pane&&pane!==panes[0])paneLoadSymbol(key);
+    else paneLoadSymbol(key);
+    return; }
   const step=strikeStep(root,liveSpot(root));
   if(act==='en'){ r.on=e.target.checked; return; }
   if(act==='up'||act==='dn'){ r.K=K+(act==='up'?step:-step);
@@ -627,7 +665,7 @@ function updateStrikeCells(root,exp,list){
       ref.exit.disabled=true; } } }
 function refreshStrikes(){
   const root=updateStrikesVis(); if(!root)return;
-  const list=listFor(), exp=expAll[expIdx].f;
+  const list=listFor(), exp=expAll[curOptExp].f;
   const view=list.filter(r=>stFilt==='ALL'||(stFilt==='B'?r.role==='buyer':stFilt==='S'?r.role==='seller':r.side===stFilt));
   if(stSort==='L')view.sort((a,b)=>optLtp(root,b.K,b.side)-optLtp(root,a.K,a.side));
   else if(stSort==='P')view.sort((a,b)=>{
@@ -657,7 +695,7 @@ function checkSLTP(){
     else{ if(isFinite(sl)&&ltp>=sl)hit='SL'; else if(isFinite(tp)&&ltp<=tp)hit='TARGET'; }
     if(hit){ toast(`${hit} hit · ${disp(p.key)} @ ${fmtP(ltp)}`, hit==='SL'?'err':'ok'); squareOff(p.id); } } }
 
-/* ============ scheduler table ============ */
+/* ============ scheduler ============ */
 let sched=[], schedSeq=1;
 const ACTS={
   deployCE:()=>deploy('CE'), deployPE:()=>deploy('PE'),
@@ -717,7 +755,7 @@ setInterval(()=>{ let fired=false; const now=Date.now();
     toast(`⏰ ${ACTLBL[t.act]||t.act} fired`,'ok'); } }
   if(fired)renderSched(); },250);
 
-/* ============ quotes / sim ticks ============ */
+/* ============ quotes / sim ============ */
 function simTickOthers(){
   for(const [key,q] of quotes){
     if(panes.some(p=>p.key===key))continue;
@@ -757,11 +795,12 @@ async function brokerPoll(){
   finally{apiPolling=false;} }
 setInterval(brokerPoll,3000);
 
-/* ============ load (no sim fallback) ============ */
+/* ============ load ============ */
 async function loadSymbol(key){
   key=normKey(key);
   const {exch}=parseKey(key);
-  const es=qs('#exchSel'); if(es&&[...es.options].some(o=>o.value===exch||o.textContent===exch))es.value=exch;
+  const es=qs('#exchSel');
+  if(es&&[...es.options].some(o=>o.value===exch||o.textContent===exch))es.value=exch;
   const meta=resolveMeta(key);
   let sd=null;
   if(SRC==='sim'){ sd=await BROKERS.sim.history({},key); apiOK=true; }
@@ -781,7 +820,7 @@ async function loadSymbol(key){
   paneLoadSymbol(key);
   if(SYM.type==='OPT'){optSide=SYM.optSide;syncDefaults();}
   inst=SYM.type==='EQ'||SYM.type==='INDEX'?'eq':'fno';
-  if(inst==='fno')inst2=SYM.type==='OPT'?'opt':SYM.type==='FUT'?'fut':'spot';
+  if(inst==='fno'&&panes.length>=3&&!panes[1].key)setupFnoPanes();
   applySegUI(); updateSymbolUI(); buildWatch(); ensureAtmRow();
   strikeSig=''; refreshStrikes(); refreshPositions(); updateAcct();
   ticketKey=key; qs('#tkSym').textContent=SYM.disp;
@@ -825,7 +864,7 @@ on('#setBtn','click',()=>{
   (b.fields||[]).forEach(fd=>{
     const l=document.createElement('label');l.textContent=fd.l;
     const i=document.createElement('input');
-    i.type=(fd.k==='pwd'||fd.k==='key'||fd.k==='secret')?'password':'text';
+    i.type=(fd.k==='pwd'||fd.k==='key'||fd.k==='secret'||fd.k==='totp')?'password':'text';
     i.placeholder=fd.ph||''; i.value=bcfg(b.id)[fd.k]||''; i.dataset.bk=fd.k;
     f.appendChild(l);f.appendChild(i); });
   qs('#setCap').value=CFG.cap;qs('#setMode').value=CFG.deployMode;qs('#setVal').value=CFG.deployVal;
@@ -843,14 +882,14 @@ on('#setTest','click',async()=>{
   const b=activeBroker();
   qsa('#bkFields input').forEach(i=>{bcfg(b.id)[i.dataset.bk]=i.value.trim();});
   saveCfg();
-  try{ await b.test(bcfg(b.id)); toast(b.label+' reachable ✓','ok'); }
+  try{ await b.test(bcfg(b.id)); toast(b.label+' reachable ✓ session stored','ok'); }
   catch(e){ toast('TEST failed: '+e.message,'err'); } });
 
 /* ============ boot ============ */
 buildSrcSeg(); setSrcDot();
-buildLayout();
+buildLayout(2);                                   /* 2×2 default, enough for spot+CE+PE */
 buildToolbar(); setTool('cursor');
-syncDefaults(); buildWatch();
+syncDefaults(); buildWatch(); buildExpSels();
 on('#exchSel','change',e=>{ CUR_EXCH=e.target.value; });
 wireAutocomplete(qs('#symIn'),qs('#acDrop'),k=>loadSymbol(k));
 qs('#defLots').value=CFG.defLots||1;
