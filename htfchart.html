@@ -61,30 +61,45 @@
   .hdrBtn svg{width:13px;height:13px}
 
   .popWrap{position:relative}
-  .pop{position:absolute;top:calc(100% + 8px);right:0;background:#11141a;border:1px solid var(--line2);border-radius:10px;padding:7px;min-width:200px;z-index:40;box-shadow:0 14px 34px rgba(0,0,0,.55)}
+  .pop{position:absolute;top:calc(100% + 8px);right:0;background:#11141a;border:1px solid var(--line2);border-radius:10px;padding:7px;min-width:210px;z-index:40;box-shadow:0 14px 34px rgba(0,0,0,.55)}
   .pop label{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;font-family:var(--mono);font-size:11px;color:var(--dim);cursor:pointer}
   .pop label:hover{background:#171c23;color:var(--ink)}
   .pop input{accent-color:var(--acc);width:13px;height:13px;flex:none}
   .pop .param{margin-left:auto;font-size:9px;color:var(--faint)}
-  .pop .note{font-family:var(--mono);font-size:8.5px;color:var(--faint);padding:5px 10px 3px;letter-spacing:.04em}
+  .pop .note{font-family:var(--mono);font-size:8.5px;color:var(--faint);padding:5px 10px 3px;letter-spacing:.04em;line-height:1.5}
 
   /* ---------- chart ---------- */
   main{position:relative;flex:1;min-height:0}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:none;user-select:none}
   canvas.grabbing{cursor:grabbing}
 
+  /* drawing toolbar — TradingView-style groups with flyouts */
   #tools{position:absolute;left:10px;top:12px;z-index:6;display:flex;flex-direction:column;gap:1px;background:rgba(13,16,20,.86);border:1px solid var(--line);border-radius:10px;padding:5px;backdrop-filter:blur(8px);max-height:calc(100% - 24px);overflow-y:auto;user-select:none;scrollbar-width:none}
   #tools::-webkit-scrollbar{display:none}
-  .tbtn{width:30px;height:27px;border-radius:7px;display:grid;place-items:center;color:var(--dim);transition:.12s;flex:none}
+  .tgrp{font:600 7.5px var(--mono);color:#3d454f;letter-spacing:.16em;text-align:center;padding:3px 0 1px;flex:none}
+  .trow{display:flex;gap:2px;align-items:stretch;flex:none}
+  .tbtn{flex:1;min-width:24px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--dim);transition:.12s}
   .tbtn:hover{color:var(--ink);background:#181d25}
   .tbtn.on{color:var(--acc);background:rgba(224,166,63,.13)}
   .tbtn svg{width:15px;height:15px}
+  .tcar{width:11px;height:26px;border-radius:6px;display:grid;place-items:center;color:var(--faint);font-size:7px;flex:none}
+  .tcar:hover{background:#181d25;color:var(--ink)}
   .tsep{height:1px;background:var(--line);margin:2px 3px;flex:none}
-  .tgrp{font:600 7.5px var(--mono);color:#3d454f;letter-spacing:.16em;text-align:center;padding:3px 0 1px;flex:none}
+  .flyout{position:absolute;z-index:60;background:#11141a;border:1px solid var(--line2);border-radius:10px;padding:5px;box-shadow:0 14px 34px rgba(0,0,0,.55);display:flex;flex-direction:column;gap:1px;min-width:158px}
+  .flyout button{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:7px;color:var(--dim);font:500 10.5px var(--mono);letter-spacing:.04em;text-align:left}
+  .flyout button:hover{background:#171c23;color:var(--ink)}
+  .flyout button.on{color:var(--acc)}
+  .flyout svg{width:14px;height:14px;flex:none}
 
   #toolChip{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--acc);background:rgba(17,20,26,.92);border:1px solid rgba(224,166,63,.45);border-radius:8px;padding:6px 12px;display:none;z-index:6;pointer-events:none;white-space:nowrap}
 
-  #txtIn{position:absolute;display:none;z-index:20;background:#141922;border:1px solid rgba(224,166,63,.55);border-radius:7px;color:var(--ink);font:500 12px var(--sans);padding:6px 9px;width:190px;outline:none;box-shadow:0 8px 22px rgba(0,0,0,.5)}
+  #axMenu{position:absolute;z-index:45;background:#11141a;border:1px solid var(--line2);border-radius:10px;padding:5px;width:176px;box-shadow:0 14px 34px rgba(0,0,0,.55)}
+  #axMenu .mh{font:600 8px var(--mono);color:var(--faint);letter-spacing:.16em;padding:4px 8px 6px}
+  #axMenu button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:7px 9px;border-radius:7px;font:600 10.5px var(--mono);letter-spacing:.05em;color:var(--dim)}
+  #axMenu button:hover{background:#171c23;color:var(--ink)}
+  #axMenu .sw{width:8px;height:8px;border-radius:2px;flex:none}
+
+  #txtIn{position:absolute;display:none;z-index:70;background:#141922;border:1px solid rgba(224,166,63,.55);border-radius:7px;color:var(--ink);font:500 12px var(--sans);padding:6px 9px;width:200px;outline:none;box-shadow:0 8px 22px rgba(0,0,0,.5)}
 
   #legend{position:absolute;top:12px;left:60px;pointer-events:none;display:flex;flex-direction:column;gap:6px;max-width:calc(100% - 90px)}
   .lgRow{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;background:rgba(13,16,20,.74);border:1px solid var(--line);border-radius:8px;padding:6px 11px;backdrop-filter:blur(6px);width:max-content;max-width:100%;flex-wrap:wrap}
@@ -100,7 +115,7 @@
   #wm .wm1{font-weight:800;font-size:clamp(28px,5vw,48px);letter-spacing:.34em;color:rgba(255,255,255,.032);padding-left:.34em}
   #wm .wm2{font-family:var(--mono);font-size:10.5px;letter-spacing:.42em;color:rgba(255,255,255,.05);margin-top:8px;padding-left:.42em}
 
-  #latestBtn{position:absolute;right:86px;bottom:46px;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--acc);background:rgba(17,20,26,.92);border:1px solid rgba(224,166,63,.5);border-radius:8px;padding:7px 12px;opacity:0;transform:translateY(6px);pointer-events:none;transition:.25s;z-index:5}
+  #latestBtn{position:absolute;right:110px;bottom:46px;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--acc);background:rgba(17,20,26,.92);border:1px solid rgba(224,166,63,.5);border-radius:8px;padding:7px 12px;opacity:0;transform:translateY(6px);pointer-events:none;transition:.25s;z-index:5}
   #latestBtn.show{opacity:1;transform:none;pointer-events:auto}
   #latestBtn:hover{background:rgba(224,166,63,.12)}
 
@@ -143,17 +158,16 @@
 
   <div class="right">
     <div class="popWrap">
-      <button class="hdrBtn" id="sclBtn" title="add / remove axis scales · topmost enabled is the axis scale · drag the 0 line to set your entry">
+      <button class="hdrBtn" id="sclBtn" title="add / remove axis scales">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16"/><path d="M8 15v-4M12 15V7M16 15v-6"/></svg>
         SCALES
       </button>
       <div class="pop" id="sclPop" hidden>
-        <div class="note">TOPMOST ENABLED = AXIS SCALE</div>
+        <div class="note">TOPMOST ENABLED = RIGHT AXIS SCALE<br>OTHERS = LEFT MEASUREMENT COLUMN —<br>DRAG THAT COLUMN TO SLIDE 0.<br>IT IS INDEPENDENT OF THE PRICE SCALE.</div>
         <label><input type="checkbox" data-scale="price" checked><span>Price</span><span class="param">2,847.55</span></label>
         <label><input type="checkbox" data-scale="pct" checked><span>Percent</span><span class="param">+0.42%</span></label>
         <label><input type="checkbox" data-scale="inv"><span>Inverted&nbsp;%</span><span class="param">sellers · −0.42%</span></label>
         <label><input type="checkbox" data-scale="pts"><span>Points</span><span class="param">+12.40</span></label>
-        <div class="note">relative scales share the amber 0-line —<br>drag it onto your entry price</div>
       </div>
     </div>
     <div class="popWrap">
@@ -180,47 +194,17 @@
 
 <main id="wrap">
   <canvas id="chart"></canvas>
+  <div id="tools"></div>
+  <div id="toolChip"></div>
 
-  <div id="tools">
-    <button class="tbtn on" data-tool="cursor" title="Cursor / select / move (ESC)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3l12 8.5-5.2 1.2L10.5 19z"/></svg></button>
-
-    <div class="tgrp">LINES</div>
-    <button class="tbtn" data-tool="trend" title="Trend line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="5" y1="19" x2="19" y2="5"/><circle cx="5" cy="19" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="5" r="1.7" fill="currentColor" stroke="none"/></svg></button>
-    <button class="tbtn" data-tool="ray" title="Ray — extends from origin through second point"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="6" y1="18" x2="21" y2="5"/><circle cx="6" cy="18" r="1.8" fill="currentColor" stroke="none"/></svg></button>
-    <button class="tbtn" data-tool="arrow" title="Arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="5" y1="19" x2="18" y2="6"/><path d="M18 6l-5 .9M18 6l-.9 5"/></svg></button>
-    <button class="tbtn" data-tool="hline" title="Horizontal line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
-    <button class="tbtn" data-tool="hray" title="Horizontal ray — extends right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><line x1="5" y1="12" x2="21" y2="12"/></svg></button>
-
-    <div class="tgrp">SHAPES</div>
-    <button class="tbtn" data-tool="rect" title="Rectangle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="6" width="16" height="12"/></svg></button>
-    <button class="tbtn" data-tool="ellipse" title="Ellipse / curve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg></button>
-
-    <div class="tgrp">FIB</div>
-    <button class="tbtn" data-tool="fib" title="Fib retracement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg></button>
-    <button class="tbtn" data-tool="fibext" title="Fib extension — levels projected beyond swing B"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="4" y1="6" x2="11" y2="6"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="18" x2="21" y2="18"/></svg></button>
-    <button class="tbtn" data-tool="tbfib" title="Trend-based fib extension — 3 pivots A→B→C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="9" y1="3.5" x2="21" y2="3.5"/><circle cx="5" cy="19" r="1.6"/><circle cx="11" cy="13" r="1.6"/><circle cx="17" cy="7" r="1.6"/></svg></button>
-    <button class="tbtn" data-tool="fan" title="Fib speed resistance fan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none"/><line x1="5" y1="19" x2="20" y2="4"/><line x1="5" y1="19" x2="20" y2="10"/><line x1="5" y1="19" x2="20" y2="16"/></svg></button>
-    <button class="tbtn" data-tool="circles" title="Fib circles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg></button>
-    <button class="tbtn" data-tool="tzones" title="Fib time zones — vertical lines at fib intervals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="6" y1="4" x2="6" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="19" y1="4" x2="19" y2="20"/></svg></button>
-    <button class="tbtn" data-tool="pitchfork" title="Andrews' pitchfork — 3 pivots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 20L11 12L18 5M11 12L18 19"/><circle cx="4" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg></button>
-
-    <div class="tgrp">TRADE</div>
-    <button class="tbtn" data-tool="long" title="Long position — entry / stop / target box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V6M12 6l-5 5M12 6l5 5"/><line x1="5" y1="21" x2="19" y2="21"/></svg></button>
-    <button class="tbtn" data-tool="short" title="Short position — entry / stop / target box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v14M12 18l-5-5M12 18l5-5"/><line x1="5" y1="3" x2="19" y2="3"/></svg></button>
-
-    <div class="tgrp">NOTES</div>
-    <button class="tbtn" data-tool="text" title="Text annotation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg></button>
-    <button class="tbtn" data-tool="free" title="Freehand pencil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 20l1.2-4.2L16 5l3 3L8.2 18.8z"/></svg></button>
-
-    <div class="tgrp">STUDY</div>
-    <button class="tbtn" data-tool="vprofile" title="Fixed range volume profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="12" x2="21" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/></svg></button>
-
-    <div class="tsep"></div>
-    <button class="tbtn" id="trashBtn" title="Clear all drawings (undo with Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg></button>
+  <div id="axMenu" hidden>
+    <div class="mh">ADD ON SCALE</div>
+    <button data-act="buy"><span class="sw" style="background:var(--up)"></span>BUY MARKER</button>
+    <button data-act="sell"><span class="sw" style="background:var(--dn)"></span>SELL MARKER</button>
+    <button data-act="base"><span class="sw" style="background:var(--acc)"></span>SET 0 · BASELINE</button>
   </div>
 
-  <div id="toolChip"></div>
-  <input id="txtIn" type="text" maxlength="90" placeholder="Type text · Enter to place" spellcheck="false">
+  <input id="txtIn" type="text" maxlength="120" placeholder="Type · Enter to place" spellcheck="false">
 
   <div id="wm"><div class="wm1">RELIANCE</div><div class="wm2" id="wm2">RELIANCE · 5m · SIM FEED</div></div>
   <div id="legend">
@@ -240,7 +224,7 @@
 
 <footer>
   <div id="aggInfo">—</div>
-  <div class="hints"><b>DRAG</b> free move · <b>AXIS WHEEL</b> zoom · <b>ALT+WHEEL</b> price · <b>P/I/T</b> toggle % · inv% · pts · <b>0 LINE</b> drag = set entry · dbl-click = anchor · <b>1–4</b> TF · <b>G</b> ghost · <b>SPACE</b> pause · <b>DEL</b> · <b>CTRL+Z</b> · <b>ESC</b></div>
+  <div class="hints"><b>DRAG</b> free move · <b>+ AXIS</b> buy/sell/baseline · <b>LEFT COL</b> slide 0 · <b>RIGHT COL</b> price · <b>P/I/T</b> scales · <b>1–4</b> TF · <b>G</b> ghost · <b>SPACE</b> pause · <b>DEL</b> · <b>CTRL+Z</b> · <b>ESC</b></div>
 </footer>
 
 <script>
@@ -250,7 +234,7 @@ const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
 const easeOut=t=>1-Math.pow(1-t,3);
-const cr=v=>Math.round(v)+0.5;                       // crisp 1px lines
+const cr=v=>Math.round(v)+0.5;
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const rng=mulberry32(0xC0FFEE);
 let gSpare=null;
@@ -266,12 +250,15 @@ function distSeg(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy;
   return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));}
 function far(x0,y0,x1,y1){const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1;
   return[x0+dx*3000/L,y0+dy*3000/L];}
+function rectHit(xa,ya,xb,yb,mx,my,tol=0){
+  const x0=Math.min(xa,xb)-tol,x1=Math.max(xa,xb)+tol,y0=Math.min(ya,yb)-tol,y1=Math.max(ya,yb)+tol;
+  return mx>=x0&&mx<=x1&&my>=y0&&my<=y1;}
 
 /* ============================ data ============================= */
-const SESSION=375, OPEN_MIN=555;                     // 09:15 → 15:30, 375 min
+const SESSION=375, OPEN_MIN=555;                     // 09:15 → 15:30
 const COL={bg:'#0c0e11',grid:'rgba(255,255,255,.045)',gridStrong:'rgba(255,255,255,.11)',
   ink:'#d6dae0',dim:'#79828d',up:'#2fbf7f',dn:'#e5484d',acc:'#e0a63f'};
-const AXIS_W=64, TIME_H=26;
+const AXIS_W=92, MCOLW=40, TIME_H=26;                // ← TIME_H restored (bug fix)
 
 let tf=5, ghostOn=true, ghostStyle='hollow', paused=false;
 const bars=[], dayLbl=[];
@@ -368,20 +355,13 @@ let viewAnim=null;
 function animateView(tr,tv){viewAnim={t0:performance.now(),dur:520,fr:view.r,fv:view.v,tr,tv};}
 const clampR=r=>{const hi=bars.length+90;return clamp(r,Math.min(view.v-30,hi),hi);};
 
-/* ----- per-axis scale state ----- */
 let pMode='auto', mLo=0, mHi=1, pzR0=1;
 
-/* ----- multi-scale axis state -----
-   scales.* toggle which scales are visible; the topmost enabled in
-   SORDER is the PRIMARY: it drives gridlines, main labels, the LTP
-   tag and the crosshair pill. Others render as compact sub-labels.
-   IMPORTANT: 'inv' only negates displayed % values — the chart
-   orientation ALWAYS matches the price scale (never flipped).      */
 const scales={price:true,pct:true,inv:false,pts:false};
 const SORDER=['price','pct','inv','pts'];
 const primScale=()=>SORDER.find(s=>scales[s])||'price';
 const anyRel=()=>scales.pct||scales.inv||scales.pts;
-let pctBase=null;                                    // price that reads as 0
+let pctBase=null;
 let baseDrag=false, directScale=false;
 
 function enterManual(){ if(pMode==='manual'||yLo==null)return;
@@ -397,8 +377,6 @@ function priceZoomAt(ypix,k){
 }
 function resetAll(){ animateView(bars.length+42,260); priceAuto(); }
 
-/* percent / points helpers — sign is NEVER used to flip the chart,
-   only to render labels (inv = negated %, for sellers)             */
 const pctOf=p=>(p-pctBase)/pctBase*100;
 function labelPct(v){ const s=v>=0?'+':'−', a=Math.abs(v);
   return s+(a>=100?a.toFixed(0):a>=10?a.toFixed(1):a.toFixed(2))+'%'; }
@@ -410,25 +388,34 @@ function scaleLabel(s,p){
   const v=pctOf(p); return labelPct(s==='inv'?-v:v);
 }
 function priceAtY(y){ const R=yHi-yLo;
-  return yHi-(y/geo.priceH)*R; }                     // chart is never flipped
+  return yHi-(y/geo.priceH)*R; }
+function fmtDur(dmin){dmin=Math.max(0,Math.round(dmin));
+  const d=Math.floor(dmin/375),r=dmin%375,h=Math.floor(r/60),m=r%60;
+  if(d>0)return d+'d'+(h?' '+h+'h':'');
+  if(h>0)return h+'h'+(m?' '+m+'m':'');
+  return m+'m';}
 
 const cv=$('#chart'), ctx=cv.getContext('2d');
 let W=0,H=0,dpr=1;
 function resize(){dpr=window.devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
 new ResizeObserver(resize).observe($('#wrap')); resize();
-const geo={sp:0,plotW:1,priceH:1,volH:1,volBot:1,X:x=>x,Y:y=>y,yLo:0,yHi:1,badge:null};
+const geo={sp:0,plotW:1,priceH:1,volH:1,volBot:1,X:x=>x,Y:y=>y,yLo:0,yHi:1,badge:null,addBtn:null};
 
 let mouse={x:0,y:0,in:false}, dragging=false, dragX=0, dragR=0, dragY0=0, vBase=null;
 let axisDrag=null, suppressUp=false;
 
 /* ======================= drawings & tools ====================== */
-const DCOL={def:'#5fb0d8',fib:'#e0a63f',text:'#d6dae0',free:'#cfd6de'};
+const DCOL={def:'#5fb0d8',fib:'#e0a63f',text:'#d6dae0',free:'#cfd6de',pat:'#b48ce0'};
 const FIBL=[0,.236,.382,.5,.618,.786,1];
 const EXTL=[0,0.618,1,1.618,2.618];
 const FANR=[0.236,0.382,0.5,0.618,0.786,1];
 const CIRCLR=[0.382,0.618,1,1.618,2.618];
 const TZL=[1,2,3,5,8,13,21,34,55,89,144];
-const NPTS={trend:2,ray:2,arrow:2,rect:2,ellipse:2,fib:2,fibext:2,fan:2,circles:2,tzones:2,tbfib:3,pitchfork:3};
+const PATS=new Set(['abcd','dbltop','dblbot','hns','ihns','tri','wedge']);
+const EDITABLE=new Set(['text','comment','callout','pin','pricenote','table']);
+const NPTS={trend:2,ray:2,arrow:2,rect:2,ellipse:2,fib:2,fibext:2,fan:2,circles:2,tzones:2,
+  tbfib:3,pitchfork:3,pricerange:2,daterange:2,pricedate:2,
+  abcd:4,dbltop:4,dblbot:4,hns:5,ihns:5,tri:5,wedge:5,projection:3,forecast:2,callout:2};
 const CHIP={trend:'TREND LINE — click start, click end',ray:'RAY — click origin, click direction',
   arrow:'ARROW — click start, click end',hline:'H LINE — click to place',hray:'H RAY — click to place',
   rect:'RECTANGLE — click two corners',ellipse:'ELLIPSE — click two corners',
@@ -439,8 +426,20 @@ const CHIP={trend:'TREND LINE — click start, click end',ray:'RAY — click ori
   circles:'FIB CIRCLES — click center, click radius',
   tzones:'FIB TIME ZONES — click start, click one unit',
   pitchfork:'PITCHFORK — click 3 pivots (handle, then prongs)',
+  pricerange:'PRICE RANGE — click start, click end',
+  daterange:'DATE RANGE — click start, click end',
+  pricedate:'PRICE + DATE RANGE — click start, click end',
+  abcd:'AB=CD PATTERN — click 4 points A → B → C → D',
+  dbltop:'DOUBLE TOP — click 4 points',dblbot:'DOUBLE BOTTOM — click 4 points',
+  hns:'HEAD & SHOULDERS — click 5 points',ihns:'INVERTED H&S — click 5 points',
+  tri:'TRIANGLE — click 5 points',wedge:'WEDGE — click 5 points',
+  projection:'PROJECTION — click move A → B, then where to project it',
+  forecast:'FORECAST — click start, click target (auto-extends)',
   long:'LONG POSITION — click entry',
-  short:'SHORT POSITION — click entry',text:'TEXT — click to type',free:'PENCIL — draw freehand',
+  short:'SHORT POSITION — click entry',text:'TEXT — click to type',
+  comment:'COMMENT — click to place',callout:'CALLOUT — click anchor, click label spot',
+  pin:'PIN — click to place',pricenote:'PRICE NOTE — click a price level',
+  table:'TABLE — click to place · dbl-click to edit',free:'PENCIL — draw freehand',
   vprofile:'VOLUME PROFILE — click range start & end'};
 
 let tool='cursor', pending=null, selId=null, drag=null, downPt=null;
@@ -475,9 +474,16 @@ function handlesOf(d){ const out=[],X=geo.X,Y=geo.Y;
   switch(d.type){
     case 'trend':case 'ray':case 'arrow':case 'rect':case 'ellipse':case 'fib':
     case 'fibext':case 'fan':case 'circles':case 'tzones':case 'tbfib':case 'pitchfork':
-      d.pts.forEach((p,i)=>add(X(p.gm),Y(p.p),'pt',i));break;
-    case 'hline': add(X(d.pts[0].gm),Y(d.pts[0].p),'hlp',0);break;
+    case 'pricerange':case 'daterange':case 'pricedate':case 'forecast':case 'projection':
+    case 'callout':
+      if(PATS.has(d.type)||NPTS[d.type])d.pts.forEach((p,i)=>add(X(p.gm),Y(p.p),'pt',i));break;
+    case 'hline': case 'mark':
+      add(X(d.pts[0].gm),Y(d.pts[0].p),'hlp',0);break;
     case 'hray':  add(X(d.pts[0].gm),Y(d.pts[0].p),'pt',0);break;
+    case 'comment': case 'pin': case 'text':
+      add(X(d.pts[0].gm),Y(d.pts[0].p),'pt',0);break;
+    case 'pricenote':
+      add(X(d.pts[0].gm),Y(d.pts[0].p),'hlp',0);break;
     case 'vprofile':{const vp=computeVP(d.pts[0].gm,d.pts[1].gm);
       const ym=Y(vp?(vp.lo+vp.hi)/2:0);
       add(X(d.pts[0].gm),ym,'gm0',0);add(X(d.pts[1].gm),ym,'gm1',1);break;}
@@ -495,11 +501,15 @@ function hitDrawing(d,mx,my){
   switch(d.type){
     case 'trend':case 'arrow':case 'ray':
       return near(X(P[0].gm),Y(P[0].p),X(P[1].gm),Y(P[1].p))?{}:null;
-    case 'hline': return Math.abs(my-Y(P[0].p))<5?{}:null;
+    case 'hline': case 'pricenote': return Math.abs(my-Y(P[0].p))<5?{}:null;
+    case 'mark':  return Math.abs(my-Y(P[0].p))<6?{}:null;
     case 'hray':  return (mx>=X(P[0].gm)-4&&Math.abs(my-Y(P[0].p))<5)?{}:null;
-    case 'rect':{ const xa=X(P[0].gm),xb=X(P[1].gm),ya=Y(P[0].p),yb=Y(P[1].p);
-      const x0=Math.min(xa,xb),x1=Math.max(xa,xb),y0=Math.min(ya,yb),y1=Math.max(ya,yb);
-      return (mx>x0&&mx<x1&&my>y0&&my<y1)||near(x0,y0,x1,y0)||near(x0,y1,x1,y1)||near(x0,y0,x0,y1)||near(x1,y0,x1,y1)?{}:null;}
+    case 'rect':
+      return rectHit(X(P[0].gm),Y(P[0].p),X(P[1].gm),Y(P[1].p),mx,my,4)?{}:null;
+    case 'pricerange': case 'pricedate':
+      return rectHit(X(P[0].gm),Y(P[0].p),X(P[1].gm),Y(P[1].p),mx,my,4)?{}:null;
+    case 'daterange':
+      return (Math.abs(my-Y(P[0].p))<11&&rectHit(X(P[0].gm),Y(P[0].p),X(P[1].gm),Y(P[0].p),mx,my,4))?{}:null;
     case 'ellipse':{ const xa=X(P[0].gm),xb=X(P[1].gm),ya=Y(P[0].p),yb=Y(P[1].p);
       const cx=(xa+xb)/2,cy=(ya+yb)/2,rx=Math.abs(xb-xa)/2,ry=Math.abs(yb-ya)/2;
       if(rx<3||ry<3)return null;
@@ -537,9 +547,34 @@ function hitDrawing(d,mx,my){
       const segs=[[ax,ay,...far(ax,ay,mx2,my2)],[ax,ay,mx2,my2],
         [bx,by,...far(bx,by,bx+dx,by+dy)],[cx2,cy2,...far(cx2,cy2,cx2+dx,cy2+dy)]];
       return segs.some(s=>near(...s))?{}:null;}
-    case 'text':{ ctx.font='600 12px Archivo, sans-serif';
+    case 'forecast': case 'projection':{
+      const A=P[0],B=P[1];
+      if(near(X(A.gm),Y(A.p),X(B.gm),Y(B.p)))return{};
+      if(d.type==='forecast'){
+        const C={gm:B.gm+(B.gm-A.gm),p:B.p+(B.p-A.p)};
+        return rectHit(X(A.gm),Y(A.p),X(B.gm),Y(B.p),mx,my,3)||
+               near(X(B.gm),Y(B.p),X(C.gm),Y(C.p))?{}:null;}
+      const C=P[2],D={gm:C.gm+(B.gm-A.gm),p:C.p+(B.p-A.p)};
+      return rectHit(X(A.gm),Y(A.p),X(B.gm),Y(B.p),mx,my,3)||
+             rectHit(X(C.gm),Y(C.p),X(D.gm),Y(D.p),mx,my,3)||
+             near(X(C.gm),Y(C.p),X(D.gm),Y(D.p))?{}:null;}
+    default: if(PATS.has(d.type)){
+      for(let i=1;i<P.length;i++)
+        if(near(X(P[i-1].gm),Y(P[i-1].p),X(P[i].gm),Y(P[i].p)))return{};
+      return null;}
+    case 'comment': case 'text':{ ctx.font='600 12px Archivo, sans-serif';
       const w=ctx.measureText(d.text).width,x=X(P[0].gm),y=Y(P[0].p);
-      return (mx>x-12&&mx<x+w+8&&my>y-18&&my<y+6)?{}:null;}
+      return (mx>x-12&&mx<x+w+14&&my>y-20&&my<y+10)?{}:null;}
+    case 'callout':{ if(near(X(P[0].gm),Y(P[0].p),X(P[1].gm),Y(P[1].p)))return{};
+      ctx.font='600 11px Archivo, sans-serif';
+      const w=ctx.measureText(d.text).width,x=X(P[1].gm),y=Y(P[1].p);
+      return (mx>x-4&&mx<x+w+16&&my>y-24&&my<y-4)?{}:null;}
+    case 'pin':{ return Math.hypot(mx-X(P[0].gm),my-Y(P[0].p))<10?{}:null;}
+    case 'table':{ ctx.font='500 9px '+MONO;
+      const cols=Math.max(...d.rows.map(r=>r.length));
+      const cw=[];for(let c=0;c<cols;c++){let w=0;for(const r of d.rows)w=Math.max(w,ctx.measureText(r[c]||'').width);cw.push(w+10);}
+      const x0=X(P[0].gm),y0=Y(P[0].p);
+      return rectHit(x0,y0,x0+cw.reduce((a,b)=>a+b,0),y0+15*d.rows.length,mx,my,2)?{}:null;}
     case 'free':{ for(let i=1;i<P.length;i++)
         if(near(X(P[i-1].gm),Y(P[i-1].p),X(P[i].gm),Y(P[i].p),5))return{};
       return null;}
@@ -575,10 +610,28 @@ function applyMove(d,orig,dgm,dp){
 }
 
 let axisTags=[];
+function legLabels(P,prev){
+  ctx.font='600 8.5px '+MONO;ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i];
+    if(prev&&Math.abs(a.gm-b.gm)<1e-6&&Math.abs(a.p-b.p)<1e-9)continue;
+    if(Math.abs(a.p)<1e-9)continue;
+    const dv=(b.p-a.p)/a.p*100;
+    const mx=(geo.X(a.gm)+geo.X(b.gm))/2, my=(geo.Y(a.p)+geo.Y(b.p))/2-4;
+    ctx.fillStyle=dv>=0?'rgba(47,191,127,.9)':'rgba(229,72,77,.9)';
+    ctx.fillText(labelPct(dv),mx,my);}}
+function drawArrow(x0,y0,x1,y1,col,dash){
+  ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.setLineDash(dash||[]);
+  line(x0,y0,x1,y1);ctx.setLineDash([]);
+  const a=Math.atan2(y1-y0,x1-x0);ctx.fillStyle=col;
+  ctx.beginPath();ctx.moveTo(x1,y1);
+  ctx.lineTo(x1-9*Math.cos(a-.42),y1-9*Math.sin(a-.42));
+  ctx.lineTo(x1-9*Math.cos(a+.42),y1-9*Math.sin(a+.42));
+  ctx.closePath();ctx.fill();}
+
 function renderDrawing(d,o={}){
   const X=geo.X,Y=geo.Y, prev=!!o.preview;
-  const fibFam=['fib','fibext','tbfib','fan','circles','tzones'];
-  const C=fibFam.includes(d.type)?DCOL.fib:d.type==='text'?DCOL.text:d.type==='free'?DCOL.free:DCOL.def;
+  const C=d.type==='fib'||['fibext','tbfib','fan','circles','tzones'].includes(d.type)?DCOL.fib
+    :d.type==='text'?DCOL.text:d.type==='free'?DCOL.free:DCOL.def;
   ctx.save();
   if(prev){ctx.globalAlpha=.9;ctx.setLineDash([5,4]);}
   const P=d.pts;
@@ -589,20 +642,66 @@ function renderDrawing(d,o={}){
       const [fx,fy]=far(x0,y0,x1,y1);
       ctx.strokeStyle=C;ctx.lineWidth=1.3;line(x0,y0,fx,fy);
       ctx.fillStyle=C;ctx.beginPath();ctx.arc(x0,y0,2.4,0,7);ctx.fill();break;}
-    case 'arrow':{ const x0=X(P[0].gm),y0=Y(P[0].p),x1=X(P[1].gm),y1=Y(P[1].p);
-      ctx.strokeStyle=C;ctx.lineWidth=1.3;line(x0,y0,x1,y1);
-      const a=Math.atan2(y1-y0,x1-x0);
-      for(const s of[-1,1]){ctx.beginPath();ctx.moveTo(x1,y1);
-        ctx.lineTo(x1-9*Math.cos(a+s*.42),y1-9*Math.sin(a+s*.42));ctx.stroke();}break;}
+    case 'arrow':{ drawArrow(X(P[0].gm),Y(P[0].p),X(P[1].gm),Y(P[1].p),C);break;}
     case 'hline':{ const y=cr(Y(P[0].p));ctx.strokeStyle=C;ctx.lineWidth=1.2;
       line(0,y,geo.plotW,y);axisTags.push({y,text:fmtP(P[0].p),c:C});break;}
     case 'hray':{ const x=X(P[0].gm),y=cr(Y(P[0].p));ctx.strokeStyle=C;ctx.lineWidth=1.2;
       line(x,y,geo.plotW,y);ctx.fillStyle=C;ctx.beginPath();ctx.arc(x,y,2.4,0,7);ctx.fill();
       axisTags.push({y,text:fmtP(P[0].p),c:C});break;}
+    case 'mark':{
+      const eY=cr(Y(P[0].p));
+      const isBuy=d.side==='buy';
+      const col=isBuy?COL.up:COL.dn;
+      ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.setLineDash([7,4]);
+      line(0,eY,geo.plotW,eY);ctx.setLineDash([]);
+      const lpc=bars[bars.length-1].c;
+      const plP=isBuy?(lpc-P[0].p)/P[0].p*100:(P[0].p-lpc)/P[0].p*100;
+      const plV=isBuy?lpc-P[0].p:P[0].p-lpc;
+      const t1=(isBuy?'BUY ':'SELL ')+P[0].p.toFixed(2);
+      const t2=labelPct(plP)+' · '+labelPts(plV);
+      ctx.font='600 9.5px '+MONO;
+      const w1=ctx.measureText(t1).width+14, w2=ctx.measureText(t2).width+12;
+      ctx.fillStyle=col; rr(6,eY-16,w1,13,3); ctx.fill();
+      ctx.fillStyle='#0c0e11'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(t1,6+w1/2,eY-9.5);
+      ctx.fillStyle='rgba(12,14,17,.85)'; rr(6+w1+4,eY-16,w2,13,3); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.lineWidth=1;
+      rr(6+w1+4,eY-16,w2,13,3); ctx.stroke();
+      ctx.fillStyle=plP>=0?COL.up:COL.dn;
+      ctx.fillText(t2,6+w1+4+w2/2,eY-9.5);
+      ctx.textAlign='left';
+      axisTags.push({y:eY,text:(isBuy?'B ':'S ')+P[0].p.toFixed(2),c:col});
+      break;}
     case 'rect':{ const xa=X(P[0].gm),xb=X(P[1].gm),ya=Y(P[0].p),yb=Y(P[1].p);
       const x0=Math.min(xa,xb),y0=Math.min(ya,yb),w=Math.abs(xb-xa),h=Math.abs(yb-ya);
       ctx.fillStyle='rgba(95,176,216,.07)';ctx.fillRect(x0,y0,w,h);
       ctx.strokeStyle=C;ctx.lineWidth=1.3;ctx.strokeRect(x0,y0,w,h);break;}
+    case 'pricerange':{ const xa=Math.min(X(P[0].gm),X(P[1].gm)),xb=Math.max(X(P[0].gm),X(P[1].gm));
+      const y0=Math.min(Y(P[0].p),Y(P[1].p)),y1=Math.max(Y(P[0].p),Y(P[1].p));
+      const up=P[1].p>=P[0].p,col=up?COL.up:COL.dn;
+      ctx.fillStyle=up?'rgba(47,191,127,.12)':'rgba(229,72,77,.12)';
+      ctx.fillRect(xa,y0,Math.max(2,xb-xa),y1-y0);
+      ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.strokeRect(xa,y0,Math.max(2,xb-xa),y1-y0);
+      const dv=P[1].p-P[0].p,dp2=Math.abs(P[0].p)>1e-9?dv/P[0].p*100:0;
+      ctx.font='600 9.5px '+MONO;ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText(labelPts(dv)+' · '+labelPct(dp2),xa+5,(y0+y1)/2);break;}
+    case 'daterange':{ const x0=Math.min(X(P[0].gm),X(P[1].gm)),x1=Math.max(X(P[0].gm),X(P[1].gm));
+      const y=cr(Y(P[0].p)); const nb=Math.round(Math.abs(P[1].gm-P[0].gm));
+      ctx.fillStyle='rgba(95,176,216,.14)';ctx.fillRect(x0,y-7,Math.max(2,x1-x0),14);
+      ctx.strokeStyle=DCOL.def;ctx.lineWidth=1.2;ctx.strokeRect(x0,y-7,Math.max(2,x1-x0),14);
+      ctx.font='600 9.5px '+MONO;ctx.fillStyle=DCOL.def;ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText('+'+fmtDur(nb)+' · '+nb+' bars',(x0+x1)/2,y-10);break;}
+    case 'pricedate':{ const xa=Math.min(X(P[0].gm),X(P[1].gm)),xb=Math.max(X(P[0].gm),X(P[1].gm));
+      const y0=Math.min(Y(P[0].p),Y(P[1].p)),y1=Math.max(Y(P[0].p),Y(P[1].p));
+      const up=P[1].p>=P[0].p,col=up?COL.up:COL.dn;
+      const nb=Math.round(Math.abs(P[1].gm-P[0].gm));
+      ctx.fillStyle=up?'rgba(47,191,127,.10)':'rgba(229,72,77,.10)';
+      ctx.fillRect(xa,y0,Math.max(2,xb-xa),y1-y0);
+      ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.strokeRect(xa,y0,Math.max(2,xb-xa),y1-y0);
+      const dv=P[1].p-P[0].p,dp2=Math.abs(P[0].p)>1e-9?dv/P[0].p*100:0;
+      ctx.font='600 9.5px '+MONO;ctx.fillStyle=col;ctx.textAlign='left';
+      ctx.textBaseline='top';ctx.fillText(labelPts(dv)+' · '+labelPct(dp2),xa+5,y0+4);
+      ctx.textBaseline='bottom';ctx.fillText('+'+fmtDur(nb)+' · '+nb+' bars',xa+5,y1-4);break;}
     case 'ellipse':{ const xa=X(P[0].gm),xb=X(P[1].gm),ya=Y(P[0].p),yb=Y(P[1].p);
       ctx.beginPath();ctx.ellipse((xa+xb)/2,(ya+yb)/2,Math.abs(xb-xa)/2,Math.abs(yb-ya)/2,0,0,7);
       ctx.fillStyle='rgba(95,176,216,.06)';ctx.fill();
@@ -670,17 +769,110 @@ function renderDrawing(d,o={}){
       const mx2=(bx+cx2)/2,my2=(by+cy2)/2,dx=mx2-ax,dy=my2-ay;
       const [fx,fy]=far(ax,ay,mx2,my2);
       ctx.strokeStyle=C;ctx.lineWidth=1.4;
-      line(ax,ay,mx2,my2);                              // handle
+      line(ax,ay,mx2,my2);
       ctx.lineWidth=1.2;
-      line(ax,ay,fx,fy);                                // median line
-      line(bx,by,bx+dx*40,by+dy*40);                    // prongs (long rays)
+      line(ax,ay,fx,fy);
+      line(bx,by,bx+dx*40,by+dy*40);
       line(cx2,cy2,cx2+dx*40,cy2+dy*40);
       ctx.fillStyle=C;
       for(const p of P){ctx.beginPath();ctx.arc(X(p.gm),Y(p.p),2.2,0,7);ctx.fill();}break;}
+    case 'projection':{ const A=P[0],B=P[1],C2=P[2];
+      const dg=B.gm-A.gm,dp=B.p-A.p;const D={gm:C2.gm+dg,p:C2.p+dp};
+      const col=dp>=0?COL.up:COL.dn;
+      const xa=Math.min(X(A.gm),X(B.gm)),xb=Math.max(X(A.gm),X(B.gm));
+      const ya=Math.min(Y(A.p),Y(B.p)),yb=Math.max(Y(A.p),Y(B.p));
+      ctx.fillStyle=col==='#2fbf7f'?'rgba(47,191,127,.12)':'rgba(229,72,77,.12)';
+      ctx.fillRect(xa,ya,xb-xa,yb-ya);
+      ctx.strokeStyle=col;ctx.lineWidth=1.1;ctx.strokeRect(xa,ya,xb-xa,yb-ya);
+      const xa2=Math.min(X(C2.gm),X(D.gm)),xb2=Math.max(X(C2.gm),X(D.gm));
+      const ya2=Math.min(Y(C2.p),Y(D.p)),yb2=Math.max(Y(C2.p),Y(D.p));
+      ctx.fillStyle=col==='#2fbf7f'?'rgba(47,191,127,.07)':'rgba(229,72,77,.07)';
+      ctx.fillRect(xa2,ya2,xb2-xa2,yb2-ya2);
+      ctx.setLineDash([4,4]);ctx.strokeRect(xa2,ya2,xb2-xa2,yb2-ya2);ctx.setLineDash([]);
+      drawArrow(X(C2.gm),Y(C2.p),X(D.gm),Y(D.p),col);
+      ctx.font='600 9.5px '+MONO;ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText(labelPts(dp)+' · +'+fmtDur(Math.abs(dg)),X(D.gm)+6,Y(D.p));break;}
+    case 'forecast':{ const A=P[0],B=P[1];
+      const C={gm:B.gm+(B.gm-A.gm),p:B.p+(B.p-A.p)};
+      const col=B.p>=A.p?COL.up:COL.dn;
+      const xa=Math.min(X(A.gm),X(B.gm)),xb=Math.max(X(A.gm),X(B.gm));
+      const ya=Math.min(Y(A.p),Y(B.p)),yb=Math.max(Y(A.p),Y(B.p));
+      ctx.fillStyle=col==='#2fbf7f'?'rgba(47,191,127,.08)':'rgba(229,72,77,.08)';
+      ctx.fillRect(xa,ya,xb-xa,yb-ya);
+      ctx.strokeStyle=col;ctx.lineWidth=1.1;ctx.strokeRect(xa,ya,xb-xa,yb-ya);
+      drawArrow(X(A.gm),Y(A.p),X(B.gm),Y(B.p),col);
+      drawArrow(X(B.gm),Y(B.p),X(C.gm),Y(C.p),col,[4,4]);
+      ctx.font='600 9.5px '+MONO;ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText('→ '+fmtP(C.p)+' ('+labelPct((B.p-A.p)/A.p*100)+' · +'+fmtDur(Math.abs(C.gm-B.gm))+')',X(B.gm)+8,Y(C.p));break;}
+    default: if(PATS.has(d.type)){
+      ctx.strokeStyle=DCOL.pat;ctx.lineWidth=1.4;ctx.lineJoin='round';
+      ctx.beginPath();ctx.moveTo(X(P[0].gm),Y(P[0].p));
+      for(let i=1;i<P.length;i++)ctx.lineTo(X(P[i].gm),Y(P[i].p));
+      ctx.stroke();
+      ctx.fillStyle=DCOL.pat;
+      for(const p of P){ctx.beginPath();ctx.arc(X(p.gm),Y(p.p),2.2,0,7);ctx.fill();}
+      ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(180,140,224,.5)';ctx.lineWidth=1;
+      if(d.type==='hns'||d.type==='ihns')line(X(P[3].gm),Y(P[3].p),X(P[4].gm),Y(P[4].p));
+      else if(d.type==='dbltop'||d.type==='dblbot')line(X(P[2].gm),Y(P[2].p),X(P[3].gm),Y(P[3].p));
+      else if(d.type==='tri'||d.type==='wedge'){
+        line(X(P[0].gm),Y(P[0].p),X(P[2].gm),Y(P[2].p));
+        line(X(P[2].gm),Y(P[2].p),X(P[4].gm),Y(P[4].p));
+        line(X(P[1].gm),Y(P[1].p),X(P[3].gm),Y(P[3].p));}
+      ctx.setLineDash([]);
+      legLabels(P,prev);break;}
     case 'text':{ const x=X(P[0].gm),y=Y(P[0].p);
       ctx.font='600 12px Archivo, sans-serif';ctx.fillStyle=DCOL.text;
       ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(d.text,x,y);
       ctx.fillStyle=DCOL.fib;ctx.beginPath();ctx.arc(x-7,y-4,2.4,0,7);ctx.fill();break;}
+    case 'comment':{ const x=X(P[0].gm),y=Y(P[0].p);
+      ctx.font='600 11px Archivo, sans-serif';
+      const w=ctx.measureText(d.text).width;
+      ctx.fillStyle='rgba(23,28,35,.92)';ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;
+      rr(x-6,y-19,w+12,17,5);ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x-1,y-2);ctx.lineTo(x+4,y-2);ctx.lineTo(x-1,y+5);ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle=DCOL.text;ctx.textAlign='left';ctx.textBaseline='alphabetic';
+      ctx.fillText(d.text,x,y-6);break;}
+    case 'callout':{ const x0=X(P[0].gm),y0=Y(P[0].p),x1=X(P[1].gm),y1=Y(P[1].p);
+      ctx.strokeStyle=DCOL.text;ctx.lineWidth=1.1;line(x0,y0,x1,y1-4);
+      ctx.beginPath();ctx.arc(x0,y0,2.4,0,7);ctx.fill();
+      ctx.font='600 11px Archivo, sans-serif';
+      const w=ctx.measureText(d.text).width;
+      ctx.fillStyle='rgba(23,28,35,.92)';ctx.strokeStyle='rgba(255,255,255,.2)';
+      rr(x1-4,y1-24,w+14,18,5);ctx.fill();ctx.stroke();
+      ctx.fillStyle=DCOL.text;ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText(d.text,x1+3,y1-14);break;}
+    case 'pin':{ const x=X(P[0].gm),y=Y(P[0].p);
+      ctx.fillStyle=COL.acc;
+      ctx.beginPath();ctx.moveTo(x-4,y+3);ctx.lineTo(x+4,y+3);ctx.lineTo(x,y+13);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.arc(x,y,4.6,0,7);ctx.fill();
+      ctx.fillStyle='#0c0e11';ctx.beginPath();ctx.arc(x,y,1.7,0,7);ctx.fill();
+      if(d.text){ctx.font='600 10px Archivo, sans-serif';ctx.fillStyle=DCOL.text;
+        ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(d.text,x,y+16);}break;}
+    case 'pricenote':{ const y=cr(Y(P[0].p));
+      ctx.strokeStyle=DCOL.def;ctx.lineWidth=1.1;ctx.setLineDash([6,4]);
+      line(0,y,geo.plotW,y);ctx.setLineDash([]);
+      axisTags.push({y,text:fmtP(P[0].p),c:DCOL.def});
+      if(d.text){ctx.font='600 10px Archivo, sans-serif';ctx.fillStyle=DCOL.def;
+        ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(d.text,6,y-8);}break;}
+    case 'table':{ const x0=X(P[0].gm),y0=Y(P[0].p);
+      ctx.font='500 9px '+MONO;
+      const cols=Math.max(...d.rows.map(r=>r.length));
+      const cw=[];for(let c=0;c<cols;c++){let w=0;for(const r of d.rows)w=Math.max(w,ctx.measureText(r[c]||'').width);cw.push(w+10);}
+      const W2=cw.reduce((a,b)=>a+b,0),H2=15*d.rows.length;
+      ctx.fillStyle='rgba(15,18,24,.9)';ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;
+      rr(x0,y0,W2,H2,4);ctx.fill();ctx.stroke();
+      ctx.save();rr(x0,y0,W2,H2,4);ctx.clip();
+      let y=y0;ctx.textAlign='left';ctx.textBaseline='middle';
+      d.rows.forEach((r,ri)=>{
+        if(ri>0){ctx.strokeStyle='rgba(255,255,255,.1)';line(x0,y,x0+W2,y);}
+        let x=x0;
+        r.forEach((cell,ci)=>{
+          if(ci>0){ctx.strokeStyle='rgba(255,255,255,.1)';line(x,y,x,y+15);}
+          ctx.fillStyle='#c8cdd4';ctx.fillText(cell||'',x+5,y+8);
+          x+=cw[ci];});
+        y+=15;});
+      ctx.restore();break;}
     case 'free':{ if(P.length<2)break;
       ctx.strokeStyle=DCOL.free;ctx.lineWidth=1.6;ctx.lineJoin='round';ctx.lineCap='round';
       ctx.beginPath();ctx.moveTo(X(P[0].gm),Y(P[0].p));
@@ -734,14 +926,20 @@ const txtIn=$('#txtIn'); let txtCtx=null;
 function openText(md,editD,val){
   txtCtx={pt:md,editD:editD||null};
   txtIn.style.display='block';
-  txtIn.style.left=clamp(geo.X(md.gm),4,geo.plotW-200)+'px';
+  txtIn.style.left=clamp(geo.X(md.gm),4,geo.plotW-210)+'px';
   txtIn.style.top=clamp(geo.Y(md.p)+(editD?-30:8),4,H-44)+'px';
   txtIn.value=val||'';txtIn.focus();txtIn.select();
 }
 function closeText(commit){
   if(!txtCtx)return; const v=txtIn.value.trim();
   if(commit&&v){
-    if(txtCtx.editD){pushUndo();txtCtx.editD.text=v;}
+    if(txtCtx.editD){ pushUndo(); const d=txtCtx.editD;
+      if(d.type==='table'){ const rows=v.split(';').map(r=>r.split('|').map(c=>c.trim())).filter(r=>r.length&&r.some(c=>c));
+        if(rows.length)d.rows=rows; }
+      else d.text=v; }
+    else if(txtCtx.kind==='table') finishD({type:'table',pts:[txtCtx.pt],
+      rows:v.split(';').map(r=>r.split('|').map(c=>c.trim()))});
+    else if(txtCtx.kind) finishD({type:txtCtx.kind,pts:[txtCtx.pt],text:v});
     else finishD({type:'text',pts:[txtCtx.pt],text:v});
   }
   txtIn.style.display='none';txtCtx=null;
@@ -750,11 +948,123 @@ txtIn.addEventListener('keydown',e=>{ e.stopPropagation();
   if(e.key==='Enter')closeText(true); else if(e.key==='Escape')closeText(false); });
 txtIn.addEventListener('blur',()=>closeText(false));
 
-/* ===================== toolbar / popover UI ==================== */
-const toolChip=$('#toolChip'), tfSeg=$('#tfSeg'), ghostCtl=$('#ghostCtl');
-const toolBtns=[...document.querySelectorAll('#tools .tbtn[data-tool]')];
-function setTool(t){ tool=t;pending=null;cv.style.cursor='';
-  toolBtns.forEach(b=>b.classList.toggle('on',b.dataset.tool===t));
+/* =================== TradingView-style toolbar =================== */
+const sv=(inner)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const ICONS={
+  cursor:sv('<path d="M6 3l12 8.5-5.2 1.2L10.5 19z"/>'),
+  trend:sv('<line x1="5" y1="19" x2="19" y2="5"/><circle cx="5" cy="19" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="5" r="1.7" fill="currentColor" stroke="none"/>'),
+  ray:sv('<line x1="6" y1="18" x2="21" y2="5"/><circle cx="6" cy="18" r="1.8" fill="currentColor" stroke="none"/>'),
+  arrow:sv('<line x1="5" y1="19" x2="18" y2="6"/><path d="M18 6l-5 .9M18 6l-.9 5"/>'),
+  hline:sv('<line x1="3" y1="12" x2="21" y2="12"/>'),
+  hray:sv('<circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><line x1="5" y1="12" x2="21" y2="12"/>'),
+  rect:sv('<rect x="4" y="6" width="16" height="12"/>'),
+  ellipse:sv('<ellipse cx="12" cy="12" rx="8" ry="6"/>'),
+  fib:sv('<line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/>'),
+  fibext:sv('<line x1="4" y1="6" x2="11" y2="6"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="18" x2="21" y2="18"/>'),
+  tbfib:sv('<line x1="9" y1="3.5" x2="21" y2="3.5"/><circle cx="5" cy="19" r="1.6"/><circle cx="11" cy="13" r="1.6"/><circle cx="17" cy="7" r="1.6"/>'),
+  fan:sv('<circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none"/><line x1="5" y1="19" x2="20" y2="4"/><line x1="5" y1="19" x2="20" y2="10"/><line x1="5" y1="19" x2="20" y2="16"/>'),
+  circles:sv('<circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/>'),
+  tzones:sv('<line x1="6" y1="4" x2="6" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="19" y1="4" x2="19" y2="20"/>'),
+  pitchfork:sv('<path d="M4 20L11 12L18 5M11 12L18 19"/><circle cx="4" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="19" r="1.4" fill="currentColor" stroke="none"/>'),
+  pricerange:sv('<path d="M12 4v16M9 7l3-3 3 3M9 17l3 3 3-3"/>'),
+  daterange:sv('<path d="M4 12h16M7 9l-3 3 3 3M17 9l3 3-3 3"/>'),
+  pricedate:sv('<rect x="6" y="6" width="12" height="12"/><path d="M3 12h3M18 12h3"/>'),
+  abcd:sv('<path d="M4 18l5-9 5 6 6-11"/>'),
+  dbltop:sv('<path d="M4 18l4-10 4 7 4-7 4 10"/>'),
+  dblbot:sv('<path d="M4 6l4 10 4-7 4 7 4-10"/>'),
+  hns:sv('<path d="M4 17l4-8 4 5 4-8 4 11"/>'),
+  ihns:sv('<path d="M4 7l4 8 4-5 4 8 4-11"/>'),
+  tri:sv('<path d="M12 5l8 14H4z"/>'),
+  wedge:sv('<path d="M4 18L20 6M4 18L20 14"/>'),
+  projection:sv('<path d="M4 18l6-6 4 4 6-9"/><path d="M15 11h6" stroke-dasharray="2 2"/>'),
+  forecast:sv('<path d="M4 18l8-8"/><path d="M12 10l7-7" stroke-dasharray="2 2"/><path d="M15 4h5v5"/>'),
+  long:sv('<path d="M12 20V6M12 6l-5 5M12 6l5 5"/><line x1="5" y1="21" x2="19" y2="21"/>'),
+  short:sv('<path d="M12 4v14M12 18l-5-5M12 18l5-5"/><line x1="5" y1="3" x2="19" y2="3"/>'),
+  text:sv('<path d="M5 7V5h14v2M12 5v14M9 19h6"/>'),
+  comment:sv('<path d="M4 5h16v10H9l-5 4z"/>'),
+  callout:sv('<rect x="12" y="4" width="9" height="8" rx="1"/><path d="M12 8H7l-3 4v8"/>'),
+  pin:sv('<path d="M12 21c-3.2-3.7-5-6.6-5-9a5 5 0 0 1 10 0c0 2.4-1.8 5.3-5 9z"/><circle cx="12" cy="11.5" r="1.6"/>'),
+  pricenote:sv('<line x1="3" y1="12" x2="12" y2="12"/><rect x="12" y="8" width="9" height="8" rx="1"/>'),
+  table:sv('<rect x="4" y="5" width="16" height="14"/><path d="M4 10h16M4 15h16M10 5v14M10 10v9"/>'),
+  free:sv('<path d="M4 20l1.2-4.2L16 5l3 3L8.2 18.8z"/>'),
+  vprofile:sv('<line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="12" x2="21" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/>'),
+  trash:sv('<path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/>')};
+const TNAME={cursor:'Cursor',trend:'Trend line',ray:'Ray',arrow:'Arrow',hline:'Horiz line',
+  hray:'Horiz ray',rect:'Rectangle',ellipse:'Ellipse',fib:'Fib retracement',fibext:'Fib extension',
+  tbfib:'Trend-based fib',fan:'Speed resistance fan',circles:'Fib circles',tzones:'Fib time zones',
+  pitchfork:"Andrews' pitchfork",pricerange:'Price range',daterange:'Date range',pricedate:'Price + date range',
+  abcd:'AB=CD',dbltop:'Double top',dblbot:'Double bottom',hns:'Head & shoulders',ihns:'Inverted H&S',
+  tri:'Triangle pattern',wedge:'Wedge pattern',projection:'Projection',forecast:'Forecast',
+  long:'Long position',short:'Short position',text:'Text',comment:'Comment',callout:'Callout',
+  pin:'Pin',pricenote:'Price note',table:'Table',free:'Pencil',vprofile:'Volume profile'};
+const GROUPS=[
+  {id:'cursor', name:'CURSOR', tools:['cursor']},
+  {id:'lines',  name:'LINES',  tools:['trend','ray','arrow','hline','hray']},
+  {id:'shapes', name:'SHAPES', tools:['rect','ellipse']},
+  {id:'fib',    name:'FIB',    tools:['fib','fibext','tbfib','fan','circles','tzones','pitchfork']},
+  {id:'measure',name:'MEASURE',tools:['pricerange','daterange','pricedate']},
+  {id:'patterns',name:'PATTERNS',tools:['abcd','dbltop','dblbot','hns','ihns','tri','wedge']},
+  {id:'forecast',name:'FORECAST',tools:['projection','forecast']},
+  {id:'trade',  name:'TRADE',  tools:['long','short']},
+  {id:'notes',  name:'NOTES',  tools:['text','comment','callout','pin','pricenote','table','free']},
+  {id:'study',  name:'STUDY',  tools:['vprofile']},
+];
+
+const toolChip=$('#toolChip');
+const toolsWrap=$('#tools');
+const groupCur={}; GROUPS.forEach(g=>groupCur[g.id]=g.tools[0]);
+let flyEl=null, flyFor=null;
+
+function buildToolbar(){
+  GROUPS.forEach(g=>{
+    const lbl=document.createElement('div');lbl.className='tgrp';lbl.textContent=g.name;
+    toolsWrap.appendChild(lbl);
+    const row=document.createElement('div');row.className='trow';
+    const main=document.createElement('button');main.className='tbtn';main.dataset.group=g.id;
+    main.innerHTML=ICONS[groupCur[g.id]];main.title=TNAME[groupCur[g.id]];
+    row.appendChild(main);
+    if(g.tools.length>1){
+      const car=document.createElement('button');car.className='tcar';car.textContent='▾';
+      car.title=g.name+' tools';car.dataset.car=g.id;
+      row.appendChild(car);
+      car.addEventListener('click',e=>{e.stopPropagation();flyFor===g.id?closeFly():openFly(g,car);});
+    }
+    toolsWrap.appendChild(row);
+    main.addEventListener('click',()=>setTool(groupCur[g.id]));
+    main.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();
+      if(g.tools.length>1)openFly(g,main);});
+  });
+  const sep=document.createElement('div');sep.className='tsep';toolsWrap.appendChild(sep);
+  const tr=document.createElement('button');tr.className='tbtn';tr.title='Clear all drawings (Ctrl+Z undo)';
+  tr.innerHTML=ICONS.trash;
+  toolsWrap.appendChild(tr);
+  tr.addEventListener('click',()=>{ if(!drawings.length)return; pushUndo();drawings=[];selId=null; });
+}
+function openFly(g,anchor){
+  closeFly();
+  flyEl=document.createElement('div');flyEl.className='flyout';
+  g.tools.forEach(t=>{
+    const b=document.createElement('button');
+    b.innerHTML=ICONS[t]+'<span>'+TNAME[t]+'</span>';
+    if(groupCur[g.id]===t)b.classList.add('on');
+    b.addEventListener('click',e=>{e.stopPropagation();groupCur[g.id]=t;setTool(t);closeFly();});
+    flyEl.appendChild(b);
+  });
+  $('#wrap').appendChild(flyEl);
+  const r=anchor.getBoundingClientRect(),wr=$('#wrap').getBoundingClientRect();
+  flyEl.style.left=(r.right-wr.left+4)+'px';
+  flyEl.style.top=clamp(r.top-wr.top-4,4,H-40)+'px';
+  flyFor=g.id;
+}
+function closeFly(){ if(flyEl){flyEl.remove();flyEl=null;flyFor=null;} }
+document.addEventListener('click',e=>{ if(flyEl&&!flyEl.contains(e.target))closeFly(); });
+
+function setTool(t){ tool=t;pending=null;cancelPlacing();cv.style.cursor='';
+  GROUPS.forEach(g=>{ if(g.tools.includes(t))groupCur[g.id]=t; });
+  toolsWrap.querySelectorAll('.tbtn[data-group]').forEach(b=>{
+    const g=GROUPS.find(x=>x.id===b.dataset.group);
+    b.classList.toggle('on',g.tools.includes(tool));
+    b.innerHTML=ICONS[groupCur[g.id]];b.title=TNAME[groupCur[g.id]];});
   chipTxt(); }
 function chipTxt(){
   if(!CHIP[tool]){toolChip.style.display='none';return;}
@@ -762,9 +1072,6 @@ function chipTxt(){
   if(pending&&NPTS[pending.type])t+=` · point ${pending.n+1}/${NPTS[pending.type]} · ESC cancels`;
   toolChip.textContent=t;toolChip.style.display='block';
 }
-toolBtns.forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
- $('#trashBtn').addEventListener('click',()=>{ if(!drawings.length)return;
-  pushUndo();drawings=[];selId=null; });
 
 function popWire(btnId,popId){
   const pop=$(popId);
@@ -782,7 +1089,38 @@ function ensureScale(){ if(!SORDER.some(s=>scales[s]))scales.price=true; syncSca
 sclPop.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',()=>{
   scales[cb.dataset.scale]=cb.checked; ensureScale(); }));
 
+/* ------------- axis add (+) button: BUY / SELL / BASELINE ------------- */
+const axMenu=$('#axMenu');
+let placing=null, axMenuOpen=false;
+function openAxMenu(){ axMenu.style.left=Math.max(4,W-184)+'px'; axMenu.style.top='26px';
+  axMenu.hidden=false; axMenuOpen=true; }
+function closeAxMenu(){ axMenu.hidden=true; axMenuOpen=false; }
+function chipPlacing(){
+  if(!placing){toolChip.style.display='none';return;}
+  const t={buy:'BUY MARKER — click a price level · ESC cancels',
+    sell:'SELL MARKER — click a price level · ESC cancels',
+    base:'SET BASELINE — click the price to anchor 0% / 0 pts · ESC cancels'}[placing];
+  toolChip.textContent=t; toolChip.style.display='block';
+}
+function startPlacing(kind){
+  if(kind==='base'&&!anyRel()){ scales.pct=true; ensureScale(); }
+  placing=kind; closeAxMenu(); chipPlacing();
+}
+function cancelPlacing(){ if(!placing)return; placing=null; chipPlacing(); }
+function placeAt(md){
+  if(placing==='buy'||placing==='sell')
+    finishD({type:'mark',side:placing,pts:[{gm:md.gm,p:md.p}]});
+  else if(placing==='base')
+    pctBase=clamp(md.p,price*0.2,price*5);
+  placing=null; chipPlacing();
+}
+axMenu.querySelectorAll('button').forEach(b=>
+  b.addEventListener('click',e=>{e.stopPropagation();startPlacing(b.dataset.act);}));
+document.addEventListener('click',e=>{
+  if(axMenuOpen&&!axMenu.contains(e.target)&&e.target!==cv)closeAxMenu(); });
+
 /* ============================ DOM refs ============================ */
+const tfSeg=$('#tfSeg'), ghostCtl=$('#ghostCtl');
 const ltpEl=$('#ltp'),chgEl=$('#chg'),liveEl=$('#live'),liveTxt=$('#liveTxt');
 const lgTf=$('#lgTf'),lgO=$('#lgO'),lgH=$('#lgH'),lgL=$('#lgL'),lgC=$('#lgC'),lgChg=$('#lgChg'),lgV=$('#lgV'),lgRow2=$('#lgRow2');
 const wm2=$('#wm2'),aggInfo=$('#aggInfo'),latestBtn=$('#latestBtn');
@@ -843,6 +1181,9 @@ addEventListener('keydown',e=>{
   else if(e.key==='r'||e.key==='R')resetAll();
   else if(e.key==='Escape'){
     if(txtCtx)closeText(false);
+    else if(flyEl)closeFly();
+    else if(axMenuOpen)closeAxMenu();
+    else if(placing)cancelPlacing();
     else if(!indPop.hidden)indPop.hidden=true;
     else if(!sclPop.hidden)sclPop.hidden=true;
     else if(pending){pending=null;chipTxt();}
@@ -865,6 +1206,8 @@ function updateCursorStyle(mx,my){
   if(hit)c=hit.h?'pointer':'move';
   if(cv.style.cursor!==c)cv.style.cursor=c;
 }
+function setCursor(c){ if(cv.style.cursor!==c)cv.style.cursor=c; }
+const inBtn=(mx,my,b)=>b&&mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h;
 const nearBaseline=(mx,my)=>anyRel()&&pctBase!=null&&geo.priceH&&mx<=geo.plotW&&
   my>=0&&my<=geo.priceH&&Math.abs(my-geo.Y(pctBase))<6;
 
@@ -872,20 +1215,23 @@ cv.addEventListener('pointerdown',e=>{
   e.preventDefault(); viewAnim=null;
   const mx=e.offsetX,my=e.offsetY;
 
-  if(geo.badge&&mx>=geo.badge.x&&mx<=geo.badge.x+geo.badge.w&&my>=geo.badge.y&&my<=geo.badge.y+geo.badge.h){
-    if(pMode==='manual')priceAuto();
-    return;
-  }
-  /* axis strips */
+  if(inBtn(mx,my,geo.addBtn)){ axMenuOpen?closeAxMenu():openAxMenu(); return; }
+  if(axMenuOpen){ closeAxMenu(); return; }
+  if(inBtn(mx,my,geo.badge)){ if(pMode==='manual')priceAuto(); return; }
+
+  if(placing&&mx<geo.plotW&&my<=geo.priceH){
+    downPt={x:mx,y:my}; cv.setPointerCapture(e.pointerId); return; }
+
   if(mx>=geo.plotW||my>=H-TIME_H){
     if(!pending&&yLo!==null){
       suppressUp=true;cv.classList.add('grabbing');cv.setPointerCapture(e.pointerId);
       if(mx>=geo.plotW){
-        /* relative primary → vertical axis drag slides the 0 baseline;
-           absolute price → pins + pans the scale */
-        if(anyRel()&&primScale()!=='price'){ axisDrag={type:'base'}; }
-        else{ enterManual();
-          axisDrag={type:'price',y0:my,lo:mLo,hi:mHi,R:(mHi-mLo)||1}; }
+        if(anyRel()&&mx<geo.plotW+MCOLW){
+          axisDrag={type:'base',y0:my,base0:pctBase,py0:priceAtY(my)};
+        }else{
+          enterManual();
+          axisDrag={type:'price',y0:my,lo:mLo,hi:mHi,R:(mHi-mLo)||1};
+        }
       }else axisDrag={type:'time',x0:mx,r0:view.r};
     }
     return;
@@ -895,7 +1241,7 @@ cv.addEventListener('pointerdown',e=>{
     const hit=hitTopmost(mx,my);
     if(hit){ selId=hit.d.id; pushUndo();
       drag={d:hit.d,h:hit.h||null,ox:mx,oy:my,orig:snap(hit.d),moved:false};
-    }else if(nearBaseline(mx,my)){          /* drag the 0 baseline to your entry */
+    }else if(nearBaseline(mx,my)){
       baseDrag=true;
       cv.classList.add('grabbing'); cv.setPointerCapture(e.pointerId); return;
     }else{ selId=null; dragging=true; dragX=mx; dragY0=my; dragR=view.r; vBase=null; }
@@ -906,10 +1252,9 @@ cv.addEventListener('pointerdown',e=>{
     pending={type:'free',pts:[md],_lx:mx,_ly:my};
     cv.setPointerCapture(e.pointerId); return;
   }
-  if(tool==='text'||tool==='hline'||tool==='hray'||tool==='long'||tool==='short'){
+  if(['text','comment','pin','pricenote','table','hline','hray','long','short'].includes(tool)){
     downPt={x:mx,y:my}; cv.setPointerCapture(e.pointerId); return;
   }
-  /* N-point tools (2 or 3 clicks; 2-pt also supports drag-release) */
   if(NPTS[tool]){
     const md=dataAt(mx,my), k=NPTS[tool];
     if(pending&&pending.type===tool&&pending.n<k){
@@ -932,7 +1277,7 @@ cv.addEventListener('pointermove',e=>{
       const d=(my-axisDrag.y0)/geo.priceH*axisDrag.R;
       mLo=axisDrag.lo+d; mHi=axisDrag.hi+d;
     }else if(axisDrag.type==='base'){
-      pctBase=clamp(priceAtY(my),price*0.2,price*5);
+      pctBase=clamp(axisDrag.base0+(priceAtY(my)-axisDrag.py0),price*0.2,price*5);
     }else view.r=clampR(axisDrag.r0-(mx-axisDrag.x0)/geo.sp);
     return;
   }
@@ -944,17 +1289,13 @@ cv.addEventListener('pointermove',e=>{
     return;
   }
   if(dragging){
-    view.r=clampR(dragR-(mx-dragX)/geo.sp);          /* free move: time …   */
+    view.r=clampR(dragR-(mx-dragX)/geo.sp);
     const dy=my-dragY0;
-    if(Math.abs(dy)>2){                              /* … and price / baseline */
-      if(anyRel()&&primScale()!=='price'){
-        pctBase=clamp(priceAtY(my),price*0.2,price*5);
-      }else{
-        if(!vBase){ if(pMode!=='manual')enterManual();
-          vBase={lo:mLo,hi:mHi,R:(mHi-mLo)||1}; }
-        const s=dy*vBase.R/geo.priceH;
-        mLo=vBase.lo+s; mHi=vBase.hi+s; directScale=true;
-      }
+    if(Math.abs(dy)>2){
+      if(!vBase){ if(pMode!=='manual')enterManual();
+        vBase={lo:mLo,hi:mHi,R:(mHi-mLo)||1}; }
+      const s=dy*vBase.R/geo.priceH;
+      mLo=vBase.lo+s; mHi=vBase.hi+s; directScale=true;
     }
     return;
   }
@@ -966,14 +1307,15 @@ cv.addEventListener('pointermove',e=>{
   if(pending&&NPTS[pending.type]&&pending.n<NPTS[pending.type])
     pending.pts[pending.n]=dataAt(mx,my);
 
-  let hc=null;
-  if(geo.badge&&mx>=geo.badge.x&&mx<=geo.badge.x+geo.badge.w&&my>=geo.badge.y&&my<=geo.badge.y+geo.badge.h)hc='pointer';
-  else if(nearBaseline(mx,my)&&(tool==='cursor'))hc='ns-resize';
-  else if(mx>=geo.plotW)hc='ns-resize';
-  else if(my>=H-TIME_H)hc='ew-resize';
-  if(hc){ if(cv.style.cursor!==hc)cv.style.cursor=hc; }
-  else if(tool==='cursor') updateCursorStyle(mx,my);
-  else if(cv.style.cursor!=='crosshair')cv.style.cursor='crosshair';
+  if(inBtn(mx,my,geo.addBtn))setCursor('pointer');
+  else if(inBtn(mx,my,geo.badge))setCursor('pointer');
+  else if(mx>=geo.plotW)setCursor('ns-resize');
+  else if(my>=H-TIME_H)setCursor('ew-resize');
+  else if(tool==='cursor'){
+    if(placing)setCursor('crosshair');
+    else if(nearBaseline(mx,my))setCursor('ns-resize');
+    else updateCursorStyle(mx,my);
+  }else setCursor('crosshair');
 });
 cv.addEventListener('pointerup',e=>{
   if(suppressUp){suppressUp=false;axisDrag=null;cv.classList.remove('grabbing');return;}
@@ -981,6 +1323,11 @@ cv.addEventListener('pointerup',e=>{
   if(baseDrag){ baseDrag=false; cv.classList.remove('grabbing'); return; }
   if(drag){ if(!drag.moved)undoStack.pop(); drag=null; cv.classList.remove('grabbing'); return; }
   if(dragging){ dragging=false;vBase=null;directScale=false;cv.classList.remove('grabbing'); return; }
+  if(placing){
+    if(downPt&&Math.hypot(mx-downPt.x,my-downPt.y)<6) placeAt(dataAt(mx,my));
+    else cancelPlacing();
+    downPt=null; return;
+  }
   if(tool==='free'&&pending){
     if(pending.pts.length>1)finishD({type:'free',pts:pending.pts});
     pending=null; return;
@@ -996,11 +1343,14 @@ cv.addEventListener('pointerup',e=>{
         finishD({type:'pos',dir,gm0:clamp(md.gm-40,0,bars.length),
           gm1:clamp(md.gm+40,0,bars.length+240),pE,pS,pT});
       }
-      else if(tool==='text') openText(md);
+      else if(tool==='text') openText(md,null,'');
+      else if(tool==='comment') openText(md,null,'note');
+      else if(tool==='pin') openText(md,null,'');
+      else if(tool==='pricenote') openText(md,null,'');
+      else if(tool==='table') openText(md,null,'RELIANCE | 5m ;TREND | — ;R:R | —'),txtCtx.kind='table';
     }
     downPt=null; return;
   }
-  /* 2-point drag-release commit (3-point tools need the final click) */
   if(pending&&NPTS[pending.type]===2&&pending.n===1){
     const a=pending.pts[0], sx=geo.X(a.gm), sy=geo.Y(a.p);
     if(Math.hypot(mx-sx,my-sy)>24){ pending.pts[1]=dataAt(mx,my); pending.n=2; commitPending(); }
@@ -1017,17 +1367,23 @@ function commitPending(){
   }else{
     const same=P.every(q=>Math.abs(q.gm-P[0].gm)<1e-6&&Math.abs(q.p-P[0].p)<1e-9);
     if(same){setTool('cursor');return;}
-    if((d.type==='fib'||d.type==='fibext'||d.type==='fan')&&Math.abs(P[0].p-P[1].p)<1e-9){setTool('cursor');return;}
+    if(['fib','fibext','fan','pricerange','pricedate','forecast'].includes(d.type)&&Math.abs(P[0].p-P[1].p)<1e-9){setTool('cursor');return;}
+    if(d.type==='daterange'&&Math.abs(P[0].gm-P[1].gm)<1e-6){setTool('cursor');return;}
     if(d.type==='tzones'&&Math.abs(P[0].gm-P[1].gm)<1e-6){setTool('cursor');return;}
   }
   finishD(d);
 }
-cv.addEventListener('pointercancel',()=>{drag=null;dragging=false;downPt=null;axisDrag=null;suppressUp=false;baseDrag=false;vBase=null;directScale=false;cv.classList.remove('grabbing');});
+cv.addEventListener('pointercancel',()=>{drag=null;dragging=false;downPt=null;axisDrag=null;suppressUp=false;baseDrag=false;vBase=null;directScale=false;cancelPlacing();cv.classList.remove('grabbing');});
 cv.addEventListener('pointerleave',()=>{mouse.in=false;});
 cv.addEventListener('wheel',e=>{
   e.preventDefault(); if(!geo.sp)return; viewAnim=null;
   const x=e.offsetX,y=e.offsetY;
-  if(x>=geo.plotW||e.altKey){ priceZoomAt(y,Math.exp(e.deltaY*0.0012)); return; }
+  if(x>=geo.plotW||e.altKey){
+    if(anyRel()&&x<geo.plotW+MCOLW&&!e.altKey){
+      const k=(yHi-yLo)/geo.priceH*0.22;
+      pctBase=clamp(pctBase-e.deltaY*k,price*0.2,price*5); return;
+    }
+    priceZoomAt(y,Math.exp(e.deltaY*0.0012)); return; }
   if(y>=H-TIME_H){
     const t=view.r-(geo.plotW-x)/geo.sp;
     const nv=clamp(view.v*Math.exp(e.deltaY*0.0011),40,2400);
@@ -1042,21 +1398,31 @@ cv.addEventListener('wheel',e=>{
 },{passive:false});
 cv.addEventListener('dblclick',e=>{
   const x=e.offsetX,y=e.offsetY;
-  if(x>=geo.plotW){ priceAuto(); return; }
+  if(x>=geo.plotW){
+    if(anyRel()&&x<geo.plotW+MCOLW){
+      const idx=clamp(Math.floor(view.r-view.v),0,bars.length-1);
+      pctBase=bars[idx].c; return; }
+    priceAuto(); return; }
   if(y>=H-TIME_H){ animateView(bars.length+42,260); return; }
-  if(nearBaseline(x,y)){                               /* anchor 0 at first visible close */
+  if(nearBaseline(x,y)){
     const idx=clamp(Math.floor(view.r-view.v),0,bars.length-1);
-    pctBase=bars[idx].c; return;
-  }
+    pctBase=bars[idx].c; return; }
   if(tool==='cursor'&&!pending){
     const hit=hitTopmost(e.offsetX,e.offsetY);
-    if(hit&&hit.d.type==='text'){ openText(hit.d.pts[0],hit.d,hit.d.text); return; }
+    if(hit&&EDITABLE.has(hit.d.type)){
+      const d=hit.d;
+      if(d.type==='table') openText(d.pts[0],d,d.rows.map(r=>r.join(' | ')).join(' ; '));
+      else openText(d.pts[0],d,d.text||'');
+      return; }
   }
   resetAll();
 });
 cv.addEventListener('contextmenu',e=>{
   e.preventDefault();
   if(txtCtx){closeText(false);return;}
+  if(flyEl){closeFly();return;}
+  if(axMenuOpen){closeAxMenu();return;}
+  if(placing){cancelPlacing();return;}
   if(pending){pending=null;chipTxt();}
   else if(tool!=='cursor')setTool('cursor');
   else selId=null;
@@ -1145,7 +1511,6 @@ function frame(now){
   const gw=Math.max(1.2,sp*0.46);
   const bp=easeOut(clamp((now-switchT0)/420,0,1));
 
-  /* y-scale targets */
   const gA=Math.max(0,Math.floor(leftGM)), gB=Math.min(bars.length-1,Math.ceil(view.r));
   let lo=1e18,hi=-1e18,vmax=0,vmax1=0;
   for(let g=gA;g<=gB;g++){const x=bars[g];if(x.l<lo)lo=x.l;if(x.h>hi)hi=x.h;if(effGhost&&x.v>vmax1)vmax1=x.v;}
@@ -1159,26 +1524,21 @@ function frame(now){
   else{const sm=manual?(direct?1:0.5):0.22;
     yLo+=(tLo-yLo)*sm;yHi+=(tHi-yHi)*sm;
     volMax+=((vmax||1)-volMax)*0.22;volMax1+=((vmax1||1)-volMax1)*0.22;}
-  const Y=p=>(1-(p-yLo)/(yHi-yLo))*priceH;           // chart NEVER flips
+  const Y=p=>(1-(p-yLo)/(yHi-yLo))*priceH;
   const X=gm=>plotW-(view.r-gm)*sp;
   geo.sp=sp;geo.plotW=plotW;geo.priceH=priceH;geo.volH=volH;geo.volBot=volBot;
   geo.X=X;geo.Y=Y;geo.yLo=yLo;geo.yHi=yHi;
 
-  /* axis strips */
+  const rel=anyRel(), prim=primScale();
+  const primX0=rel?plotW+MCOLW:plotW;
   ctx.fillStyle='rgba(255,255,255,.014)';
   ctx.fillRect(plotW,0,AXIS_W,plotH); ctx.fillRect(0,plotH,W,TIME_H);
+  if(rel){ ctx.fillStyle='rgba(224,166,63,.025)'; ctx.fillRect(plotW,0,MCOLW,priceH); }
 
-  /* grid + axis labels — primary scale drives grid, extras stack beneath */
-  const prim=primScale();
-  const extras=SORDER.filter(s=>scales[s]&&s!==prim);
   ctx.font='10px '+MONO; ctx.textAlign='left'; ctx.textBaseline='middle';
   ctx.lineWidth=1;
   const gridCol=manual?'#c9a45c':COL.dim;
-  const subLabel=(y,p)=>{ if(!extras.length)return;
-    ctx.font='8px '+MONO;
-    extras.forEach((s,i)=>{ ctx.fillStyle='rgba(154,163,174,.55)';
-      ctx.fillText(scaleLabel(s,p),plotW+9,y+11+i*9); });
-    ctx.font='10px '+MONO; };
+  const tickPts=[];
   if(prim==='price'){
     const range=yHi-yLo, raw=range/6;
     const pow=Math.pow(10,Math.floor(Math.log10(raw)));
@@ -1187,8 +1547,8 @@ function frame(now){
     for(let i=Math.ceil(yLo/step);i*step<=yHi;i++){
       const p=i*step, gy=cr(Y(p));
       line(0,gy,plotW,gy);
-      ctx.fillText(p.toFixed(2),plotW+9,gy);
-      subLabel(gy,p);
+      ctx.fillText(p.toFixed(2),primX0+8,gy);
+      tickPts.push({gy,p});
     }
   }else{
     const isPts=prim==='pts';
@@ -1200,32 +1560,41 @@ function frame(now){
     const k0=Math.ceil(valOf(yLo)/st), k1=Math.floor(valOf(yHi)/st);
     ctx.strokeStyle=COL.grid; ctx.fillStyle=gridCol;
     for(let k=k0;k<=k1;k++){
-      if(k===0)continue;                             // zero = baseline line
+      if(k===0)continue;
       const v=k*st, gy=cr(Y(priceOf(v)));
       if(gy<-1||gy>priceH+1)continue;
       line(0,gy,plotW,gy);
       const disp=prim==='inv'?-v:v;
-      ctx.fillText(isPts?labelPts(disp):labelPct(disp),plotW+9,gy);
-      subLabel(gy,priceOf(v));
+      ctx.fillText(isPts?labelPts(disp):labelPct(disp),primX0+8,gy);
+      tickPts.push({gy,p:priceOf(v)});
     }
   }
 
-  /* 0 baseline — serves percent, inverted % and points scales */
-  if(anyRel()&&pctBase){
-    const zy=cr(Y(pctBase));
-    if(zy>-1&&zy<priceH+1){
-      ctx.strokeStyle=baseDrag?'rgba(224,166,63,1)':'rgba(224,166,63,.75)';
-      ctx.setLineDash([6,4]); line(0,zy,plotW,zy); ctx.setLineDash([]);
-      ctx.font='500 9px '+MONO; ctx.fillStyle='rgba(224,166,63,.9)';
-      ctx.fillText(`0 · ${fmtP(pctBase)}${baseDrag?' · drag':''}`,6,zy-5);
-      ctx.fillStyle=COL.acc; rr(plotW+3,zy-8,26,16,4); ctx.fill();
-      ctx.fillStyle='#10131a'; ctx.font='600 9px '+MONO; ctx.textAlign='center';
-      ctx.fillText('0',plotW+16,zy); ctx.textAlign='left';
-      ctx.font='10px '+MONO;
+  if(rel){
+    const others=SORDER.filter(s=>scales[s]&&s!==prim).slice(0,3);
+    if(pctBase){ const zy=Y(pctBase);
+      if(zy>20&&zy<priceH-8) tickPts.push({gy:zy,p:pctBase}); }
+    if(others.length){
+      ctx.font='8px '+MONO;
+      for(const t of tickPts){ if(t.gy<20||t.gy>priceH-8)continue;
+        others.forEach((s,i)=>{
+          ctx.fillStyle='rgba(154,163,174,.62)';
+          ctx.fillText(scaleLabel(s,t.p),plotW+5,t.gy+(i-(others.length-1)/2)*9);
+        });}
+    }
+    if(pctBase){ const zy=cr(Y(pctBase));
+      if(zy>-1&&zy<priceH+1){
+        ctx.strokeStyle=baseDrag?'rgba(224,166,63,1)':'rgba(224,166,63,.75)';
+        ctx.setLineDash([6,4]); line(0,zy,plotW,zy); ctx.setLineDash([]);
+        ctx.font='500 9px '+MONO; ctx.fillStyle='rgba(224,166,63,.9)';
+        ctx.fillText(`0 · ${fmtP(pctBase)}${baseDrag?' · drag':''}`,6,zy-5);
+        ctx.fillStyle=COL.acc; rr(plotW+3,zy-8,MCOLW-6,16,4); ctx.fill();
+        ctx.fillStyle='#10131a'; ctx.font='600 9px '+MONO; ctx.textAlign='center';
+        ctx.fillText('0',plotW+3+(MCOLW-6)/2,zy); ctx.textAlign='left';
+      }
     }
   }
 
-  /* day separators + time labels */
   const dayXs=[];
   for(let d=Math.max(0,Math.ceil(leftGM/SESSION));d*SESSION<bars.length&&d*SESSION<=view.r;d++)
     dayXs.push({gm:d*SESSION,xi:X(d*SESSION),d});
@@ -1244,7 +1613,6 @@ function frame(now){
       ctx.fillText(dayLbl[o.d],o.xi+5,plotH+TIME_H/2+1);ctx.textAlign='center';}
   }
 
-  /* volume pane */
   const ghostVol=effGhost&&la>0.02;
   const aggA=ghostVol?0.22*(1-la):0.22;
   if(aggA>0.012){
@@ -1272,7 +1640,6 @@ function frame(now){
   }
   ctx.globalAlpha=1;
 
-  /* 1m GHOST layer */
   if(effGhost&&la>0.02){
     for(let b=b0;b<=b1;b++){
       const emph=(b===sb);
@@ -1298,7 +1665,6 @@ function frame(now){
     ctx.globalAlpha=1;
   }
 
-  /* main timeframe candles */
   for(let b=b0;b<=b1;b++){
     const k=agg[b];
     const born=(bornGM>=0&&b===Math.floor(bornGM/tf))?easeOut(clamp((now-bornAt)/380,0,1)):1;
@@ -1330,7 +1696,6 @@ function frame(now){
   }
   ctx.globalAlpha=1;
 
-  /* parent ring while inspecting a shell */
   if(tf>1&&sb>=0&&agg[sb]&&agg[sb].g0<bars.length){
     const k=agg[sb], x0=X(k.g0), x1=X(k.g1), ins=(x1-x0)*0.17;
     ctx.strokeStyle=COL.acc; ctx.lineWidth=1.4; ctx.globalAlpha=.9;
@@ -1338,7 +1703,6 @@ function frame(now){
     ctx.globalAlpha=1;
   }
 
-  /* 1m inspect marker when ghosts hidden */
   if(tf>1&&sb>=0&&!effGhost&&gi>=0){
     const ib=bars[gi], cxm=X(gi+0.5);
     ctx.fillStyle='rgba(224,166,63,.055)'; ctx.fillRect(X(gi),0,sp,priceH);
@@ -1352,7 +1716,6 @@ function frame(now){
     ctx.globalAlpha=1;
   }
 
-  /* drawings layer */
   axisTags=[];
   ctx.save(); ctx.beginPath(); ctx.rect(0,0,plotW,priceH); ctx.clip();
   for(const d of drawings) renderDrawing(d,{});
@@ -1363,24 +1726,32 @@ function frame(now){
       ctx.fillRect(h.x-3.5,h.y-3.5,7,7); ctx.strokeRect(h.x-2.5,h.y-2.5,5,5); } }
   ctx.restore();
   for(const t of axisTags){
-    ctx.fillStyle=t.c; rr(plotW+3,t.y-8,AXIS_W-7,16,4); ctx.fill();
-    ctx.fillStyle='#0c0e11'; ctx.font='600 9.5px '+MONO;
+    ctx.fillStyle=t.c; rr(primX0+2,t.y-8,W-primX0-4,16,4); ctx.fill();
+    ctx.fillStyle='#0c0e11'; ctx.font='600 8.5px '+MONO;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(t.text,plotW+3+(AXIS_W-7)/2,t.y);
+    ctx.fillText(t.text,primX0+2+(W-primX0-4)/2,t.y);
   }
 
-  /* last traded price line + tag (primary scale) */
   const lp=bars[bars.length-1].c, ly=Y(lp);
   if(ly>-8&&ly<priceH+8){
     ctx.strokeStyle=COL.acc; ctx.globalAlpha=.55; ctx.setLineDash([3,4]); ctx.lineWidth=1;
     line(0,cr(ly),plotW,cr(ly)); ctx.setLineDash([]); ctx.globalAlpha=1;
-    ctx.fillStyle=COL.acc; rr(plotW+3,ly-9,AXIS_W-7,18,4); ctx.fill();
-    ctx.fillStyle='#10131a'; ctx.font='600 10.5px '+MONO;
+    ctx.fillStyle=COL.acc; rr(primX0+2,ly-9,W-primX0-4,18,4); ctx.fill();
+    ctx.fillStyle='#10131a'; ctx.font='600 9.5px '+MONO;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(scaleLabel(prim,lp),plotW+3+(AXIS_W-7)/2,ly+0.5);
+    ctx.fillText(scaleLabel(prim,lp),primX0+2+(W-primX0-4)/2,ly+0.5);
   }
 
-  /* ----- indicator panes ----- */
+  if(placing&&mouse.in&&mouse.x<plotW&&mouse.y<priceH){
+    const pv2=priceAtY(mouse.y), py2=cr(Y(pv2));
+    const pc2=placing==='buy'?COL.up:placing==='sell'?COL.dn:COL.acc;
+    ctx.strokeStyle=pc2; ctx.globalAlpha=.8; ctx.setLineDash([5,4]); ctx.lineWidth=1;
+    line(0,py2,plotW,py2); ctx.setLineDash([]); ctx.globalAlpha=1;
+    ctx.font='600 9px '+MONO; ctx.fillStyle=pc2;
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(placing==='base'?`0 → ${fmtP(pv2)}`:(placing==='buy'?'BUY ':'SELL ')+fmtP(pv2),8,py2-6);
+  }
+
   if(act.length){
     const IND=getInd();
     let top=volBot;
@@ -1442,7 +1813,6 @@ function frame(now){
     }
   }
 
-  /* crosshair */
   if(inPlot&&sb>=0){
     const cgm=tf>1?gi:agg[sb].g0;
     const sx=cr(X(cgm+0.5));
@@ -1451,20 +1821,19 @@ function frame(now){
     if(mouse.y<=priceH){
       line(0,cr(mouse.y),plotW,cr(mouse.y));
       const pv=clamp(priceAtY(mouse.y),Math.min(yLo,yHi),Math.max(yLo,yHi));
-      ctx.font='500 10px '+MONO;
-      pill(plotW+3,mouse.y-9,AXIS_W-7,18,scaleLabel(prim,pv));
+      ctx.font='500 9.5px '+MONO;
+      pill(primX0+2,mouse.y-9,W-primX0-4,18,scaleLabel(prim,pv));
     }
     ctx.setLineDash([]);
     const txt=fmtHM(cgm), w=ctx.measureText(txt).width+14;
     pill(clamp(X(cgm+0.5)-w/2,2,plotW-w-2),plotH+4,w,TIME_H-8,txt);
   }
 
-  /* axis separators */
   ctx.strokeStyle='#20262f'; ctx.lineWidth=1;
   line(cr(plotW),0,cr(plotW),H); line(0,cr(plotH),W,cr(plotH));
+  if(rel) line(cr(primX0),0,cr(primX0),H);
 
-  /* price-scale mode badge */
-  geo.badge={x:plotW+4,y:H-TIME_H-20,w:AXIS_W-8,h:15};
+  geo.badge={x:primX0+2,y:H-TIME_H-20,w:W-primX0-4,h:15};
   ctx.font='600 8.5px '+MONO;
   const fac=pzR0/((mHi-mLo)||1);
   ctx.fillStyle=manual?'rgba(224,166,63,.14)':'rgba(255,255,255,.04)';
@@ -1474,10 +1843,20 @@ function frame(now){
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText(manual?('×'+fac.toFixed(2)):'AUTO',geo.badge.x+geo.badge.w/2,geo.badge.y+8);
 
-  /* legend (DOM) */
+  geo.addBtn={x:W-20,y:4,w:16,h:16};
+  const ab=geo.addBtn;
+  const abH=mouse.in&&inBtn(mouse.x,mouse.y,ab);
+  ctx.fillStyle=axMenuOpen?'rgba(224,166,63,.16)':abH?'rgba(255,255,255,.08)':'rgba(255,255,255,.045)';
+  ctx.strokeStyle=axMenuOpen?'rgba(224,166,63,.6)':'rgba(255,255,255,.14)';
+  rr(ab.x,ab.y,ab.w,ab.h,4);ctx.fill();ctx.stroke();
+  ctx.strokeStyle=axMenuOpen?COL.acc:'#9aa3ae'; ctx.lineWidth=1.3;
+  const acx=ab.x+ab.w/2, acy=ab.y+ab.h/2;
+  line(acx-3.5,acy,acx+3.5,acy); line(acx,acy-3.5,acx,acy+3.5);
+  ctx.lineWidth=1;
+
   const show=sb>=0?agg[sb]:agg[agg.length-1];
   const up=show.c>=show.o, cc=up?COL.up:COL.dn;
-  const prev=sb>0?agg[sb-1].c:show.o, dC=show.c-prev, dP=prev?dC/prev*100:0;
+  const prevC=sb>0?agg[sb-1].c:show.o, dC=show.c-prevC, dP=prevC?dC/prevC*100:0;
   lgTf.textContent=tf+'m';
   lgO.textContent=fmtP(show.o); lgH.textContent=fmtP(show.h);
   lgL.textContent=fmtP(show.l); lgC.textContent=fmtP(show.c);
@@ -1506,7 +1885,9 @@ function frame(now){
 }
 
 /* ============================ boot ============================ */
-pctBase=prevCloseRef();                              // 0 defaults to previous close
+pctBase=prevCloseRef();
+buildToolbar();
+setTool('cursor');
 renderHeader(); updateAggInfo(); syncScales();
 requestAnimationFrame(frame);
 </script>
