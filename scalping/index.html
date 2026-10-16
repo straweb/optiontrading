@@ -23,12 +23,19 @@
     <button class="btn" id="addWatchBtn">+ WATCH</button>
   </div>
   <div class="vdiv"></div>
-  <div class="seg" id="instSeg">
+  <!-- replace the old instSeg + fnoSub + expSel block with: -->
+<div class="seg" id="instSeg">
+  <button data-i="eq" class="on">EQ</button><button data-i="fno">FNO</button>
+</div>
+<select id="expSpot" class="miniSel" style="height:28px;display:none" title="spot & futures expiry"></select>
+<select id="expOpt" class="miniSel" style="height:28px;display:none" title="option strike expiry"></select>
+
+  <!-- <div class="seg" id="instSeg">
     <button data-i="eq" class="on">EQ</button><button data-i="fno">FNO</button>
   </div>
   <div class="seg" id="fnoSub" style="display:none">
     <button data-s="spot">SPOT</button><button data-s="fut">FUT</button><button data-s="opt">OPT</button>
-  </div>
+  </div> -->
   <select id="expSel" style="display:none"></select>
   <div class="right">
     <span class="achip" id="capChip">CAP <b>—</b></span>
@@ -173,13 +180,22 @@
     <table id="tblSch" style="display:none"><thead><tr><th>ON</th><th>ACTION</th><th>TARGET</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
       <tbody id="tbSch"></tbody>
       <tfoot><tr><td colspan="5" style="padding:4px 10px">
-        <select id="scAct" class="miniSel" style="height:26px;width:auto">
+        
+      <!-- in the scheduler table footer, the action select becomes: -->
+      <select id="scAct" class="miniSel" style="height:26px;width:auto">
+        <option value="deployCE">DEPLOY CE</option><option value="deployPE">DEPLOY PE</option>
+        <option value="deployAtmCE">ATM CE</option><option value="deployAtmPE">ATM PE</option>
+        <option value="exitCE">EXIT CE</option><option value="exitPE">EXIT PE</option>
+        <option value="exitAll">EXIT ALL</option><option value="exitSym">EXIT TICKET SYMBOL</option>
+        <option value="buySym">BUY TICKET SYMBOL</option><option value="sellSym">SELL TICKET SYMBOL</option>
+      </select>
+        <!-- <select id="scAct" class="miniSel" style="height:26px;width:auto">
           <option value="deployCE">DEPLOY CE</option><option value="deployPE">DEPLOY PE</option>
           <option value="deployAtmCE">ATM CE</option><option value="deployAtmPE">ATM PE</option>
           <option value="exitCE">EXIT CE</option><option value="exitPE">EXIT PE</option>
           <option value="exitAll">EXIT ALL</option><option value="exitSym">EXIT TICKET SYMBOL</option>
           <option value="buySym">BUY TICKET SYMBOL</option><option value="sellSym">SELL TICKET SYMBOL</option>
-        </select>
+        </select> -->
         <input type="datetime-local" step="1" id="scAt" class="schedIn">
         <button class="btn acc" id="scAdd2" style="height:26px">ADD</button>
       </td></tr></tfoot>
