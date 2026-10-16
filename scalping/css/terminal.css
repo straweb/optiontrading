@@ -331,3 +331,23 @@ tr:hover td{background:rgba(255,255,255,.02)}
 #grid.g5x5{grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr)}
 /* FNO default: spot spans full top row over CE|PE */
 #grid.g2x2 .paneBox:first-child{grid-column:1/3}
+
+/* resizable grid */
+#wrap{overflow:hidden}
+.spl{position:absolute;z-index:8;background:transparent}
+.spl.v{width:7px;cursor:col-resize;top:0;bottom:0;margin-left:-3px}
+.spl.h{height:7px;cursor:row-resize;left:0;right:0;margin-top:-3px}
+.spl:hover,.spl.act{background:rgba(224,166,63,.4)}
+#grid.maxed .paneBox{display:none!important}
+#grid.maxed .paneBox.max{display:flex!important;grid-area:1/1/-1/-1}
+.paneBox .mx{background:rgba(13,16,20,.85);border:1px solid var(--line);border-radius:6px;
+  padding:2px 5px;color:var(--faint);cursor:pointer;pointer-events:auto;font-size:9px}
+.paneBox .mx:hover{color:var(--acc)}
+/* collapsible watchlist */
+#watch{transition:width .18s}
+#watch.min{width:30px}
+#watch.min .pbody,#watch.min .pnote{display:none}
+#watch.min .phead{justify-content:center;padding:8px 2px}
+#watch.min .phead span:first-child,#watch.min .phead .cnt{display:none}
+.wcoll{cursor:pointer;color:var(--faint);font-size:11px;padding:0 3px;border-radius:4px}
+.wcoll:hover{color:var(--acc)}
