@@ -139,6 +139,12 @@
     </div>
   </div>
 
+  <div class="seg mini" id="axSeg" title="Y-axis scale · P cycles · I inverts · drag the 0% line to set your entry">
+    <button data-m="price" class="on" title="absolute price">PRICE</button>
+    <button data-m="pct" title="percent from 0% baseline — drag the amber 0% line to your entry">PCT</button>
+    <button data-m="pcti" title="inverted percent — up = seller profit">PCT-INV</button>
+  </div>
+
   <div class="right">
     <div class="popWrap">
       <button class="hdrBtn" id="indBtn" title="toggle indicator panes">
@@ -212,7 +218,7 @@
 
 <footer>
   <div id="aggInfo">—</div>
-  <div class="hints"><b>WHEEL</b> time zoom · <b>PRICE AXIS</b> wheel/drag = price scale · <b>TIME AXIS</b> wheel/drag · <b>ALT+WHEEL</b> price · <b>DBL-CLICK AXIS</b> auto-fit · <b>1–4</b> TF · <b>G</b> ghost · <b>SPACE</b> pause · <b>DEL</b> · <b>CTRL+Z</b> · <b>ESC</b></div>
+  <div class="hints"><b>DRAG</b> free move (time + price) · <b>AXIS WHEEL</b> single-axis zoom · <b>P</b> pct · <b>I</b> invert · <b>0% LINE</b> drag = set entry · dbl-click = auto · <b>1–4</b> TF · <b>G</b> ghost · <b>SPACE</b> pause · <b>DEL</b> · <b>CTRL+Z</b> · <b>ESC</b></div>
 </footer>
 
 <script>
@@ -339,23 +345,35 @@ function animateView(tr,tv){viewAnim={t0:performance.now(),dur:520,fr:view.r,fv:
 const clampR=r=>{const hi=bars.length+90;return clamp(r,Math.min(view.v-30,hi),hi);};
 
 /* ----- per-axis scale state -----
-   pMode 'auto'  → price range auto-fits the visible data every frame
-   pMode 'manual'→ mLo/mHi pinned by the user (wheel/drag on price axis);
-                   new data no longer moves the scale until auto-fit is
-                   restored (dbl-click axis / A / badge / reset).        */
+   pMode 'auto'   → price range auto-fits the visible data every frame
+   pMode 'manual' → mLo/mHi pinned; free vertical body-drag, price-axis
+                    drag and price-wheel all keep it pinned.            */
 let pMode='auto', mLo=0, mHi=1, pzR0=1;
+/* ----- axis display mode: absolute price vs percent (+inverted) ----- */
+let axPct=false, axInv=false;
+let pctBase=null;                                    // price that reads as 0%
+let baseDrag=false, directScale=false;
+
 function enterManual(){ if(pMode==='manual'||yLo==null)return;
   pMode='manual'; mLo=yLo; mHi=yHi; pzR0=Math.max(1e-9,yHi-yLo); }
-function priceAuto(){ pMode='auto'; }                // targets recompute next frame → smooth glide
+function priceAuto(){ pMode='auto'; }
 function priceZoomAt(ypix,k){
   if(!geo.priceH)return; const R=yHi-yLo; if(!(R>0))return;
   enterManual(); if(pMode!=='manual')return;
-  const pc=yHi-(ypix/geo.priceH)*R;                  // price under the cursor stays fixed
+  const pc=priceAtY(ypix);                           // price under cursor stays fixed
   const nR=clamp((mHi-mLo)*k, price*0.0006, price*1.5);
   const kk=nR/(mHi-mLo);
   mHi=pc+(mHi-pc)*kk; mLo=pc-(pc-mLo)*kk;
 }
 function resetAll(){ animateView(bars.length+42,260); priceAuto(); }
+
+/* percent helpers (baseline-relative; negated when inverted so
+   "up" always reads as profit from the active perspective)          */
+const pctOf=p=>(p-pctBase)/pctBase*100;
+function labelPct(v){ v*=axInv?-1:1; const s=v>=0?'+':'−', a=Math.abs(v);
+  return s+(a>=100?a.toFixed(0):a>=10?a.toFixed(1):a.toFixed(2))+'%'; }
+function priceAtY(y){ const R=yHi-yLo;
+  return axInv? yLo+(y/geo.priceH)*R : yHi-(y/geo.priceH)*R; }
 
 const cv=$('#chart'), ctx=cv.getContext('2d');
 let W=0,H=0,dpr=1;
@@ -363,7 +381,7 @@ function resize(){dpr=window.devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHei
 new ResizeObserver(resize).observe($('#wrap')); resize();
 const geo={sp:0,plotW:1,priceH:1,volH:1,volBot:1,X:x=>x,Y:y=>y,yLo:0,yHi:1,badge:null};
 
-let mouse={x:0,y:0,in:false}, dragging=false, dragX=0, dragR=0;
+let mouse={x:0,y:0,in:false}, dragging=false, dragX=0, dragR=0, dragY0=0, vBase=null;
 let axisDrag=null, suppressUp=false;
 
 /* ======================= drawings & tools ====================== */
@@ -383,7 +401,9 @@ const undoStack=[];
 function pushUndo(){undoStack.push(drawings.slice());if(undoStack.length>80)undoStack.shift();}
 function dataAt(x,y){ if(!geo.sp)return{gm:0,p:0};
   const yy=clamp(y,0,Math.max(1,geo.priceH-1));
-  return {gm:view.r-(geo.plotW-x)/geo.sp, p:geo.yHi-(yy/geo.priceH)*(geo.yHi-geo.yLo)}; }
+  const R=geo.yHi-geo.yLo;
+  const p=axInv? geo.yLo+(yy/geo.priceH)*R : geo.yHi-(yy/geo.priceH)*R;
+  return {gm:view.r-(geo.plotW-x)/geo.sp, p}; }
 function snap(d){return JSON.parse(JSON.stringify(d));}
 function finishD(d){d.id=uidC++;pushUndo();drawings.push(d);selId=d.id;setTool('cursor');}
 
@@ -619,6 +639,13 @@ document.addEventListener('click',e=>{ if(!indPop.hidden&&!indPop.contains(e.tar
 indPop.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',()=>{
   PANE_DEFS.find(p=>p.id===cb.dataset.pane).on=cb.checked; }));
 
+/* axis-mode segmented control */
+const axSeg=$('#axSeg');
+function syncAxSeg(){ const m=(axPct&&axInv)?'pcti':axPct?'pct':'price';
+  axSeg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); }
+function setAxMode(m){ axPct=m!=='price'; axInv=m==='pcti'; syncAxSeg(); }
+axSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>setAxMode(b.dataset.m)));
+
 /* ============================ DOM refs ============================ */
 const ltpEl=$('#ltp'),chgEl=$('#chg'),liveEl=$('#live'),liveTxt=$('#liveTxt');
 const lgTf=$('#lgTf'),lgO=$('#lgO'),lgH=$('#lgH'),lgL=$('#lgL'),lgC=$('#lgC'),lgChg=$('#lgChg'),lgV=$('#lgV'),lgRow2=$('#lgRow2');
@@ -674,6 +701,8 @@ addEventListener('keydown',e=>{
   else if(e.key==='g'||e.key==='G'){if(tf>1)ghostToggle.click();}
   else if(e.key===' '){e.preventDefault();$('#pauseBtn').click();}
   else if(e.key==='a'||e.key==='A')priceAuto();
+  else if(e.key==='p'||e.key==='P')setAxMode(axPct?(axInv?'price':'pcti'):'pct'); // cycle
+  else if(e.key==='i'||e.key==='I'){axInv=!axInv;syncAxSeg();}
   else if(e.key==='r'||e.key==='R')resetAll();
   else if(e.key==='Escape'){
     if(txtCtx)closeText(false);
@@ -698,6 +727,9 @@ function updateCursorStyle(mx,my){
   if(hit)c=hit.h?'pointer':'move';
   if(cv.style.cursor!==c)cv.style.cursor=c;
 }
+const nearBaseline=(mx,my)=>axPct&&pctBase!=null&&geo.priceH&&mx<=geo.plotW&&
+  my>=0&&my<=geo.priceH&&Math.abs(my-geo.Y(pctBase))<6;
+
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault(); viewAnim=null;
   const mx=e.offsetX,my=e.offsetY;
@@ -722,7 +754,10 @@ cv.addEventListener('pointerdown',e=>{
     const hit=hitTopmost(mx,my);
     if(hit){ selId=hit.d.id; pushUndo();
       drag={d:hit.d,h:hit.h||null,ox:mx,oy:my,orig:snap(hit.d),moved:false};
-    }else{ selId=null; dragging=true; dragX=mx; dragR=view.r; }
+    }else if(nearBaseline(mx,my)){          /* drag the 0% baseline */
+      enterManual(); baseDrag=true;
+      cv.classList.add('grabbing'); cv.setPointerCapture(e.pointerId); return;
+    }else{ selId=null; dragging=true; dragX=mx; dragY0=my; dragR=view.r; vBase=null; }
     cv.classList.add('grabbing'); cv.setPointerCapture(e.pointerId); return;
   }
   if(tool==='free'){
@@ -743,20 +778,32 @@ cv.addEventListener('pointermove',e=>{
   const mx=e.offsetX,my=e.offsetY;
   mouse.x=mx;mouse.y=my;mouse.in=true;
 
+  if(baseDrag){ pctBase=clamp(priceAtY(my),price*0.2,price*5); return; }
   if(axisDrag){
     if(axisDrag.type==='price'){
-      const d=(my-axisDrag.y0)/geo.priceH*axisDrag.R;
-      mLo=axisDrag.lo+d; mHi=axisDrag.hi+d;
+      const s=(axInv?-1:1)*(my-axisDrag.y0)/geo.priceH*axisDrag.R;
+      mLo=axisDrag.lo+s; mHi=axisDrag.hi+s;
     }else view.r=clampR(axisDrag.r0-(mx-axisDrag.x0)/geo.sp);
     return;
   }
   if(drag&&drag.d){
     if(drag.h){ applyHandle(drag.d,drag.h,dataAt(mx,my)); drag.moved=true; }
-    else{ const dgm=(mx-drag.ox)/geo.sp, dp=-(my-drag.oy)/geo.priceH*(geo.yHi-geo.yLo);
+    else{ const dgm=(mx-drag.ox)/geo.sp,
+            dp=(axInv?1:-1)*(my-drag.oy)/geo.priceH*(geo.yHi-geo.yLo);
       if(applyMove(drag.d,drag.orig,dgm,dp))drag.moved=true; }
     return;
   }
-  if(dragging){ view.r=clampR(dragR-(mx-dragX)/geo.sp); return; }
+  if(dragging){
+    view.r=clampR(dragR-(mx-dragX)/geo.sp);          /* free move: time …   */
+    const dy=my-dragY0;
+    if(Math.abs(dy)>2){                              /* … and price axis    */
+      if(!vBase){ if(pMode!=='manual')enterManual();
+        vBase={lo:mLo,hi:mHi,R:(mHi-mLo)||1}; }
+      const s=(axInv?-1:1)*dy*vBase.R/geo.priceH;
+      mLo=vBase.lo+s; mHi=vBase.hi+s; directScale=true;
+    }
+    return;
+  }
   if(tool==='free'&&pending){
     if(Math.hypot(mx-pending._lx,my-pending._ly)>3){
       pending.pts.push(dataAt(mx,my));pending._lx=mx;pending._ly=my;}
@@ -764,9 +811,10 @@ cv.addEventListener('pointermove',e=>{
   }
   if(pending&&twoPoint.has(pending.type)) pending.pts[1]=dataAt(mx,my);
 
-  /* hover cursor: axes → resize, badge → pointer, else tool logic */
+  /* hover cursor: baseline/axes → resize, badge → pointer, else tool logic */
   let hc=null;
   if(geo.badge&&mx>=geo.badge.x&&mx<=geo.badge.x+geo.badge.w&&my>=geo.badge.y&&my<=geo.badge.y+geo.badge.h)hc='pointer';
+  else if(nearBaseline(mx,my)&&(tool==='cursor'))hc='ns-resize';
   else if(mx>=geo.plotW)hc='ns-resize';
   else if(my>=H-TIME_H)hc='ew-resize';
   if(hc){ if(cv.style.cursor!==hc)cv.style.cursor=hc; }
@@ -776,8 +824,9 @@ cv.addEventListener('pointermove',e=>{
 cv.addEventListener('pointerup',e=>{
   if(suppressUp){suppressUp=false;axisDrag=null;cv.classList.remove('grabbing');return;}
   const mx=e.offsetX,my=e.offsetY;
+  if(baseDrag){ baseDrag=false; cv.classList.remove('grabbing'); return; }
   if(drag){ if(!drag.moved)undoStack.pop(); drag=null; cv.classList.remove('grabbing'); return; }
-  if(dragging){ dragging=false;cv.classList.remove('grabbing'); return; }
+  if(dragging){ dragging=false;vBase=null;directScale=false;cv.classList.remove('grabbing'); return; }
   if(tool==='free'&&pending){
     if(pending.pts.length>1)finishD({type:'free',pts:pending.pts});
     pending=null; return;
@@ -816,7 +865,7 @@ function commitPending(){
   }
   finishD(d);
 }
-cv.addEventListener('pointercancel',()=>{drag=null;dragging=false;downPt=null;axisDrag=null;suppressUp=false;cv.classList.remove('grabbing');});
+cv.addEventListener('pointercancel',()=>{drag=null;dragging=false;downPt=null;axisDrag=null;suppressUp=false;baseDrag=false;vBase=null;directScale=false;cv.classList.remove('grabbing');});
 cv.addEventListener('pointerleave',()=>{mouse.in=false;});
 cv.addEventListener('wheel',e=>{
   e.preventDefault(); if(!geo.sp)return; viewAnim=null;
@@ -830,7 +879,7 @@ cv.addEventListener('wheel',e=>{
     const nsp=geo.plotW/nv;
     view.r=clampR(t+(geo.plotW-x)/nsp); view.v=nv; return;
   }
-  /* chart body: time zoom as before (shift = strafe) */
+  /* chart body: time zoom (shift = strafe) */
   if(e.shiftKey){view.r=clampR(view.r+(e.deltaY+e.deltaX)*0.6/geo.sp);return;}
   const anchor=view.r-(geo.plotW-x)/geo.sp;
   const nv=clamp(view.v*Math.exp(e.deltaY*0.0011),40,2400);
@@ -841,6 +890,11 @@ cv.addEventListener('dblclick',e=>{
   const x=e.offsetX,y=e.offsetY;
   if(x>=geo.plotW){ priceAuto(); return; }               // price axis → auto-fit price
   if(y>=H-TIME_H){ animateView(bars.length+42,260); return; } // time axis → jump to latest
+  /* 0% baseline → auto-anchor at first visible candle close */
+  if(nearBaseline(x,y)){ 
+    const idx=clamp(Math.floor(view.r-view.v),0,bars.length-1);
+    pctBase=bars[idx].c; return;
+  }
   if(tool==='cursor'&&!pending){
     const hit=hitTopmost(e.offsetX,e.offsetY);
     if(hit&&hit.d.type==='text'){ openText(hit.d.pts[0],hit.d,hit.d.text); return; }
@@ -896,6 +950,7 @@ function pill(x,y,w,h,txt){ctx.fillStyle='#171c23';ctx.strokeStyle='rgba(255,255
   ctx.fillStyle=COL.ink;ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText(txt,x+w/2,y+h/2+0.5);}
 const MONO='"IBM Plex Mono", monospace';
+const PCT_STEPS=[0.02,0.05,0.1,0.2,0.25,0.5,1,2,2.5,5,10,20,25,50,100,200,500];
 
 /* ============================ render loop ============================ */
 let yLo=null,yHi=null,volMax=null,volMax1=null;
@@ -928,7 +983,7 @@ function frame(now){
   const effGhost=ghostOn&&tf>1;
 
   const gmAt=view.r-(plotW-mouse.x)/sp;
-  const inPlot=mouse.in&&!dragging&&!drag&&!axisDrag&&mouse.x>=0&&mouse.x<=plotW&&mouse.y>=0&&mouse.y<=plotH;
+  const inPlot=mouse.in&&!dragging&&!drag&&!axisDrag&&!baseDrag&&mouse.x>=0&&mouse.x<=plotW&&mouse.y>=0&&mouse.y<=plotH;
   const sb=inPlot?clamp(Math.floor(gmAt/tf),0,agg.length-1):-1;
   const gi=(tf>1&&sb>=0)?clamp(Math.floor(gmAt),0,bars.length-1):-1;
 
@@ -943,13 +998,17 @@ function frame(now){
   const b0=Math.max(0,Math.floor(leftGM/tf)), b1=Math.min(agg.length-1,Math.floor(view.r/tf));
   for(let b=b0;b<=b1;b++){if(agg[b].v>vmax)vmax=agg[b].v;}
   const manual=pMode==='manual'&&yLo!==null;
+  const direct=directScale||(axisDrag&&axisDrag.type==='price');
   const pad=(hi-lo)*0.08+price*0.0003;
   const tLo=manual?mLo:lo-pad, tHi=manual?mHi:hi+pad;
   if(yLo===null){yLo=tLo;yHi=tHi;volMax=vmax||1;volMax1=vmax1||1;}
-  else{const sm=manual?0.5:0.22;
+  else{const sm=manual?(direct?1:0.5):0.22;
     yLo+=(tLo-yLo)*sm;yHi+=(tHi-yHi)*sm;
     volMax+=((vmax||1)-volMax)*0.22;volMax1+=((vmax1||1)-volMax1)*0.22;}
-  const Y=p=>(1-(p-yLo)/(yHi-yLo))*priceH;
+  /* Y() honors the inverted axis; data range stays lo<hi either way */
+  const Y=axInv
+    ? p=>((p-yLo)/(yHi-yLo))*priceH
+    : p=>(1-(p-yLo)/(yHi-yLo))*priceH;
   const X=gm=>plotW-(view.r-gm)*sp;
   geo.sp=sp;geo.plotW=plotW;geo.priceH=priceH;geo.volH=volH;geo.volBot=volBot;
   geo.X=X;geo.Y=Y;geo.yLo=yLo;geo.yHi=yHi;
@@ -958,17 +1017,43 @@ function frame(now){
   ctx.fillStyle='rgba(255,255,255,.014)';
   ctx.fillRect(plotW,0,AXIS_W,plotH); ctx.fillRect(0,plotH,W,TIME_H);
 
-  /* price grid + labels (tinted amber while scale is manual) */
-  const range=yHi-yLo, raw=range/6;
-  const pow=Math.pow(10,Math.floor(Math.log10(raw)));
-  const step=(raw/pow<1.5?1:raw/pow<3.5?2:raw/pow<7.5?5:10)*pow;
+  /* grid + axis labels — absolute price OR baseline-relative percent */
   ctx.font='10px '+MONO; ctx.textAlign='left'; ctx.textBaseline='middle';
-  ctx.strokeStyle=COL.grid; ctx.lineWidth=1;
-  ctx.fillStyle=manual?'#c9a45c':COL.dim;
-  for(let i=Math.ceil(yLo/step);i*step<=yHi;i++){
-    const p=i*step, gy=cr(Y(p));
-    line(0,gy,plotW,gy);
-    ctx.fillText(p.toFixed(2),plotW+9,gy);
+  ctx.lineWidth=1;
+  const gridCol=manual?'#c9a45c':COL.dim;
+  if(axPct&&pctBase){
+    const pLo=pctOf(yLo), pHi=pctOf(yHi), span=Math.abs(pHi-pLo)||1;
+    const st=PCT_STEPS.find(s=>span/s<=8)||1000;
+    const k0=Math.floor(Math.min(pLo,pHi)/st), k1=Math.ceil(Math.max(pLo,pHi)/st);
+    ctx.strokeStyle=COL.grid; ctx.fillStyle=gridCol;
+    for(let k=k0;k<=k1;k++){
+      const pv=k*st; if(pv===0)continue;             // zero drawn separately
+      const gy=cr(Y(pctBase*(1+pv/100)));
+      if(gy<-1||gy>priceH+1)continue;
+      line(0,gy,plotW,gy);
+      ctx.fillText(labelPct(pv),plotW+9,gy);
+    }
+    const zy=cr(Y(pctBase));                         // the 0% baseline
+    if(zy>-1&&zy<priceH+1){
+      ctx.strokeStyle=baseDrag?'rgba(224,166,63,1)':'rgba(224,166,63,.75)';
+      ctx.setLineDash([6,4]); line(0,zy,plotW,zy); ctx.setLineDash([]);
+      ctx.font='500 9px '+MONO; ctx.fillStyle='rgba(224,166,63,.9)';
+      ctx.fillText(`0% · ${fmtP(pctBase)}${baseDrag?' · drag':''}`,6,zy-5);
+      ctx.fillStyle=COL.acc; rr(plotW+3,zy-8,32,16,4); ctx.fill();
+      ctx.fillStyle='#10131a'; ctx.font='600 9px '+MONO; ctx.textAlign='center';
+      ctx.fillText('0%',plotW+19,zy); ctx.textAlign='left';
+      ctx.font='10px '+MONO;
+    }
+  }else{
+    const range=yHi-yLo, raw=range/6;
+    const pow=Math.pow(10,Math.floor(Math.log10(raw)));
+    const step=(raw/pow<1.5?1:raw/pow<3.5?2:raw/pow<7.5?5:10)*pow;
+    ctx.strokeStyle=COL.grid; ctx.fillStyle=gridCol;
+    for(let i=Math.ceil(yLo/step);i*step<=yHi;i++){
+      const p=i*step, gy=cr(Y(p));
+      line(0,gy,plotW,gy);
+      ctx.fillText(p.toFixed(2),plotW+9,gy);
+    }
   }
 
   /* day separators + time labels */
@@ -1115,7 +1200,7 @@ function frame(now){
     ctx.fillText(t.text,plotW+3+(AXIS_W-7)/2,t.y);
   }
 
-  /* last traded price line + tag */
+  /* last traded price line + tag (reads % when percent axis is on) */
   const lp=bars[bars.length-1].c, ly=Y(lp);
   if(ly>-8&&ly<priceH+8){
     ctx.strokeStyle=COL.acc; ctx.globalAlpha=.55; ctx.setLineDash([3,4]); ctx.lineWidth=1;
@@ -1123,7 +1208,7 @@ function frame(now){
     ctx.fillStyle=COL.acc; rr(plotW+3,ly-9,AXIS_W-7,18,4); ctx.fill();
     ctx.fillStyle='#10131a'; ctx.font='600 10.5px '+MONO;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(fmtP(lp),plotW+3+(AXIS_W-7)/2,ly+0.5);
+    ctx.fillText((axPct&&pctBase)?labelPct(pctOf(lp)):fmtP(lp),plotW+3+(AXIS_W-7)/2,ly+0.5);
   }
 
   /* ----- indicator panes ----- */
@@ -1196,9 +1281,9 @@ function frame(now){
     line(sx,0,sx,plotH);
     if(mouse.y<=priceH){
       line(0,cr(mouse.y),plotW,cr(mouse.y));
-      const pv=clamp(yHi-(mouse.y/priceH)*(yHi-yLo),yLo,yHi);
+      const pv=clamp(priceAtY(mouse.y),Math.min(yLo,yHi),Math.max(yLo,yHi));
       ctx.font='500 10px '+MONO;
-      pill(plotW+3,mouse.y-9,AXIS_W-7,18,fmtP(pv));
+      pill(plotW+3,mouse.y-9,AXIS_W-7,18,(axPct&&pctBase)?labelPct(pctOf(pv)):fmtP(pv));
     }
     ctx.setLineDash([]);
     const txt=fmtHM(cgm), w=ctx.measureText(txt).width+14;
@@ -1210,7 +1295,7 @@ function frame(now){
   line(cr(plotW),0,cr(plotW),H); line(0,cr(plotH),W,cr(plotH));
 
   /* price-scale mode badge: AUTO ⇄ ×factor (click = restore auto) */
-  geo.badge={x:plotW+4,y:5,w:AXIS_W-8,h:15};
+  geo.badge={x:plotW+4,y:H-TIME_H-20,w:AXIS_W-8,h:15};
   ctx.font='600 8.5px '+MONO;
   const fac=pzR0/((mHi-mLo)||1);
   ctx.fillStyle=manual?'rgba(224,166,63,.14)':'rgba(255,255,255,.04)';
@@ -1218,7 +1303,7 @@ function frame(now){
   rr(geo.badge.x,geo.badge.y,geo.badge.w,geo.badge.h,4);ctx.fill();ctx.stroke();
   ctx.fillStyle=manual?COL.acc:'#5a626d';
   ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(manual?('×'+fac.toFixed(2)):'AUTO',geo.badge.x+geo.badge.w/2,geo.badge.y+8);
+  ctx.fillText(manual?('×'+fac.toFixed(2)+(axInv?' ↕':'')):'AUTO',geo.badge.x+geo.badge.w/2,geo.badge.y+8);
 
   /* legend (DOM) */
   const show=sb>=0?agg[sb]:agg[agg.length-1];
@@ -1230,13 +1315,14 @@ function frame(now){
   lgChg.textContent=(dC>=0?'+':'−')+Math.abs(dP).toFixed(2)+'%';
   lgV.textContent=fmtV(show.v);
   [lgO,lgH,lgL,lgC,lgChg,lgV].forEach(el=>el.style.color=cc);
+  const pctx=v=>(axPct&&pctBase)?` · <b class="${v>=pctBase?'u':'d'}">${labelPct(pctOf(v))}</b>`:'';
   let html;
   if(tf>1&&sb>=0){
     const ib=bars[gi], iu=ib.c>=ib.o?'u':'d';
-    html=`INNER 1m · <b>${fmtHM(gi)}</b> · O <b>${fmtP(ib.o)}</b> H <b class="${iu}">${fmtP(ib.h)}</b> L <b class="${iu}">${fmtP(ib.l)}</b> C <b class="${iu}">${fmtP(ib.c)}</b> · VOL <b>${fmtV(ib.v)}</b> · SHELL ${tf}m ${fmtHM(agg[sb].g0)}–${fmtEnd(agg[sb].g1)}`;
+    html=`INNER 1m · <b>${fmtHM(gi)}</b> · O <b>${fmtP(ib.o)}</b> H <b class="${iu}">${fmtP(ib.h)}</b> L <b class="${iu}">${fmtP(ib.l)}</b> C <b class="${iu}">${fmtP(ib.c)}</b> · VOL <b>${fmtV(ib.v)}</b>${pctx(ib.c)} · SHELL ${tf}m ${fmtHM(agg[sb].g0)}–${fmtEnd(agg[sb].g1)}`;
   }else if(sb>=0){
-    html=tf>1?`SHELL ${tf}m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g1)}</b> · ${tf} × 1m aggregated`
-             :`1m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g0+1)}</b>`;
+    html=tf>1?`SHELL ${tf}m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g1)}</b> · ${tf} × 1m aggregated${pctx(show.c)}`
+             :`1m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g0+1)}</b>${pctx(show.c)}`;
   }else{
     html=tf>1?`${tf}m view · hover any candle — legend reads the ${tf}m shell and the exact 1m minute inside it`
              :`drag to pan · wheel to zoom · keys 1 2 3 4 = timeframes · G ghost · SPACE pause`;
@@ -1247,6 +1333,7 @@ function frame(now){
 }
 
 /* ============================ boot ============================ */
+pctBase=prevCloseRef();                              // 0% defaults to previous close
 renderHeader(); updateAggInfo();
 requestAnimationFrame(frame);
 </script>
