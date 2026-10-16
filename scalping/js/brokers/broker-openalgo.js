@@ -46,7 +46,7 @@ BROKERS.openalgo={
   async placeOrder(cfg,o){
     const j=await this.call(cfg,'/api/v1/placeorder',{apikey:cfg.key,strategy:'scalpingtool',
       symbol:o.sym,exchange:o.exch,action:o.side>0?'BUY':'SELL',
-      pricetype:o.priceType,product:'MIS',quantity:o.qty,price:o.priceType==='LIMIT'?o.price:0});
+      pricetype:o.priceType,product:o.product||'MIS',quantity:o.qty,price:o.priceType==='LIMIT'?o.price:0});
     return {ok:true,orderId:j.orderid||j.data?.orderid||''};
   }
 };
