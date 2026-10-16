@@ -1,5 +1,6 @@
 'use strict';
 /* SIM broker — deterministic local feed. Also the default fills engine. */
+window.BROKERS=window.BROKERS||{};
 BROKERS.sim={
   id:'sim', label:'SIM',
   fields:[],
