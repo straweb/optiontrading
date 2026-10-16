@@ -14,7 +14,8 @@ let tool='cursor', pending=null, selId=null, drag=null, downPt=null;
 let drawings=[], uidC=1;
 const undoStack=[];
 let axisTags=[];
-
+/* compat globals for tools.js — re-pointed to the active/rendered pane each frame */
+var cv={style:{}}, ctx=null, W=0, H=0;
 on('#ovSeg','click',e=>{ const b=e.target.closest('button'); if(!b)return;
   if(b.dataset.o==='fvg'){fvgOn=!fvgOn;b.classList.toggle('on',fvgOn);}
   else{vwOn=!vwOn;b.classList.toggle('on',vwOn);} });
@@ -234,7 +235,10 @@ const lgTf=qs('#lgTf'),lgO=qs('#lgO'),lgH=qs('#lgH'),lgL=qs('#lgL'),lgC=qs('#lgC
 function frame(now){
   requestAnimationFrame(frame);
   panes.forEach(p=>{
-    const ctx=p.ctx; if(!ctx)return;
+    ctx=p.ctx; cv=p.cv; W=p.W||0; H=p.H||0;
+    if(!ctx)return;
+  // panes.forEach(p=>{
+  //   const ctx=p.ctx; if(!ctx)return;
     ctx.setTransform(p.dpr||1,0,0,p.dpr||1,0,0);
     ctx.fillStyle=COL.bg;ctx.fillRect(0,0,p.W,p.H);
     if(p.W<60||p.H<60)return;
@@ -268,6 +272,9 @@ function frame(now){
     const X=gm=>plotW-(v.r-gm)*sp;
     p.priceH=priceH;
     Object.assign(geo,{sp,plotW,priceH,X,Y,yLo:p.yLo,yHi:p.yHi});
+    p.geo={sp,plotW,priceH,X,Y,yLo:p.yLo,yHi:p.yHi};
+    // p.priceH=priceH;
+    // Object.assign(geo,{sp,plotW,priceH,X,Y,yLo:p.yLo,yHi:p.yHi});
     RD_BARS=src;
     const effGhost=p.ghost&&p.tf>1;
     const la=la0(sp);
