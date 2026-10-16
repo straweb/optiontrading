@@ -1,5 +1,6 @@
 'use strict';
 /* OpenAlgo broker — POST /api/v1/... */
+window.BROKERS=window.BROKERS||{};
 BROKERS.openalgo={
   id:'openalgo', label:'OPENALGO',
   fields:[
