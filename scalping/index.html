@@ -12,14 +12,17 @@
   <div class="brand"><div class="bolt">⚡</div>
     <div><div class="brandName">SCALPING TOOL</div><div class="brandSub">OPENALGO · MULTI-BROKER</div></div></div>
   <div class="vdiv"></div>
-  <div class="symLoad">
-    <input id="symIn" placeholder="exch:symbol · NSE:RELIANCE" spellcheck="false">
+  <div class="searchWrap">
+    <input id="symIn" placeholder="search NIFTY, RELIANCE, NFO:NIFTY… " spellcheck="false" autocomplete="off">
+    <div id="acDrop" hidden></div>
     <button class="btn acc" id="loadBtn">LOAD</button>
     <button class="btn" id="addWatchBtn">+ WATCH</button>
   </div>
   <div class="vdiv"></div>
   <div class="seg" id="instSeg">
-    <button data-i="spot" class="on">SPOT</button><button data-i="fut">FUT</button><button data-i="opt">OPT</button>
+    <button data-i="spot" class="on">EQ</button>
+    <button data-i="fut">FUT</button>
+    <button data-i="opt">OPT</button>
   </div>
   <select id="expSel" disabled></select>
   <div class="right">
@@ -37,22 +40,20 @@
   <aside id="watch">
     <div class="phead"><span>WATCHLIST</span><span class="cnt" id="wCnt">0</span></div>
     <div class="pbody" id="wBody"></div>
-    <div class="pnote">click to load into the active chart tab · LOAD → + WATCH</div>
+    <div class="pnote">click to load into the <b>active pane</b> · LOAD → + WATCH</div>
   </aside>
 
   <section id="chartcol">
     <div id="chartbar">
-      <div class="ctabs" id="ctabs"></div>
+      <select id="laySel" class="miniSel" style="height:26px;width:auto;padding:0 6px" title="split layout">
+        <option value="1">▦ 1</option><option value="2v" selected>◫ 2·V</option>
+        <option value="2h">▥ 2·H</option><option value="3">⟟ 3</option><option value="4">▦ 4</option>
+      </select>
       <div class="symTitle"><div class="s1" id="symName">—</div><div class="s2" id="symSub">—</div></div>
       <div class="ltpBox"><div class="ltp" id="ltp">—</div><div class="chg up" id="chg">—</div></div>
       <div class="seg" id="tfSeg">
         <button data-tf="1">1m</button><button data-tf="3">3m</button>
         <button data-tf="5" class="on">5m</button><button data-tf="15">15m</button>
-      </div>
-      <div class="ghostCtl" id="ghostCtl">
-        <span class="ctlLabel">1M GHOST</span>
-        <button class="toggle on" id="ghostToggle"></button>
-        <div class="seg mini" id="styleSeg"><button data-s="hollow" class="on">HOLLOW</button><button data-s="fade">FADE</button></div>
       </div>
       <div class="seg mini" id="ovSeg">
         <button data-o="fvg" class="on">FVG</button><button data-o="vw" class="on">V WICK</button>
@@ -79,26 +80,20 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4"/></svg></button>
       </div>
     </div>
-    <main id="wrap">
-      <canvas id="chart"></canvas>
-      <div id="tools"></div><div id="toolChip"></div>
-      <div id="axMenu" hidden>
-        <div class="mh">ADD ON SCALE</div>
-        <button data-act="buy"><span class="sw" style="background:var(--up)"></span>BUY MARKER</button>
-        <button data-act="sell"><span class="sw" style="background:var(--dn)"></span>SELL MARKER</button>
-        <button data-act="base"><span class="sw" style="background:var(--acc)"></span>SET 0 · BASELINE</button>
+
+    <div id="grid"></div>
+
+    <div id="paneBar">
+      <div class="paneTabs" id="paneTabs"></div>
+      <div class="right" style="margin-left:auto;display:flex;gap:8px">
+        <div class="ghostCtl" id="ghostCtl">
+          <span class="ctlLabel">1M GHOST</span>
+          <button class="toggle on" id="ghostToggle"></button>
+          <div class="seg mini" id="styleSeg"><button data-s="hollow" class="on">HOLLOW</button><button data-s="fade">FADE</button></div>
+        </div>
+        <button class="btn" id="paneAdd" style="height:24px">+ ADD</button>
       </div>
-      <input id="txtIn" type="text" maxlength="120" placeholder="Type · Enter to place" spellcheck="false">
-      <div id="wm"><div class="wm1" id="wm1">—</div><div class="wm2" id="wm2">—</div></div>
-      <div id="legend">
-        <div class="lgRow"><span class="chipTf" id="lgTf">5m</span>
-          <span class="k">O</span><span class="v" id="lgO">—</span><span class="k">H</span><span class="v" id="lgH">—</span>
-          <span class="k">L</span><span class="v" id="lgL">—</span><span class="k">C</span><span class="v" id="lgC">—</span>
-          <span class="k">Δ</span><span class="v" id="lgChg">—</span><span class="k">VOL</span><span class="v" id="lgV">—</span></div>
-        <div class="lgRow" id="lgRow2">—</div>
-      </div>
-      <button id="latestBtn">▶ LATEST</button>
-    </main>
+    </div>
   </section>
 
   <aside id="strikes">
@@ -126,37 +121,38 @@
         <div class="seg mini" id="bsSeg" style="flex:1.4"><button data-s="buyer" class="on">BUYER</button><button data-s="seller">SELLER</button></div>
       </div>
       <div class="crow"><input id="stIn" placeholder="custom strike" spellcheck="false"><button class="btn" id="stAdd" style="height:26px">ADD</button></div>
-      <div class="pnote">adds never touch the chart · click a strike / its LTP to open it · % sliders auto-normalize per side (CE total = 100%, PE total = 100%) · AUTO = LOTS/STRIKE from the bottom bar</div>
+      <div class="pnote">adds never touch the chart · click strike/LTP = open in <b>active pane</b> · % sliders auto-balance per side · AUTO = LOTS/STRIKE</div>
     </div>
   </aside>
 </div>
 
 <section id="bottom">
   <div id="botbar">
-    <div class="tabs"><button data-t="pos" class="on">POSITIONS</button><button data-t="trd">TRADE BOOK</button></div>
+    <div class="tabs">
+      <button data-t="pos" class="on">POSITIONS</button>
+      <button data-t="trd">TRADE BOOK</button>
+      <button data-t="sch">⏰ SCHEDULER</button>
+    </div>
     <div class="ticket">
       <span class="tsym" id="tkSym">—</span>
-      <span class="lotlbl" id="lotLbl">LOT</span>
-      <input id="tkQty" type="number" min="1" value="1" title="quantity in lots (or shares if no lot size)">
+      <span class="lotlbl" id="lotLbl">SH</span>
+      <input id="tkQty" type="number" min="1" value="1">
       <button class="btn buy" id="tkBuy">BUY</button>
       <button class="btn sell" id="tkSell">SELL</button>
       <div class="seg mini" id="ordType"><button data-o="MKT" class="on">MKT</button><button data-o="LMT">LMT</button></div>
-      <input id="ordPx" type="number" step="0.05" placeholder="limit" style="width:66px;display:none" title="limit price — empty = live">
-      <select id="prdSel" class="miniSel" title="product type">
-        <option value="MIS">MIS · intraday</option>
-        <option value="NRML">NRML · normal</option>
-        <option value="CNC">CNC · delivery</option>
+      <input id="ordPx" type="number" step="0.05" placeholder="limit" style="width:66px;display:none">
+      <select id="prdSel" class="miniSel" title="product">
+        <option value="MIS">MIS</option><option value="NRML">NRML</option><option value="CNC">CNC</option>
       </select>
-      <span class="lotlbl" title="AUTO rows deploy this many lots per strike">L/S</span>
-      <input id="defLots" type="number" min="1" value="1" style="width:44px" title="fixed lots per strike used by AUTO allocation">
+      <span class="lotlbl">L/S</span>
+      <input id="defLots" type="number" min="1" value="1" style="width:44px" title="AUTO rows: fixed lots per strike">
       <button class="btn" id="tkFlat">SQ-OFF ALL</button>
     </div>
     <div class="qwrap" style="margin-left:auto">
       <button class="qbtn g" id="qDCE">DEPLOY CE</button><button class="qbtn g" id="qDPE">DEPLOY PE</button>
-      <button class="qbtn a" id="qSCP">SWAP C→P</button><button class="qbtn a" id="qSPC">SWAP P→C</button>
+      <button class="qbtn a" id="qSW">SWAP</button>
       <button class="qbtn r" id="qCCE">CLOSE CE</button><button class="qbtn r" id="qCPE">CLOSE PE</button>
       <button class="qbtn r" id="qCA">CLOSE ALL</button>
-      <button class="qbtn a" id="qSched">⏰ SCHED <span id="schedCnt"></span></button>
       <button class="qbtn" id="qCXL">CANCEL</button>
       <button class="btn" id="botMin" style="height:24px">▾</button>
     </div>
@@ -168,24 +164,11 @@
     <table id="tblTrd" style="display:none"><thead><tr>
       <th>TIME</th><th>SYMBOL</th><th>SIDE</th><th>QTY</th><th>PRICE</th><th>P&amp;L</th><th></th>
     </tr></thead><tbody id="tbTrd"></tbody></table>
+    <table id="tblSch" style="display:none"><thead><tr>
+      <th>ON</th><th>ACTION</th><th>SYMBOL / TARGET</th><th>STATUS</th><th>ACTIONS</th>
+    </tr></thead><tbody id="tbSch"></tbody></table>
   </div>
 </section>
-
-<div id="schedPop" hidden>
-  <div class="sh">⏰ SCHEDULED ORDERS <span id="schedN"></span></div>
-  <div id="schedList" class="slist"></div>
-  <div class="crow" style="padding:6px 8px">
-    <select id="scAct" class="miniSel" style="flex:1.3;height:26px">
-      <option value="deployCE">DEPLOY CE</option><option value="deployPE">DEPLOY PE</option>
-      <option value="deployAtmCE">ATM CE</option><option value="deployAtmPE">ATM PE</option>
-      <option value="exitCE">EXIT CE</option><option value="exitPE">EXIT PE</option>
-      <option value="exitAll">EXIT ALL</option>
-    </select>
-    <input type="datetime-local" step="1" id="scAt" style="flex:1.6;height:26px;font-size:10px">
-    <button class="btn acc" id="scAdd" style="height:26px">ADD</button>
-  </div>
-  <div class="pnote" style="border:none">fires once at the set second (browser clock) · action runs against ☑-enabled strikes / current ATM</div>
-</div>
 
 <div class="modalBk" id="setModal">
   <div class="modal">
