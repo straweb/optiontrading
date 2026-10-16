@@ -252,3 +252,42 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .stask.done{opacity:.4}
 .stask .rm2{margin-left:auto;color:var(--faint)}
 .stask .rm2:hover{color:var(--dn)}
+
+/* search autocomplete */
+.searchWrap{position:relative;display:flex;gap:6px;align-items:center}
+.searchWrap input{width:220px;padding:6px 10px;font-size:11px}
+#acDrop{position:absolute;top:calc(100% + 4px);left:0;width:300px;max-height:260px;overflow-y:auto;background:#11141a;border:1px solid var(--line2);border-radius:10px;z-index:100;box-shadow:0 16px 40px rgba(0,0,0,.6)}
+.acRow{display:flex;align-items:center;gap:7px;padding:6px 10px;font:500 10.5px var(--mono);color:var(--dim);cursor:pointer}
+.acRow:hover,.acRow.hot{background:#1a2029;color:var(--ink)}
+.acRow .t{width:26px;text-align:center;font-size:8px;font-weight:600;border-radius:3px;padding:2px 0;flex:none}
+.acRow .t.INDEX{background:rgba(224,166,63,.16);color:var(--acc)}
+.acRow .t.EQ{background:rgba(95,176,216,.16);color:var(--api)}
+.acRow .t.FUT{background:rgba(180,140,224,.16);color:#b48ce0}
+.acRow .t.OPT{background:rgba(232,120,192,.16);color:#e878c0}
+.acRow small{margin-left:auto;color:var(--faint);font-size:8.5px}
+
+/* split layout grid */
+#grid{flex:1;display:grid;gap:2px;background:var(--line);min-height:0;padding:0}
+#grid.g1{grid-template-columns:1fr;grid-template-rows:1fr}
+#grid.g2v{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
+#grid.g2h{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+#grid.g3{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+#grid.g4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.paneBox{position:relative;background:var(--bg);min-width:0;min-height:0;display:flex;flex-direction:column}
+.paneBox .ph{position:absolute;top:4px;left:44px;z-index:4;display:flex;gap:4px;align-items:center;font:600 9px var(--mono);pointer-events:none}
+.paneBox .ph .pn{background:rgba(13,16,20,.85);border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--ink)}
+.paneBox .ph .pl{background:rgba(13,16,20,.85);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+.paneBox .ph .px{background:rgba(13,16,20,.85);border:1px solid var(--line);border-radius:6px;padding:2px 5px;color:var(--faint);cursor:pointer;pointer-events:auto}
+.paneBox .ph .px:hover{color:var(--dn)}
+.paneBox.activePane{box-shadow:inset 0 0 0 1.5px rgba(224,166,63,.55)}
+.paneBox canvas{flex:1;min-height:0}
+#paneBar{display:flex;align-items:center;gap:10px;padding:3px 10px;border-top:1px solid var(--line);background:var(--panel);flex:none;height:28px}
+.paneTabs{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none}
+.paneTabs::-webkit-scrollbar{display:none}
+.ptab{font:600 9px var(--mono);padding:3px 8px;border:1px solid var(--line2);border-radius:6px;color:var(--dim);white-space:nowrap;cursor:pointer}
+.ptab.on{color:var(--acc);border-color:rgba(224,166,63,.5);background:rgba(224,166,63,.08)}
+
+/* scheduler table */
+.stask td b{color:var(--ink)}
+.stask.pend td{color:var(--ink)}
+.schedIn{width:170px;height:24px;font-size:10px}
