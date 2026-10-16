@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAlgo · Composite Timeframe Chart</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0c0e11;
+            --panel: #11141a;
+            --line: #1d232c;
+            --line2: #262e39;
+            --ink: #d6dae0;
+            --dim: #79828d;
+            --faint: #4a525d;
+            --up: #2fbf7f;
+            --dn: #e5484d;
+            --acc: #e0a63f;
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'Archivo', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--sans);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            overscroll-behavior: none
+        }
+
+        button {
+            font: inherit;
+            color: inherit;
+            background: none;
+            border: none;
+            cursor: pointer
+        }
+
+        button:focus-visible {
+            outline: 1px solid var(--acc);
+            outline-offset: 2px
+        }
+
+        /* ---------- header ---------- */
+        header {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 10px 18px;
+            border-bottom: 1px solid var(--line);
+            flex-wrap: wrap
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px
+        }
+
+        .brandName {
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: .28em
+        }
+
+        .brandSub {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--faint);
+            letter-spacing: .14em;
+            margin-top: 2px
+        }
+
+        .vdiv {
+            width: 1px;
+            height: 30px;
+            background: var(--line)
+        }
+
+        .symName {
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: .04em
+        }
+
+        .symSub {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--faint);
+            letter-spacing: .12em;
+            margin-top: 2px
+        }
+
+        .ltpBox {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .ltp {
+            font-family: var(--mono);
+            font-size: 17px;
+            font-weight: 600;
+            transition: color .3s
+        }
+
+        .chg {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid;
+            white-space: nowrap
+        }
+
+        .chg.up {
+            color: var(--up);
+            border-color: rgba(47, 191, 127, .35);
+            background: rgba(47, 191, 127, .07)
+        }
+
+        .chg.dn {
+            color: var(--dn);
+            border-color: rgba(229, 72, 77, .35);
+            background: rgba(229, 72, 77, .07)
+        }
+
+        .seg {
+            display: flex;
+            border: 1px solid var(--line2);
+            border-radius: 9px;
+            overflow: hidden
+        }
+
+        .seg button {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            padding: 7px 14px;
+            color: var(--dim);
+            border-right: 1px solid var(--line);
+            letter-spacing: .03em;
+            transition: color .15s, background .15s
+        }
+
+        .seg button:last-child {
+            border-right: none
+        }
+
+        .seg button:hover {
+            color: var(--ink)
+        }
+
+        .seg button.on {
+            color: var(--acc);
+            background: rgba(224, 166, 63, .10)
+        }
+
+        .seg.mini button {
+            padding: 4px 9px;
+            font-size: 9.5px
+        }
+
+        .ghostCtl {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .ghostCtl.dis {
+            opacity: .32;
+            pointer-events: none
+        }
+
+        .ctlLabel {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--dim);
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .toggle {
+            width: 34px;
+            height: 18px;
+            border-radius: 9px;
+            background: #20262f;
+            border: 1px solid var(--line2);
+            position: relative;
+            transition: .18s;
+            flex: none
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--dim);
+            transition: .18s
+        }
+
+        .toggle.on {
+            background: rgba(224, 166, 63, .16);
+            border-color: rgba(224, 166, 63, .5)
+        }
+
+        .toggle.on::after {
+            left: 18px;
+            background: var(--acc)
+        }
+
+        .right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .live {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .12em;
+            color: var(--up)
+        }
+
+        .live .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: blink 1.4s ease-in-out infinite
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .25
+            }
+        }
+
+        .live.paused {
+            color: var(--dim)
+        }
+
+        .live.paused .dot {
+            animation: none;
+            opacity: .5
+        }
+
+        .iconBtn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--line2);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            color: var(--dim);
+            transition: .15s
+        }
+
+        .iconBtn:hover {
+            color: var(--ink);
+            border-color: #39424f
+        }
+
+        .iconBtn svg {
+            width: 14px;
+            height: 14px
+        }
+
+        /* ---------- chart ---------- */
+        main {
+            position: relative;
+            flex: 1;
+            min-height: 0
+        }
+
+        canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+            touch-action: none;
+            user-select: none
+        }
+
+        canvas.grabbing {
+            cursor: grabbing
+        }
+
+        #legend {
+            position: absolute;
+            top: 12px;
+            left: 14px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: calc(100% - 90px)
+        }
+
+        .lgRow {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-family: var(--mono);
+            font-size: 11px;
+            background: rgba(13, 16, 20, .74);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 6px 11px;
+            backdrop-filter: blur(6px);
+            width: max-content;
+            max-width: 100%;
+            flex-wrap: wrap
+        }
+
+        .lgRow .k {
+            color: var(--faint);
+            font-size: 9px;
+            letter-spacing: .06em
+        }
+
+        .lgRow .v {
+            color: var(--ink)
+        }
+
+        .chipTf {
+            font-size: 10px;
+            color: var(--acc);
+            border: 1px solid rgba(224, 166, 63, .45);
+            border-radius: 5px;
+            padding: 1px 7px;
+            letter-spacing: .08em
+        }
+
+        #lgRow2 {
+            color: var(--dim);
+            font-size: 10px;
+            letter-spacing: .02em
+        }
+
+        #lgRow2 b {
+            color: var(--ink);
+            font-weight: 500
+        }
+
+        #lgRow2 .u {
+            color: var(--up)
+        }
+
+        #lgRow2 .d {
+            color: var(--dn)
+        }
+
+        #wm {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-content: center;
+            text-align: center;
+            pointer-events: none;
+            user-select: none
+        }
+
+        #wm .wm1 {
+            font-weight: 800;
+            font-size: clamp(28px, 5vw, 48px);
+            letter-spacing: .34em;
+            color: rgba(255, 255, 255, .032);
+            padding-left: .34em
+        }
+
+        #wm .wm2 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .42em;
+            color: rgba(255, 255, 255, .05);
+            margin-top: 8px;
+            padding-left: .42em
+        }
+
+        #latestBtn {
+            position: absolute;
+            right: 86px;
+            bottom: 46px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .08em;
+            color: var(--acc);
+            background: rgba(17, 20, 26, .92);
+            border: 1px solid rgba(224, 166, 63, .5);
+            border-radius: 8px;
+            padding: 7px 12px;
+            opacity: 0;
+            transform: translateY(6px);
+            pointer-events: none;
+            transition: .25s
+        }
+
+        #latestBtn.show {
+            opacity: 1;
+            transform: none;
+            pointer-events: auto
+        }
+
+        #latestBtn:hover {
+            background: rgba(224, 166, 63, .12)
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 7px 18px;
+            border-top: 1px solid var(--line);
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--dim);
+            letter-spacing: .05em;
+            flex-wrap: wrap
+        }
+
+        footer .hints {
+            color: var(--faint)
+        }
+
+        footer .hints b {
+            color: var(--dim);
+            font-weight: 500
+        }
+
+        @media (max-width:920px) {
+
+            .brandSub,
+            .symSub,
+            .hints,
+            .vdiv.h2 {
+                display: none
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+                <line x1="4.5" y1="2" x2="4.5" y2="18" stroke="#2fbf7f" stroke-width="1.4" />
+                <rect x="2.5" y="7" width="4" height="6" fill="#2fbf7f" />
+                <line x1="10.5" y1="1" x2="10.5" y2="14" stroke="#e5484d" stroke-width="1.4" />
+                <rect x="8.5" y="4" width="4" height="6" fill="none" stroke="#e5484d" stroke-width="1.4" />
+                <line x1="16.5" y1="4" x2="16.5" y2="19" stroke="#2fbf7f" stroke-width="1.4" />
+                <rect x="14.5" y="9" width="4" height="6" fill="#2fbf7f" />
+            </svg>
+            <div>
+                <div class="brandName">OPENALGO</div>
+                <div class="brandSub">COMPOSITE CHART · SIM FEED</div>
+            </div>
+        </div>
+        <div class="vdiv"></div>
+        <div>
+            <div class="symName">RELIANCE</div>
+            <div class="symSub">NSE · EQ</div>
+        </div>
+        <div class="ltpBox">
+            <div class="ltp" id="ltp">—</div>
+            <div class="chg up" id="chg">—</div>
+        </div>
+
+        <div class="seg" id="tfSeg" role="tablist" aria-label="timeframe">
+            <button data-tf="1" title="1 minute (key 1)">1m</button>
+            <button data-tf="3" title="3 minutes, auto-aggregated (key 2)">3m</button>
+            <button data-tf="5" class="on" title="5 minutes, auto-aggregated (key 3)">5m</button>
+            <button data-tf="15" title="15 minutes, auto-aggregated (key 4)">15m</button>
+        </div>
+
+        <div class="ghostCtl" id="ghostCtl"
+            title="Show the 1-minute candles that built each aggregated candle, drawn hollow/faded behind it">
+            <span class="ctlLabel"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linejoin="round">
+                    <path d="M12 3l9 5-9 5-9-5z" />
+                    <path d="M3 13l9 5 9-5" opacity=".55" />
+                </svg>1M GHOST</span>
+            <button class="toggle on" id="ghostToggle" aria-pressed="true"
+                aria-label="toggle 1m ghost candles"></button>
+            <div class="seg mini" id="styleSeg">
+                <button data-s="hollow" class="on" title="outline only">HOLLOW</button>
+                <button data-s="fade" title="outline + transparent fill">FADE</button>
+            </div>
+        </div>
+
+        <div class="right">
+            <div class="live" id="live"><span class="dot"></span><span id="liveTxt">LIVE · ×10</span></div>
+            <button class="iconBtn" id="pauseBtn" title="pause / resume sim (space)">
+                <svg id="icPause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round">
+                    <path d="M9 5v14M15 5v14" />
+                </svg>
+                <svg id="icPlay" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+                    <path d="M8 5.5v13l11-6.5z" />
+                </svg>
+            </button>
+            <button class="iconBtn" id="resetBtn" title="reset view (R / double-click)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path
+                        d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main id="wrap">
+        <canvas id="chart"></canvas>
+        <div id="wm">
+            <div class="wm1">RELIANCE</div>
+            <div class="wm2" id="wm2">RELIANCE · 5m · SIM FEED</div>
+        </div>
+        <div id="legend">
+            <div class="lgRow">
+                <span class="chipTf" id="lgTf">5m</span>
+                <span class="k">O</span><span class="v" id="lgO">—</span>
+                <span class="k">H</span><span class="v" id="lgH">—</span>
+                <span class="k">L</span><span class="v" id="lgL">—</span>
+                <span class="k">C</span><span class="v" id="lgC">—</span>
+                <span class="k">Δ</span><span class="v" id="lgChg">—</span>
+                <span class="k">VOL</span><span class="v" id="lgV">—</span>
+            </div>
+            <div class="lgRow" id="lgRow2">—</div>
+        </div>
+        <button id="latestBtn"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round">
+                <path d="M9 5l7 7-7 7" />
+            </svg>LATEST</button>
+    </main>
+
+    <footer>
+        <div id="aggInfo">—</div>
+        <div class="hints"><b>DRAG</b> pan · <b>WHEEL</b> zoom · <b>1–4</b> timeframe · <b>G</b> ghost · <b>SPACE</b>
+            pause</div>
+    </footer>
+
+    <script>
+        'use strict';
+        /* ============================ utils ============================ */
+        const $ = s => document.querySelector(s);
+        const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const easeOut = t => 1 - Math.pow(1 - t, 3);
+        const cr = v => Math.round(v) + 0.5;                       // crisp 1px lines
+        function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296 } }
+        const rng = mulberry32(0xC0FFEE);
+        let gSpare = null;
+        function gauss() {
+            if (gSpare !== null) { const v = gSpare; gSpare = null; return v }
+            let u = 0, v = 0; while (u === 0) u = rng(); while (v === 0) v = rng();
+            const m = Math.sqrt(-2 * Math.log(u)), a = 2 * Math.PI * v;
+            gSpare = m * Math.sin(a); return m * Math.cos(a);
+        }
+
+        const fmtP = p => p.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fmtV = v => v >= 1e7 ? (v / 1e7).toFixed(2) + 'Cr' : v >= 1e5 ? (v / 1e5).toFixed(2) + 'L' : v >= 1e3 ? (v / 1e3).toFixed(1) + 'K' : '' + Math.round(v);
+
+        /* ============================ data ============================= */
+        /* Base series = 1-minute OHLCV. bars[] is dense: bars[gm], gm = global
+           session-minute index (day*375 + minuteSinceOpen). Everything else —
+           3m / 5m / 15m candles — is aggregated from this on the fly.        */
+        const SESSION = 375, OPEN_MIN = 555;                     // 09:15 → 15:30, 375 min
+        const COL = {
+            bg: '#0c0e11', grid: 'rgba(255,255,255,.045)', gridStrong: 'rgba(255,255,255,.11)',
+            ink: '#d6dae0', dim: '#79828d', up: '#2fbf7f', dn: '#e5484d', acc: '#e0a63f'
+        };
+        const AXIS_W = 64, TIME_H = 26;
+
+        let tf = 5, ghostOn = true, ghostStyle = 'hollow', paused = false;
+        const bars = [], dayLbl = [];
+        let price = 2847.55, liveDrift = 0;
+        let bornGM = -1, bornAt = 0;                             // new-bar bloom animation
+        let switchT0 = performance.now();                      // timeframe-switch bloom
+
+        const dates = []; const d0 = new Date();
+        while (dates.length < 3) { d0.setDate(d0.getDate() - 1); const w = d0.getDay(); if (w !== 0 && w !== 6) dates.push(new Date(d0)); }
+        dates.reverse();
+        const fmtDate = dt => dt.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase();
+        dates.forEach((dt, i) => { dayLbl.push(fmtDate(dt)); genDay(i); });
+        let lastDate = dates[dates.length - 1];
+        function nextDayLabel() { do { lastDate.setDate(lastDate.getDate() + 1); } while (lastDate.getDay() === 0 || lastDate.getDay() === 6); return fmtDate(lastDate); }
+
+        function genDay() {
+            price *= 1 + gauss() * 0.0011;                           // overnight gap
+            let regimeLeft = 0, drift = 0;
+            for (let m = 0; m < SESSION; m++) {
+                if (regimeLeft <= 0) { regimeLeft = 25 + (rng() * 45 | 0); drift = (rng() - 0.48) * 0.0009; if (rng() < 0.06) drift *= 4; }
+                const smile = 1 + 1.5 * Math.exp(-m / 45) + 1.05 * Math.exp(-(SESSION - m) / 55); // U-shaped intraday vol
+                const vol = 0.00042 * smile, va = price * vol;
+                const o = price, c = o * (1 + drift + gauss() * vol);
+                const h = Math.max(o, c) + va * (0.15 + rng() * 0.85);
+                const l = Math.min(o, c) - va * (0.15 + rng() * 0.85);
+                const v = Math.round(4600 * smile * (0.5 + rng()) * (1 + Math.abs(c - o) / (va || 1e-9) * 0.35));
+                bars.push({ o, h, l, c, v }); price = c;
+            }
+        }
+        const prevCloseRef = () => { const day = Math.floor((bars.length - 1) / 375); return day > 0 ? bars[day * 375 - 1].c : bars[0].o; };
+
+        /* -------- aggregation: 1m → 3m / 5m / 15m (auto) -------- */
+        let aggDirty = true; const aggCache = new Map();
+        function buildAgg(t) {
+            const arr = [], n = Math.ceil(bars.length / t);
+            for (let b = 0; b < n; b++) {
+                const g0 = b * t, g1 = Math.min(g0 + t, bars.length);
+                let h = -1e18, l = 1e18, v = 0;
+                for (let g = g0; g < g1; g++) { const x = bars[g]; if (x.h > h) h = x.h; if (x.l < l) l = x.l; v += x.v; }
+                arr.push({ g0, g1, o: bars[g0].o, h, l, c: bars[g1 - 1].c, v });
+            }
+            return arr;
+        }
+        function getAgg(t) { if (aggDirty) { aggCache.clear(); aggDirty = false; } if (!aggCache.has(t)) aggCache.set(t, buildAgg(t)); return aggCache.get(t); }
+
+        /* ============================ view ============================= */
+        /* The view is expressed in base-1m units, so switching timeframe keeps
+           the exact same time window — candles just re-granulate in place.   */
+        const view = { r: bars.length + 42, v: 260 };
+        let viewAnim = null;
+        function animateView(tr, tv) { viewAnim = { t0: performance.now(), dur: 520, fr: view.r, fv: view.v, tr, tv }; }
+        const clampR = r => { const hi = bars.length + 90; return clamp(r, Math.min(view.v - 30, hi), hi); };
+
+        const cv = $('#chart'), ctx = cv.getContext('2d');
+        let W = 0, H = 0, dpr = 1;
+        function resize() { dpr = window.devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+        new ResizeObserver(resize).observe($('#wrap')); resize();
+        const geo = { sp: 0, plotW: 1, plotH: 1, priceH: 1, volH: 1 };
+
+        let mouse = { x: 0, y: 0, in: false }, dragging = false, dragX = 0, dragR = 0;
+        cv.addEventListener('pointerdown', e => { e.preventDefault(); dragging = true; dragX = e.offsetX; dragR = view.r; viewAnim = null; cv.classList.add('grabbing'); cv.setPointerCapture(e.pointerId); });
+        cv.addEventListener('pointermove', e => {
+            mouse.x = e.offsetX; mouse.y = e.offsetY; mouse.in = true;
+            if (dragging) { view.r = clampR(dragR - (e.offsetX - dragX) / geo.sp); }
+        });
+        const endDrag = () => { dragging = false; cv.classList.remove('grabbing'); };
+        cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+        cv.addEventListener('pointerleave', () => { mouse.in = false; });
+        cv.addEventListener('wheel', e => {
+            e.preventDefault(); if (!geo.sp) return; viewAnim = null;
+            if (e.shiftKey) { view.r = clampR(view.r + (e.deltaY + e.deltaX) * 0.6 / geo.sp); return; }
+            const anchor = view.r - (geo.plotW - e.offsetX) / geo.sp;
+            const nv = clamp(view.v * Math.exp(e.deltaY * 0.0011), 40, 2400);
+            const nsp = geo.plotW / nv;
+            view.r = clampR(anchor + (geo.plotW - e.offsetX) / nsp); view.v = nv;
+        }, { passive: false });
+        cv.addEventListener('dblclick', () => animateView(bars.length + 42, 260));
+
+        /* ============================ DOM refs ============================ */
+        const ltpEl = $('#ltp'), chgEl = $('#chg'), liveEl = $('#live'), liveTxt = $('#liveTxt');
+        const lgTf = $('#lgTf'), lgO = $('#lgO'), lgH = $('#lgH'), lgL = $('#lgL'), lgC = $('#lgC'), lgChg = $('#lgChg'), lgV = $('#lgV'), lgRow2 = $('#lgRow2');
+        const wm2 = $('#wm2'), aggInfo = $('#aggInfo'), latestBtn = $('#latestBtn');
+        const tfSeg = $('#tfSeg'), ghostCtl = $('#ghostCtl'), ghostToggle = $('#ghostToggle'), styleSeg = $('#styleSeg');
+
+        function renderHeader() {
+            ltpEl.textContent = fmtP(price);
+            const pc = prevCloseRef(), d = price - pc;
+            chgEl.textContent = `${d >= 0 ? '+' : '−'}${fmtP(Math.abs(d))} · ${d >= 0 ? '+' : '−'}${Math.abs(d / pc * 100).toFixed(2)}%`;
+            chgEl.className = 'chg ' + (d >= 0 ? 'up' : 'dn');
+        }
+        let lastPrice = price, flashTO = null;
+        function flashHeader() {
+            renderHeader();
+            ltpEl.style.color = price >= lastPrice ? COL.up : COL.dn;
+            clearTimeout(flashTO); flashTO = setTimeout(() => ltpEl.style.color = '', 260);
+            lastPrice = price;
+        }
+        function updateAggInfo() {
+            aggInfo.textContent = `BASE 1m · ${bars.length.toLocaleString('en-IN')} bars · AUTO-AGG ×${tf} → ${getAgg(tf).length} candles · ${dayLbl.length} SESSIONS · 09:15–15:30 IST`;
+        }
+        function setTF(t) {
+            if (t === tf) return; tf = t; switchT0 = performance.now();
+            tfSeg.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.tf === t));
+            ghostCtl.classList.toggle('dis', t === 1);
+            wm2.textContent = `RELIANCE · ${t}m · SIM FEED`;
+            updateAggInfo();
+        }
+        tfSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => setTF(+b.dataset.tf)));
+        ghostToggle.addEventListener('click', () => {
+            ghostOn = !ghostOn; ghostToggle.classList.toggle('on', ghostOn);
+            ghostToggle.setAttribute('aria-pressed', ghostOn); switchT0 = performance.now();
+        });
+        styleSeg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+            ghostStyle = b.dataset.s; switchT0 = performance.now();
+            styleSeg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+        }));
+        $('#pauseBtn').addEventListener('click', () => {
+            paused = !paused;
+            $('#icPause').style.display = paused ? 'none' : 'block';
+            $('#icPlay').style.display = paused ? 'block' : 'none';
+            liveEl.classList.toggle('paused', paused);
+            liveTxt.textContent = paused ? 'PAUSED' : 'LIVE · ×10';
+        });
+        $('#resetBtn').addEventListener('click', () => animateView(bars.length + 42, 260));
+        latestBtn.addEventListener('click', () => animateView(bars.length + 42, 260));
+        addEventListener('keydown', e => {
+            if (e.key === '1') setTF(1); else if (e.key === '2') setTF(3);
+            else if (e.key === '3') setTF(5); else if (e.key === '4') setTF(15);
+            else if (e.key === 'g' || e.key === 'G') { if (tf > 1) ghostToggle.click(); }
+            else if (e.key === ' ') { e.preventDefault(); $('#pauseBtn').click(); }
+            else if (e.key === 'r' || e.key === 'R') animateView(bars.length + 42, 260);
+        });
+
+        /* ============================ live sim ============================ */
+        /* Virtual clock runs ×10: one 1m bar forms every ~5.9s, micro-ticks
+           every 280ms. Higher timeframes update automatically via re-aggregation. */
+        function tick() {
+            const b = bars[bars.length - 1], m = (bars.length - 1) % SESSION;
+            const smile = 1 + 1.2 * Math.exp(-m / 45) + 0.8 * Math.exp(-(SESSION - m) / 55);
+            const step = price * 0.00042 * smile * 0.36;
+            const nc = b.c + liveDrift * price * 0.3 + gauss() * step;
+            b.c = nc; if (nc > b.h) b.h = nc; if (nc < b.l) b.l = nc;
+            b.v += Math.round(50 + rng() * 180);
+            price = nc; aggDirty = true; flashHeader();
+        }
+        function newBar() {
+            const last = bars[bars.length - 1];
+            let o;
+            if (bars.length % SESSION === 0) {                       // session roll → next weekday
+                dayLbl.push(nextDayLabel());
+                o = last.c * (1 + gauss() * 0.0011);
+                liveDrift = (rng() - 0.48) * 0.0009;
+            } else {
+                if (rng() < 0.05) liveDrift = (rng() - 0.48) * 0.0011;
+                o = last.c;
+            }
+            bars.push({ o, h: o, l: o, c: o, v: Math.round(300 + rng() * 350) });
+            bornGM = bars.length - 1; bornAt = performance.now();
+            aggDirty = true; updateAggInfo();
+        }
+        let tickN = 0;
+        setInterval(() => { if (paused) return; tickN++; tick(); if (tickN % 21 === 0) newBar(); }, 280);
+
+        /* ============================ helpers ============================ */
+        const fmtHM = gm => {
+            const m = ((gm % SESSION) + SESSION) % SESSION, t = OPEN_MIN + m;
+            return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+        };
+        const fmtEnd = gm => gm % SESSION === 0 ? '15:30' : fmtHM(gm);   // exclusive bucket end
+        function line(x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+        function rr(x, y, w, h, r) {
+            r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+        }
+        function pill(x, y, w, h, txt) {
+            ctx.fillStyle = '#171c23'; ctx.strokeStyle = 'rgba(255,255,255,.16)';
+            rr(x, y, w, h, 4); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = COL.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(txt, x + w / 2, y + h / 2 + 0.5);
+        }
+        const MONO = '"IBM Plex Mono", monospace';
+
+        /* ============================ render loop ============================ */
+        let yLo = null, yHi = null, volMax = null, volMax1 = null;
+        function frame(now) {
+            requestAnimationFrame(frame);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.fillStyle = COL.bg; ctx.fillRect(0, 0, W, H);
+            if (W < 60 || H < 60) return;
+
+            const plotW = W - AXIS_W, plotH = H - TIME_H;
+            const volH = Math.max(30, plotH * 0.15), priceH = plotH - volH;
+            if (viewAnim) {
+                const p = Math.min(1, (now - viewAnim.t0) / viewAnim.dur), e = easeOut(p);
+                view.r = lerp(viewAnim.fr, viewAnim.tr, e); view.v = lerp(viewAnim.fv, viewAnim.tv, e);
+                if (p >= 1) viewAnim = null;
+            }
+            const sp = plotW / view.v;
+            geo.sp = sp; geo.plotW = plotW; geo.plotH = plotH; geo.priceH = priceH; geo.volH = volH;
+
+            const agg = getAgg(tf), leftGM = view.r - view.v;
+            const effGhost = ghostOn && tf > 1;
+
+            /* hover / snap */
+            const gmAt = view.r - (plotW - mouse.x) / sp;
+            const inPlot = mouse.in && !dragging && mouse.x >= 0 && mouse.x <= plotW && mouse.y >= 0 && mouse.y <= plotH;
+            const sb = inPlot ? clamp(Math.floor(gmAt / tf), 0, agg.length - 1) : -1;
+            const gi = (tf > 1 && sb >= 0) ? clamp(Math.floor(gmAt), 0, bars.length - 1) : -1;   // inner 1m minute under cursor
+
+            /* ghost-layer shared params (density fade, body width, bloom) */
+            const la = clamp((sp - 1.5) / 1.8, 0, 1);
+            const gw = Math.max(1.2, sp * 0.46);                    // 1m ghost body width
+            const bp = easeOut(clamp((now - switchT0) / 420, 0, 1));   // switch bloom
+
+            /* y autoscale from the 1m series (covers every ghost wick) */
+            const gA = Math.max(0, Math.floor(leftGM)), gB = Math.min(bars.length - 1, Math.ceil(view.r));
+            let lo = 1e18, hi = -1e18, vmax = 0, vmax1 = 0;
+            for (let g = gA; g <= gB; g++) { const x = bars[g]; if (x.l < lo) lo = x.l; if (x.h > hi) hi = x.h; if (effGhost && x.v > vmax1) vmax1 = x.v; }
+            const b0 = Math.max(0, Math.floor(leftGM / tf)), b1 = Math.min(agg.length - 1, Math.floor(view.r / tf));
+            for (let b = b0; b <= b1; b++) { if (agg[b].v > vmax) vmax = agg[b].v; }
+            const pad = (hi - lo) * 0.08 + price * 0.0003, tLo = lo - pad, tHi = hi + pad;
+            if (yLo === null) { yLo = tLo; yHi = tHi; volMax = vmax || 1; volMax1 = vmax1 || 1; }
+            else { yLo += (tLo - yLo) * 0.22; yHi += (tHi - yHi) * 0.22; volMax += ((vmax || 1) - volMax) * 0.22; volMax1 += ((vmax1 || 1) - volMax1) * 0.22; }
+            const Y = p => (1 - (p - yLo) / (yHi - yLo)) * priceH;
+            const X = gm => plotW - (view.r - gm) * sp;
+
+            /* axis strips */
+            ctx.fillStyle = 'rgba(255,255,255,.014)';
+            ctx.fillRect(plotW, 0, AXIS_W, plotH); ctx.fillRect(0, plotH, W, TIME_H);
+
+            /* price grid + labels */
+            const range = yHi - yLo, raw = range / 6;
+            const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+            const step = (raw / pow < 1.5 ? 1 : raw / pow < 3.5 ? 2 : raw / pow < 7.5 ? 5 : 10) * pow;
+            ctx.font = '10px ' + MONO; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.strokeStyle = COL.grid; ctx.lineWidth = 1; ctx.fillStyle = COL.dim;
+            for (let i = Math.ceil(yLo / step); i * step <= yHi; i++) {
+                const p = i * step, gy = cr(Y(p));
+                line(0, gy, plotW, gy);
+                ctx.fillText(p.toFixed(2), plotW + 9, gy);
+            }
+
+            /* day separators + time labels */
+            const dayXs = [];
+            for (let d = Math.max(0, Math.ceil(leftGM / SESSION)); d * SESSION < bars.length && d * SESSION <= view.r; d++)
+                dayXs.push({ gm: d * SESSION, xi: X(d * SESSION), d });
+            let stepT = [5, 10, 15, 30, 60, 120, 240, 480].find(s => s * sp >= 64) || 480;
+            ctx.textAlign = 'center';
+            for (let gmT = Math.max(0, Math.ceil(leftGM / stepT) * stepT); gmT <= view.r; gmT += stepT) {
+                if (gmT >= bars.length) break;
+                const xi = X(gmT);
+                if (dayXs.some(o => Math.abs(o.xi - xi) < 30)) continue;
+                ctx.strokeStyle = COL.grid; line(cr(xi), 0, cr(xi), plotH);
+                ctx.fillStyle = COL.dim; ctx.fillText(fmtHM(gmT), xi, plotH + TIME_H / 2 + 1);
+            }
+            for (const o of dayXs) {
+                ctx.strokeStyle = COL.gridStrong; line(cr(o.xi), 0, cr(o.xi), plotH);
+                if (dayLbl[o.d]) {
+                    ctx.fillStyle = '#9aa3ae'; ctx.font = '600 10px ' + MONO; ctx.textAlign = 'left';
+                    ctx.fillText(dayLbl[o.d], o.xi + 5, plotH + TIME_H / 2 + 1); ctx.textAlign = 'center';
+                }
+            }
+
+            /* ----- volume pane -----
+               Ghost mode → 1m-resolution bars, each centered under its own ghost
+               candle (same x, same body width), normalized to the 1m volume max.
+               Zoomed out past the ghost density threshold → cross-fades back to
+               aggregate (shell) volume bars so the pane is never empty.          */
+            const ghostVol = effGhost && la > 0.02;
+            const aggA = ghostVol ? 0.22 * (1 - la) : 0.22;
+            if (aggA > 0.012) {
+                ctx.globalAlpha = aggA;
+                for (let b = b0; b <= b1; b++) {
+                    const k = agg[b], x0 = X(k.g0), x1 = X(k.g1), ins = (x1 - x0) * 0.17;
+                    const w = Math.max(1, (x1 - x0) * 0.66), vh = Math.max(1, k.v / volMax * (volH - 8));
+                    ctx.fillStyle = k.c >= k.o ? COL.up : COL.dn;
+                    ctx.fillRect(x0 + ins, plotH - vh, w, vh);
+                }
+            }
+            if (ghostVol) {
+                for (let b = b0; b <= b1; b++) {
+                    const e0 = agg[b].g0;
+                    for (let g = Math.max(gA, e0), ge = Math.min(gB, agg[b].g1 - 1); g <= ge; g++) {
+                        const bar = bars[g], cx = X(g + 0.5);
+                        if (cx < -4 || cx > plotW + 4) continue;
+                        const cascade = clamp((now - switchT0 - (g - e0) * 16) / 200, 0, 1) * bp;
+                        const a = (g === gi ? 0.85 : 0.38) * la * cascade; if (a <= 0.015) continue;
+                        const vh = Math.max(1, bar.v / volMax1 * (volH - 8));
+                        ctx.globalAlpha = a; ctx.fillStyle = bar.c >= bar.o ? COL.up : COL.dn;
+                        ctx.fillRect(cx - gw / 2, plotH - vh, gw, vh);
+                    }
+                }
+            }
+            ctx.globalAlpha = 1;
+
+            /* ----- 1m GHOST layer: hollow / transparent candles behind shells -----
+               Wick is drawn ONLY outside the body: high→body-top and body-bottom→low. */
+            if (effGhost && la > 0.02) {
+                for (let b = b0; b <= b1; b++) {
+                    const emph = (b === sb);
+                    for (let g = Math.max(gA, agg[b].g0), e0 = agg[b].g0; g <= Math.min(gB, agg[b].g1 - 1); g++) {
+                        const bar = bars[g], cx = X(g + 0.5);
+                        if (cx < -6 || cx > plotW + 6) continue;
+                        const up = bar.c >= bar.o, col = up ? COL.up : COL.dn;
+                        const cascade = clamp((now - switchT0 - (g - e0) * 16) / 200, 0, 1) * bp; // staggered fill-in
+                        const isInner = (g === gi);
+                        const a = (isInner ? 1 : emph ? 0.85 : 0.62) * la * cascade; if (a <= 0.015) continue;
+                        const yH = Y(bar.h), yL = Y(bar.l), yO = Y(bar.o), yC = Y(bar.c);
+                        const top = Math.min(yO, yC), bot = Math.max(yO, yC), bh = Math.max(1, bot - top);
+                        ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.fillStyle = col;
+                        ctx.lineWidth = isInner ? 1.8 : emph ? 1.4 : 1;
+                        if (gw >= 2.6) {
+                            if (top - yH > 0.3) line(cr(cx), yH, cr(cx), top + 0.5);   // upper wick stub
+                            if (yL - bot > 0.3) line(cr(cx), bot - 0.5, cr(cx), yL);   // lower wick stub
+                            if (ghostStyle === 'fade') { ctx.globalAlpha = a * 0.16; ctx.fillRect(cx - gw / 2, top, gw, bh); ctx.globalAlpha = a; }
+                            ctx.strokeRect(cx - gw / 2, top, gw, bh);               // HOLLOW body
+                        } else ctx.fillRect(cx - gw / 2, top, gw, bh);             // too small → solid tick
+                    }
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            /* ----- main timeframe candles (shell mode when ghost is on) ----- */
+            for (let b = b0; b <= b1; b++) {
+                const k = agg[b];
+                const born = (bornGM >= 0 && b === Math.floor(bornGM / tf)) ? easeOut(clamp((now - bornAt) / 380, 0, 1)) : 1;
+                const e = clamp(bp * born, 0, 1);                      // bloom from close line
+                const oV = lerp(k.c, k.o, e), hV = lerp(k.c, k.h, e), lV = lerp(k.c, k.l, e);
+                const up = k.c >= k.o, col = up ? COL.up : COL.dn;
+                const x0 = X(k.g0), x1 = X(k.g1), ins = (x1 - x0) * 0.17;
+                const bx = x0 + ins, bw = Math.max(1, (x1 - x0) * 0.66), cx = (x0 + x1) / 2;
+                const emph = effGhost && b === sb;
+                const yHv = Y(hV), yLv = Y(lV);
+                const top = Y(Math.max(oV, k.c)), yBo = Y(Math.min(oV, k.c)), bh = Math.max(1, yBo - top);
+                ctx.strokeStyle = col; ctx.fillStyle = col;
+                ctx.lineWidth = 1; ctx.globalAlpha = effGhost ? (emph ? 1 : 0.85) : 1;
+                if (bw < 2.6) {
+                    line(cr(cx), yHv, cr(cx), yLv);                   // full wick (solid micro-tick)
+                    ctx.globalAlpha = effGhost ? 0.9 : 1; ctx.lineWidth = Math.max(2, bw);
+                    line(cr(cx), top, cr(cx), top + bh);
+                } else if (effGhost) {                              // SHELL: wick outside body only
+                    if (top - yHv > 0.3) line(cr(cx), yHv, cr(cx), top + 0.5);       // upper wick stub
+                    if (yLv - yBo > 0.3) line(cr(cx), yBo - 0.5, cr(cx), yLv);       // lower wick stub
+                    ctx.globalAlpha = emph ? 0.34 : 0.17; ctx.fillRect(bx, top, bw, bh);
+                    ctx.globalAlpha = emph ? 1 : 0.9; ctx.lineWidth = emph ? 2 : 1.5;
+                    ctx.strokeRect(bx, top, bw, bh);
+                } else {
+                    ctx.globalAlpha = 1;
+                    line(cr(cx), yHv, cr(cx), yLv);                   // SOLID candle: full wick,
+                    ctx.fillRect(bx, top, bw, bh);                    // interior hidden by fill
+                }
+            }
+            ctx.globalAlpha = 1;
+
+            /* parent ring while inspecting a shell */
+            if (tf > 1 && sb >= 0 && agg[sb] && agg[sb].g0 < bars.length) {
+                const k = agg[sb], x0 = X(k.g0), x1 = X(k.g1), ins = (x1 - x0) * 0.17;
+                ctx.strokeStyle = COL.acc; ctx.lineWidth = 1.4; ctx.globalAlpha = .9;
+                rr(x0 + ins - 5, Y(k.h) - 5, (x1 - x0 - 2 * ins) + 10, (Y(k.l) - Y(k.h)) + 10, 6); ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+
+            /* 1m inspect marker when ghosts are hidden: accent band + hollow candle
+               so you can see exactly which minute the legend is reading */
+            if (tf > 1 && sb >= 0 && !effGhost && gi >= 0) {
+                const ib = bars[gi], cxm = X(gi + 0.5);
+                ctx.fillStyle = 'rgba(224,166,63,.055)'; ctx.fillRect(X(gi), 0, sp, plotH);
+                const yH = Y(ib.h), yL = Y(ib.l), yO = Y(ib.o), yC = Y(ib.c);
+                const t2 = Math.min(yO, yC), b2 = Math.max(yO, yC);
+                const wb = Math.max(3, Math.min(gw * 1.3, sp * 0.7));
+                ctx.strokeStyle = COL.acc; ctx.globalAlpha = .95; ctx.lineWidth = 1.5;
+                if (t2 - yH > 0.3) line(cr(cxm), yH, cr(cxm), t2 + 0.5);
+                if (yL - b2 > 0.3) line(cr(cxm), b2 - 0.5, cr(cxm), yL);
+                ctx.strokeRect(cxm - wb / 2, t2, wb, Math.max(1, b2 - t2));
+                ctx.globalAlpha = 1;
+            }
+
+            /* last traded price line + tag */
+            const lp = bars[bars.length - 1].c, ly = Y(lp);
+            if (ly > -8 && ly < priceH + 8) {
+                ctx.strokeStyle = COL.acc; ctx.globalAlpha = .55; ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
+                line(0, cr(ly), plotW, cr(ly)); ctx.setLineDash([]); ctx.globalAlpha = 1;
+                ctx.fillStyle = COL.acc; rr(plotW + 3, ly - 9, AXIS_W - 7, 18, 4); ctx.fill();
+                ctx.fillStyle = '#10131a'; ctx.font = '600 10.5px ' + MONO;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(fmtP(lp), plotW + 3 + (AXIS_W - 7) / 2, ly + 0.5);
+            }
+
+            /* crosshair — vertical line snaps to the inner 1m minute (tf>1),
+               so the time tag names the exact minute being read */
+            if (inPlot && sb >= 0) {
+                const cgm = tf > 1 ? gi : agg[sb].g0;
+                const sx = cr(X(cgm + 0.5));
+                ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+                line(sx, 0, sx, plotH);
+                const my = Math.min(mouse.y, plotH); line(0, cr(my), plotW, cr(my));
+                ctx.setLineDash([]);
+                const pv = clamp(yHi - (my / priceH) * (yHi - yLo), yLo, yHi);
+                ctx.font = '500 10px ' + MONO;
+                pill(plotW + 3, Math.min(mouse.y, priceH) - 9, AXIS_W - 7, 18, fmtP(pv));
+                const txt = fmtHM(cgm), w = ctx.measureText(txt).width + 14;
+                pill(clamp(X(cgm + 0.5) - w / 2, 2, plotW - w - 2), plotH + 4, w, TIME_H - 8, txt);
+            }
+
+            /* axis separators */
+            ctx.strokeStyle = '#20262f'; ctx.lineWidth = 1;
+            line(cr(plotW), 0, cr(plotW), H); line(0, cr(plotH), W, cr(plotH));
+
+            /* legend (DOM) — top row: hovered shell · bottom row: inner 1m minute */
+            const show = sb >= 0 ? agg[sb] : agg[agg.length - 1];
+            const up = show.c >= show.o, cc = up ? COL.up : COL.dn;
+            const prev = sb > 0 ? agg[sb - 1].c : show.o, dC = show.c - prev, dP = prev ? dC / prev * 100 : 0;
+            lgTf.textContent = tf + 'm';
+            lgO.textContent = fmtP(show.o); lgH.textContent = fmtP(show.h);
+            lgL.textContent = fmtP(show.l); lgC.textContent = fmtP(show.c);
+            lgChg.textContent = (dC >= 0 ? '+' : '−') + Math.abs(dP).toFixed(2) + '%';
+            lgV.textContent = fmtV(show.v);
+            [lgO, lgH, lgL, lgC, lgChg, lgV].forEach(el => el.style.color = cc);
+            let html;
+            if (tf > 1 && sb >= 0) {
+                const ib = bars[gi], iu = ib.c >= ib.o ? 'u' : 'd';
+                html = `INNER 1m · <b>${fmtHM(gi)}</b> · O <b>${fmtP(ib.o)}</b> H <b class="${iu}">${fmtP(ib.h)}</b> L <b class="${iu}">${fmtP(ib.l)}</b> C <b class="${iu}">${fmtP(ib.c)}</b> · VOL <b>${fmtV(ib.v)}</b> · SHELL ${tf}m ${fmtHM(agg[sb].g0)}–${fmtEnd(agg[sb].g1)}`;
+            } else if (sb >= 0) {
+                html = tf > 1 ? `SHELL ${tf}m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g1)}</b> · ${tf} × 1m aggregated`
+                    : `1m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g0 + 1)}</b>`;
+            } else {
+                html = tf > 1 ? `${tf}m view · hover any candle — legend reads the ${tf}m shell and the exact 1m minute inside it`
+                    : `drag to pan · wheel to zoom · keys 1 2 3 4 = timeframes · G ghost · SPACE pause`;
+            }
+            if (lgRow2.dataset.h !== html) { lgRow2.innerHTML = html; lgRow2.dataset.h = html; }
+
+            latestBtn.classList.toggle('show', view.r < bars.length - 2);
+        }
+
+        /* ============================ boot ============================ */
+        renderHeader(); updateAggInfo();
+        requestAnimationFrame(frame);
+    </script>
+</body>
+
+</html>
