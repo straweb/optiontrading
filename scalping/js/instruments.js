@@ -40,14 +40,20 @@ function basePriceOf(sym){ if(IDX[sym])return IDX[sym]; if(EQP[sym])return EQP[s
   return 300+(hash('NSE:'+sym)%4700); }
 function strikeStep(root,spot){ if(IDX[root])return({NIFTY:50,BANKNIFTY:100,FINNIFTY:50,MIDCPNIFTY:25,SENSEX:100})[root]||50;
   return spot>4000?100:spot>1500?50:spot>500?20:spot>200?10:5; }
-const expFmts=[];
+/* expiries: 4 weekly(ish) Thursdays + 2 monthlies */
+const expAll=[];
 (function(){ const d=new Date(); const wk=[];
-  while(wk.length<3){d.setDate(d.getDate()+1);if(d.getDay()===4)wk.push(new Date(d));}
-  const last=new Date(d.getFullYear(),d.getMonth(),0);
-  while(last.getDay()!==4)last.setDate(last.getDate()-1);
-  if(last>wk[2])wk.push(last); else{const n=new Date(d.getFullYear(),d.getMonth()+1,0);while(n.getDay()!==4)n.setDate(n.getDate()-1);wk.push(n);}
-  wk.forEach(dt=>expFmts.push(String(dt.getDate()).padStart(2,'0')+MONTHS[dt.getMonth()]+String(dt.getFullYear()).slice(2)));
-})();
+  while(wk.length<4){d.setDate(d.getDate()+1);if(d.getDay()===4)wk.push(new Date(d));}
+  wk.forEach(dt=>{ const f=String(dt.getDate()).padStart(2,'0')+MONTHS[dt.getMonth()]+String(dt.getFullYear()).slice(2);
+    expAll.push({f,date:dt,kind:'weekly'}); });
+  for(let mi=0;mi<2;mi++){
+    const m=new Date(d.getFullYear(),d.getMonth()+mi+1,0);
+    while(m.getDay()!==4)m.setDate(m.getDate()-1);
+    const f=String(m.getDate()).padStart(2,'0')+MONTHS[m.getMonth()]+String(m.getFullYear()).slice(2);
+    if(!expAll.some(e=>e.f===f))expAll.push({f,date:m,kind:'monthly'}); } })();
+expAll.sort((a,b)=>a.date-b.date);
+function nextWeekly(root){ return expAll.find(e=>e.kind==='weekly')||expAll[0]; }
+function nextMonthly(root){ return [...expAll].reverse().find(e=>e.kind==='monthly')||expAll[expAll.length-1]; }
 function tym(f){ const dd=String(f).match(/^(\d{2})([A-Z]{3})(\d{2})$/); if(!dd)return 2/365;
   const dt=new Date(2000+ +dd[3],MONTHS.indexOf(dd[2]),+dd[1],15,30);
   return Math.max(0.4,(dt-Date.now())/864e5)/365; }
@@ -59,7 +65,7 @@ function ncdf(x){const t=1/(1+.2316419*Math.abs(x));const d=.3989423*Math.exp(-x
 function bs(S,K,T,iv,isCall){ if(T<=0)T=1/(365*8); const r=.065,sq=iv*Math.sqrt(T);
   const d1=(Math.log(S/K)+(r+iv*iv/2)*T)/sq,d2=d1-sq,disc=Math.exp(-r*T);
   return Math.max(.05,isCall?S*ncdf(d1)-K*disc*ncdf(d2):K*disc*ncdf(-d2)-S*ncdf(-d1)); }
-function mapApiRows(rows){
+function mapApiRows(rows){ /* unchanged from previous version */
   const days=[],dayIdx=new Map();
   for(const r of rows){ const t=(+r.timestamp>1e12?+r.timestamp:+r.timestamp*1000);
     const dk=new Date(t).toDateString();
@@ -74,8 +80,7 @@ function mapApiRows(rows){
     if(!ex)map.set(gm,{o,h,l,c,v});
     else{ex.h=Math.max(ex.h,h);ex.l=Math.min(ex.l,l);ex.c=c;ex.v+=v;} }
   const bars=[...map.entries()].sort((a,b)=>a[0]-b[0]).map(e=>e[1]);
-  return {bars,dayLbl:days.map(fmtDate)};
-}
+  return {bars,dayLbl:days.map(fmtDate)}; }
 
 const metaCache=new Map();
 function resolveMeta(key){
@@ -86,16 +91,15 @@ function resolveMeta(key){
   const fm=sym.match(/^([A-Z]+?)(\d{2}[A-Z]{3}\d{2})FUT$/);
   if(um){ const root=um[1];
     Object.assign(m,{type:'OPT',root,underlying:'NSE:'+root,exp:um[2],strike:+um[3],optSide:um[4]});
-    const ei=expFmts.indexOf(um[2]);
-    m.iv=((IDX[root]?0.13:0.22)+(ei<=0?0:0.01*ei));
+    m.iv=((IDX[root]?0.13:0.22)+(expAll.findIndex(e=>e.f===um[2])<=0?0:0.01));
     m.basePrice=bs(basePriceOf(root),m.strike,tym(um[2]),m.iv,um[4]==='CE');
     m.disp=`${root} ${m.strike} ${um[4]}`;
   }else if(fm){ const root=fm[1];
     Object.assign(m,{type:'FUT',root,underlying:'NSE:'+root,exp:fm[2]});
-    m.basePrice=basePriceOf(root)*(1+0.0006*(expFmts.indexOf(fm[2])+1)); m.disp=`${root} FUT`; }
+    m.basePrice=basePriceOf(root)*(1+0.0006*(expAll.findIndex(e=>e.f===fm[2])+1));
+    m.disp=`${root} FUT`; }
   else{ m.type=IDX[sym]?'INDEX':'EQ'; m.basePrice=basePriceOf(sym); }
-  metaCache.set(key,m); return m;
-}
+  metaCache.set(key,m); return m; }
 const disp=key=>{try{return resolveMeta(key).disp}catch(e){return key}};
 const quotes=new Map();
 function liveSpot(root){ const q=quotes.get('NSE:'+root); return q?q.ltp:basePriceOf(root); }
@@ -114,28 +118,68 @@ function genSeries(key){
     let regimeLeft=0,drift=0;
     for(let mi=0;mi<SESSION;mi++){
       if(regimeLeft<=0){regimeLeft=25+(r()*45|0);drift=(r()-.48)*0.0009;if(r()<0.06)drift*=4;}
-      const smile=1+1.5*Math.exp(-mi/45)+1.05*Math.exp(-(SESSION-mi)/55);
+      const smile=1+1.2*Math.exp(-mi/45)+0.8*Math.exp(-(SESSION-mi)/55);
       const vol=volBase*smile,va=p*vol;
       const o=p,c=o*(1+drift+g()*vol);
       const h=Math.max(o,c)+va*(0.15+r()*0.85);
       const l=Math.min(o,c)-va*(0.15+r()*0.85);
       const v=Math.round((m.type==='INDEX'?9000:5200)*smile*(0.5+r())*(1+Math.abs(c-o)/(va||1e-9)*0.35));
-      out.bars.push({o,h,l,c,v});p=c;
-    }
-  }
+      out.bars.push({o,h,l,c,v});p=c; } }
   const k=m.basePrice/out.bars[out.bars.length-1].c;
   for(const b of out.bars){b.o*=k;b.h*=k;b.l*=k;b.c*=k;}
   out.price=m.basePrice; out.prevClose=out.bars[SESSION*2-1].c;
-  return out;
-}
+  return out; }
 function symbolData(key){
   if(dataCache.has(key))return dataCache.get(key);
-  const sd=genSeries(key); dataCache.set(key,sd); return sd;
-}
+  const sd=genSeries(key); dataCache.set(key,sd); return sd; }
 function ensureQuote(key){
   if(quotes.has(key))return quotes.get(key);
   const sd=symbolData(key);
   const q={ltp:sd.price,prevClose:sd.prevClose};
-  quotes.set(key,q); return q;
-}
-const BROKERS={};                                    // broker registry
+  quotes.set(key,q); return q; }
+const BROKERS={};
+
+/* ---------- quick search autocomplete ---------- */
+function acCandidates(qRaw){
+  const q=qRaw.trim().toUpperCase();
+  if(!q)return [];
+  let exch=null,term=q;
+  const ci=q.indexOf(':');
+  if(ci>0){exch=q.slice(0,ci);term=q.slice(ci+1);}
+  const out=[];
+  const push=(key,tag,extra)=>{ if(out.length<12&&!out.some(o=>o.key===key))out.push({key,tag,extra}); };
+  const roots=[...Object.keys(IDX),...Object.keys(EQP)];
+  if(!term){ roots.slice(0,8).forEach(s=>push('NSE:'+s,IDX[s]?'INDEX':'EQ','')); return out; }
+  for(const s of roots) if(s.includes(term)) push('NSE:'+s,IDX[s]?'INDEX':'EQ','');
+  if(exch==='NFO'||!exch){
+    for(const s of Object.keys(IDX)){
+      for(const e of expAll.slice(0,3)){
+        if((s+e.f).includes(term)||term===s) push(`NFO:${s}${e.f}FUT`,'FUT',e.f);
+        if(term.replace(/\d/g,'').includes(s)||term===s){
+          const spot=basePriceOf(s), st=strikeStep(s,spot);
+          const atm=Math.round(spot/st)*st;
+          push(`NFO:${s}${e.f}${atm}CE`,'OPT',e.f);
+          push(`NFO:${s}${e.f}${atm}PE`,'OPT',e.f); } } } }
+  return out; }
+function wireAutocomplete(inp,drop,onPick){
+  let hot=-1, items=[];
+  const close=()=>{drop.hidden=true;items=[];hot=-1;};
+  const render=()=>{
+    items=acCandidates(inp.value);
+    if(!items.length){close();return;}
+    drop.innerHTML=items.map((o,i)=>`
+      <div class="acRow${i===hot?' hot':''}" data-k="${o.key}">
+        <span class="t ${o.tag}">${o.tag}</span><span>${o.key}</span><small>${o.extra||''}</small></div>`).join('');
+    drop.hidden=false; };
+  inp.addEventListener('input',()=>{hot=-1;render();});
+  inp.addEventListener('focus',()=>render());
+  inp.addEventListener('keydown',e=>{
+    if(drop.hidden)return;
+    if(e.key==='ArrowDown'){e.preventDefault();hot=Math.min(items.length-1,hot+1);render();}
+    else if(e.key==='ArrowUp'){e.preventDefault();hot=Math.max(0,hot-1);render();}
+    else if(e.key==='Enter'&&hot>=0){e.preventDefault();inp.value=items[hot].key;onPick(items[hot].key);close();}
+    else if(e.key==='Escape')close(); });
+  drop.addEventListener('mousedown',e=>{
+    const r=e.target.closest('.acRow'); if(!r)return;
+    inp.value=r.dataset.k; onPick(r.dataset.k); close(); });
+  document.addEventListener('click',e=>{ if(!drop.contains(e.target)&&e.target!==inp)close(); }); }
