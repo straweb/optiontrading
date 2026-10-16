@@ -49,7 +49,8 @@ function buildLayout(n){
   for(let i=0;i<n*n;i++){
     const prev=old[i];
     const box=document.createElement('div');box.className='paneBox';
-    box.innerHTML=`<div class="ph"><span class="pn">—</span><span class="pl">—</span><span class="px" title="clear pane">✕</span></div><canvas></canvas>`;
+    // box.innerHTML=`<div class="ph"><span class="pn">—</span><span class="pl">—</span><span class="px" title="clear pane">✕</span></div><canvas></canvas>`;
+    box.innerHTML=`<div class="ph"><span class="pn">—</span><span class="pl">—</span><span class="mx" title="maximize / restore (Esc)">⤢</span><span class="px" title="clear pane">✕</span></div><canvas></canvas>`;
     grid.appendChild(box);
     const cv=box.querySelector('canvas');
     panes.push(prev&&prev._keep?{...prev,_keep:false}:
@@ -64,7 +65,7 @@ function buildLayout(n){
   for(let i=0;i<Math.min(old.length,n*n);i++){
     if(old[i]&&old[i].key&&panes[i]&&!panes[i].key)panes[i].key=old[i].key; }
   panes.forEach(p=>{ if(p.key)p._keep=true; });
-  bindPaneEvents(); buildLayPop(); layoutUI(); syncPaneUI(); }
+  bindPaneEvents(); buildLayPop(); layoutUI(); syncPaneUI(); resetSplitters(); applyGridTemplate(); }
 function layoutUI(){
   const pt=qs('#paneTabs'); if(!pt)return;
   pt.innerHTML=panes.map((p,i)=>`<span class="ptab${i===activePane?' on':''}" data-i="${i}">P${i+1} · ${paneTitle(p.key)}</span>`).join('');
@@ -139,7 +140,72 @@ qsa('#indPop input').forEach(cb=>on(cb,'change',()=>{
 function clearAllPanes(){ panes.forEach(p=>{ p.key=null;p.yLo=p.yHi=null;
   p.aggCache.clear();p.indCache=null;p.dataVer++; });
   bars.length=0; syncPaneUI(); layoutUI(); }
-
+/* ===== resizable grid: drag splitters + pane maximize ===== */
+let colFr=[], rowFr=[], maxPane=null;
+function applyGridTemplate(){
+  const grid=qs('#grid'); if(!grid)return;
+  grid.style.gridTemplateColumns=colFr.map(f=>f+'fr').join(' ');
+  grid.style.gridTemplateRows=rowFr.map(f=>f+'fr').join(' ');
+  grid.classList.toggle('maxed',maxPane!=null);
+  panes.forEach((p,i)=>p.box.classList.toggle('max',i===maxPane));
+  placeSplitters(); }
+function resetSplitters(){
+  const n=Math.round(Math.sqrt(panes.length))||1;
+  colFr=Array(n).fill(1); rowFr=Array(n).fill(1); }
+function placeSplitters(){
+  qsa('#wrap .spl').forEach(e=>e.remove());
+  const grid=qs('#grid'), wrap=qs('#wrap');
+  if(!grid||!wrap||maxPane!=null||!panes.length)return;
+  const n=Math.round(Math.sqrt(panes.length));
+  const totC=colFr.reduce((a,b)=>a+b,0), totR=rowFr.reduce((a,b)=>a+b,0);
+  for(let j=1;j<n;j++){
+    const pct=colFr.slice(0,j).reduce((a,b)=>a+b,0)/totC*100;
+    const s=document.createElement('div'); s.className='spl v';
+    s.style.left=`calc(${pct}% )`; s.dataset.j=j;
+    wrap.appendChild(s); }
+  for(let i=1;i<n;i++){
+    const pct=rowFr.slice(0,i).reduce((a,b)=>a+b,0)/totR*100;
+    const s=document.createElement('div'); s.className='spl h';
+    s.style.top=`calc(${pct}% )`; s.dataset.i=i;
+    wrap.appendChild(s); } }
+on(document,'pointerdown',e=>{
+  const s=e.target.closest?.('.spl'); if(!s)return;
+  e.preventDefault(); s.classList.add('act');
+  const grid=qs('#grid'), rect=grid.getBoundingClientRect();
+  let move,up;
+  if(s.classList.contains('v')){
+    const j=+s.dataset.j;
+    const a0=colFr[j-1], b0=colFr[j], tot=a0+b0;
+    const pxPerFr=rect.width/tot;
+    const x0=e.clientX;
+    move=ev=>{ const d=(ev.clientX-x0)/pxPerFr;
+      colFr[j-1]=clamp(a0+d,0.35,tot-0.35);
+      colFr[j]=tot-colFr[j-1];
+      applyGridTemplate(); };
+  }else{
+    const i=+s.dataset.i;
+    const a0=rowFr[i-1], b0=rowFr[i], tot=a0+b0;
+    const pxPerFr=rect.height/tot;
+    const y0=e.clientY;
+    move=ev=>{ const d=(ev.clientY-y0)/pxPerFr;
+      rowFr[i-1]=clamp(a0+d,0.35,tot-0.35);
+      rowFr[i]=tot-rowFr[i-1];
+      applyGridTemplate(); }; }
+  up=()=>{ s.classList.remove('act');
+    document.removeEventListener('pointermove',move);
+    document.removeEventListener('pointerup',up); };
+  document.addEventListener('pointermove',move);
+  document.addEventListener('pointerup',up); });
+function toggleMaxPane(i){
+  maxPane=maxPane===i?null:i;
+  applyGridTemplate();
+  panes.forEach(p=>{ if(p.key)p.aggDirty=true; }); }
+on(document,'click',e=>{
+  const mx=e.target.closest?.('.paneBox .mx'); if(!mx)return;
+  const box=mx.closest('.paneBox'); const i=panes.findIndex(p=>p.box===box);
+  if(i>=0)toggleMaxPane(i); });
+on(document,'keydown',e=>{
+  if(e.key==='Escape'&&maxPane!=null){ maxPane=null; applyGridTemplate(); } });
 /* ============ orders ============ */
 let positions=[], trades=[], posId=1;
 const realized={};
@@ -327,7 +393,9 @@ function refreshWatch(){
     r.pc.style.color=chg>=0?'var(--up)':'var(--dn)';
     r.row.classList.toggle('on',!!SYM&&key===SYM.key); } }
 function persistWatch(){localStorage.setItem('scalping_watch',JSON.stringify(watch));}
-
+on('#wCol','click',()=>{
+  const w=qs('#watch'); w.classList.toggle('min');
+  qs('#wCol').textContent=w.classList.contains('min')?'»':'«'; });
 /* ============ EQ / FNO + dual expiries + FNO auto-grid ============ */
 let inst='eq', expSpotIdx=0, expOptIdx=0;
 function rootOf(){
