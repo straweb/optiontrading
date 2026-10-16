@@ -229,7 +229,7 @@ function refreshPositions(){
   else tb2.innerHTML=trades.slice(0,80).map((t,i)=>`<tr><td>${t.t}</td><td><b>${disp(t.key)}</b></td>
     <td class="${t.side>0?'u':'d'}">${t.side>0?'BUY':'SELL'}</td><td>${t.qty}</td><td>${fmtP(t.price)}</td>
     <td class="${(t.pnl??0)>=0?'u':'d'}">${t.pnl==null?'—':(t.pnl>=0?'+':'')+t.pnl.toFixed(2)}</td>
-    <td><button class="pb" onclick="repeatTrade(${i})">REPEAT</button></td></tr>').join(''); }
+    <td><button class="pb" onclick="repeatTrade(${i})">REPEAT</button></td></tr>`).join(''); }
  $('#tbPos').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target.classList.contains('eq')){
     const tr=e.target.closest('tr'); saveEdit(+tr.dataset.id); } });
