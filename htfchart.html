@@ -66,6 +66,7 @@
   .pop label:hover{background:#171c23;color:var(--ink)}
   .pop input{accent-color:var(--acc);width:13px;height:13px;flex:none}
   .pop .param{margin-left:auto;font-size:9px;color:var(--faint)}
+  .pop .note{font-family:var(--mono);font-size:8.5px;color:var(--faint);padding:5px 10px 3px;letter-spacing:.04em}
 
   /* ---------- chart ---------- */
   main{position:relative;flex:1;min-height:0}
@@ -74,11 +75,12 @@
 
   #tools{position:absolute;left:10px;top:12px;z-index:6;display:flex;flex-direction:column;gap:1px;background:rgba(13,16,20,.86);border:1px solid var(--line);border-radius:10px;padding:5px;backdrop-filter:blur(8px);max-height:calc(100% - 24px);overflow-y:auto;user-select:none;scrollbar-width:none}
   #tools::-webkit-scrollbar{display:none}
-  .tbtn{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--dim);transition:.12s;flex:none}
+  .tbtn{width:30px;height:27px;border-radius:7px;display:grid;place-items:center;color:var(--dim);transition:.12s;flex:none}
   .tbtn:hover{color:var(--ink);background:#181d25}
   .tbtn.on{color:var(--acc);background:rgba(224,166,63,.13)}
-  .tbtn svg{width:16px;height:16px}
-  .tsep{height:1px;background:var(--line);margin:3px 2px;flex:none}
+  .tbtn svg{width:15px;height:15px}
+  .tsep{height:1px;background:var(--line);margin:2px 3px;flex:none}
+  .tgrp{font:600 7.5px var(--mono);color:#3d454f;letter-spacing:.16em;text-align:center;padding:3px 0 1px;flex:none}
 
   #toolChip{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--acc);background:rgba(17,20,26,.92);border:1px solid rgba(224,166,63,.45);border-radius:8px;padding:6px 12px;display:none;z-index:6;pointer-events:none;white-space:nowrap}
 
@@ -139,13 +141,21 @@
     </div>
   </div>
 
-  <div class="seg mini" id="axSeg" title="Y-axis scale · P cycles · I inverts · drag the 0% line to set your entry">
-    <button data-m="price" class="on" title="absolute price">PRICE</button>
-    <button data-m="pct" title="percent from 0% baseline — drag the amber 0% line to your entry">PCT</button>
-    <button data-m="pcti" title="inverted percent — up = seller profit">PCT-INV</button>
-  </div>
-
   <div class="right">
+    <div class="popWrap">
+      <button class="hdrBtn" id="sclBtn" title="add / remove axis scales · topmost enabled is the axis scale · drag the 0 line to set your entry">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5M4 19h16"/><path d="M8 15v-4M12 15V7M16 15v-6"/></svg>
+        SCALES
+      </button>
+      <div class="pop" id="sclPop" hidden>
+        <div class="note">TOPMOST ENABLED = AXIS SCALE</div>
+        <label><input type="checkbox" data-scale="price" checked><span>Price</span><span class="param">2,847.55</span></label>
+        <label><input type="checkbox" data-scale="pct" checked><span>Percent</span><span class="param">+0.42%</span></label>
+        <label><input type="checkbox" data-scale="inv"><span>Inverted&nbsp;%</span><span class="param">sellers · −0.42%</span></label>
+        <label><input type="checkbox" data-scale="pts"><span>Points</span><span class="param">+12.40</span></label>
+        <div class="note">relative scales share the amber 0-line —<br>drag it onto your entry price</div>
+      </div>
+    </div>
     <div class="popWrap">
       <button class="hdrBtn" id="indBtn" title="toggle indicator panes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h13M20 18h0.01"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>
@@ -173,26 +183,38 @@
 
   <div id="tools">
     <button class="tbtn on" data-tool="cursor" title="Cursor / select / move (ESC)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3l12 8.5-5.2 1.2L10.5 19z"/></svg></button>
-    <div class="tsep"></div>
+
+    <div class="tgrp">LINES</div>
     <button class="tbtn" data-tool="trend" title="Trend line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="5" y1="19" x2="19" y2="5"/><circle cx="5" cy="19" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="5" r="1.7" fill="currentColor" stroke="none"/></svg></button>
     <button class="tbtn" data-tool="ray" title="Ray — extends from origin through second point"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="6" y1="18" x2="21" y2="5"/><circle cx="6" cy="18" r="1.8" fill="currentColor" stroke="none"/></svg></button>
     <button class="tbtn" data-tool="arrow" title="Arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="5" y1="19" x2="18" y2="6"/><path d="M18 6l-5 .9M18 6l-.9 5"/></svg></button>
-    <div class="tsep"></div>
     <button class="tbtn" data-tool="hline" title="Horizontal line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
     <button class="tbtn" data-tool="hray" title="Horizontal ray — extends right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/><line x1="5" y1="12" x2="21" y2="12"/></svg></button>
-    <div class="tsep"></div>
+
+    <div class="tgrp">SHAPES</div>
     <button class="tbtn" data-tool="rect" title="Rectangle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="6" width="16" height="12"/></svg></button>
     <button class="tbtn" data-tool="ellipse" title="Ellipse / curve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg></button>
-    <div class="tsep"></div>
+
+    <div class="tgrp">FIB</div>
     <button class="tbtn" data-tool="fib" title="Fib retracement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg></button>
-    <div class="tsep"></div>
+    <button class="tbtn" data-tool="fibext" title="Fib extension — levels projected beyond swing B"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="4" y1="6" x2="11" y2="6"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="18" x2="21" y2="18"/></svg></button>
+    <button class="tbtn" data-tool="tbfib" title="Trend-based fib extension — 3 pivots A→B→C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="9" y1="3.5" x2="21" y2="3.5"/><circle cx="5" cy="19" r="1.6"/><circle cx="11" cy="13" r="1.6"/><circle cx="17" cy="7" r="1.6"/></svg></button>
+    <button class="tbtn" data-tool="fan" title="Fib speed resistance fan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none"/><line x1="5" y1="19" x2="20" y2="4"/><line x1="5" y1="19" x2="20" y2="10"/><line x1="5" y1="19" x2="20" y2="16"/></svg></button>
+    <button class="tbtn" data-tool="circles" title="Fib circles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg></button>
+    <button class="tbtn" data-tool="tzones" title="Fib time zones — vertical lines at fib intervals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="6" y1="4" x2="6" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="19" y1="4" x2="19" y2="20"/></svg></button>
+    <button class="tbtn" data-tool="pitchfork" title="Andrews' pitchfork — 3 pivots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 20L11 12L18 5M11 12L18 19"/><circle cx="4" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg></button>
+
+    <div class="tgrp">TRADE</div>
     <button class="tbtn" data-tool="long" title="Long position — entry / stop / target box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V6M12 6l-5 5M12 6l5 5"/><line x1="5" y1="21" x2="19" y2="21"/></svg></button>
     <button class="tbtn" data-tool="short" title="Short position — entry / stop / target box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v14M12 18l-5-5M12 18l5-5"/><line x1="5" y1="3" x2="19" y2="3"/></svg></button>
-    <div class="tsep"></div>
+
+    <div class="tgrp">NOTES</div>
     <button class="tbtn" data-tool="text" title="Text annotation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg></button>
     <button class="tbtn" data-tool="free" title="Freehand pencil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 20l1.2-4.2L16 5l3 3L8.2 18.8z"/></svg></button>
-    <div class="tsep"></div>
+
+    <div class="tgrp">STUDY</div>
     <button class="tbtn" data-tool="vprofile" title="Fixed range volume profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="12" x2="21" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/></svg></button>
+
     <div class="tsep"></div>
     <button class="tbtn" id="trashBtn" title="Clear all drawings (undo with Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg></button>
   </div>
@@ -218,7 +240,7 @@
 
 <footer>
   <div id="aggInfo">—</div>
-  <div class="hints"><b>DRAG</b> free move (time + price) · <b>AXIS WHEEL</b> single-axis zoom · <b>P</b> pct · <b>I</b> invert · <b>0% LINE</b> drag = set entry · dbl-click = auto · <b>1–4</b> TF · <b>G</b> ghost · <b>SPACE</b> pause · <b>DEL</b> · <b>CTRL+Z</b> · <b>ESC</b></div>
+  <div class="hints"><b>DRAG</b> free move · <b>AXIS WHEEL</b> zoom · <b>ALT+WHEEL</b> price · <b>P/I/T</b> toggle % · inv% · pts · <b>0 LINE</b> drag = set entry · dbl-click = anchor · <b>1–4</b> TF · <b>G</b> ghost · <b>SPACE</b> pause · <b>DEL</b> · <b>CTRL+Z</b> · <b>ESC</b></div>
 </footer>
 
 <script>
@@ -242,6 +264,8 @@ const fmtV=v=>v>=1e7?(v/1e7).toFixed(2)+'Cr':v>=1e5?(v/1e5).toFixed(2)+'L':v>=1e
 function distSeg(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy;
   let t=L2?((px-x1)*dx+(py-y1)*dy)/L2:0;t=clamp(t,0,1);
   return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));}
+function far(x0,y0,x1,y1){const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1;
+  return[x0+dx*3000/L,y0+dy*3000/L];}
 
 /* ============================ data ============================= */
 const SESSION=375, OPEN_MIN=555;                     // 09:15 → 15:30, 375 min
@@ -344,14 +368,20 @@ let viewAnim=null;
 function animateView(tr,tv){viewAnim={t0:performance.now(),dur:520,fr:view.r,fv:view.v,tr,tv};}
 const clampR=r=>{const hi=bars.length+90;return clamp(r,Math.min(view.v-30,hi),hi);};
 
-/* ----- per-axis scale state -----
-   pMode 'auto'   → price range auto-fits the visible data every frame
-   pMode 'manual' → mLo/mHi pinned; free vertical body-drag, price-axis
-                    drag and price-wheel all keep it pinned.            */
+/* ----- per-axis scale state ----- */
 let pMode='auto', mLo=0, mHi=1, pzR0=1;
-/* ----- axis display mode: absolute price vs percent (+inverted) ----- */
-let axPct=false, axInv=false;
-let pctBase=null;                                    // price that reads as 0%
+
+/* ----- multi-scale axis state -----
+   scales.* toggle which scales are visible; the topmost enabled in
+   SORDER is the PRIMARY: it drives gridlines, main labels, the LTP
+   tag and the crosshair pill. Others render as compact sub-labels.
+   IMPORTANT: 'inv' only negates displayed % values — the chart
+   orientation ALWAYS matches the price scale (never flipped).      */
+const scales={price:true,pct:true,inv:false,pts:false};
+const SORDER=['price','pct','inv','pts'];
+const primScale=()=>SORDER.find(s=>scales[s])||'price';
+const anyRel=()=>scales.pct||scales.inv||scales.pts;
+let pctBase=null;                                    // price that reads as 0
 let baseDrag=false, directScale=false;
 
 function enterManual(){ if(pMode==='manual'||yLo==null)return;
@@ -360,20 +390,27 @@ function priceAuto(){ pMode='auto'; }
 function priceZoomAt(ypix,k){
   if(!geo.priceH)return; const R=yHi-yLo; if(!(R>0))return;
   enterManual(); if(pMode!=='manual')return;
-  const pc=priceAtY(ypix);                           // price under cursor stays fixed
+  const pc=priceAtY(ypix);
   const nR=clamp((mHi-mLo)*k, price*0.0006, price*1.5);
   const kk=nR/(mHi-mLo);
   mHi=pc+(mHi-pc)*kk; mLo=pc-(pc-mLo)*kk;
 }
 function resetAll(){ animateView(bars.length+42,260); priceAuto(); }
 
-/* percent helpers (baseline-relative; negated when inverted so
-   "up" always reads as profit from the active perspective)          */
+/* percent / points helpers — sign is NEVER used to flip the chart,
+   only to render labels (inv = negated %, for sellers)             */
 const pctOf=p=>(p-pctBase)/pctBase*100;
-function labelPct(v){ v*=axInv?-1:1; const s=v>=0?'+':'−', a=Math.abs(v);
+function labelPct(v){ const s=v>=0?'+':'−', a=Math.abs(v);
   return s+(a>=100?a.toFixed(0):a>=10?a.toFixed(1):a.toFixed(2))+'%'; }
+function labelPts(v){ const s=v>=0?'+':'−', a=Math.abs(v);
+  return s+(a>=1000?a.toFixed(0):a>=100?a.toFixed(1):a.toFixed(2)); }
+function scaleLabel(s,p){
+  if(s==='price')return fmtP(p);
+  if(s==='pts')return labelPts(p-pctBase);
+  const v=pctOf(p); return labelPct(s==='inv'?-v:v);
+}
 function priceAtY(y){ const R=yHi-yLo;
-  return axInv? yLo+(y/geo.priceH)*R : yHi-(y/geo.priceH)*R; }
+  return yHi-(y/geo.priceH)*R; }                     // chart is never flipped
 
 const cv=$('#chart'), ctx=cv.getContext('2d');
 let W=0,H=0,dpr=1;
@@ -387,11 +424,22 @@ let axisDrag=null, suppressUp=false;
 /* ======================= drawings & tools ====================== */
 const DCOL={def:'#5fb0d8',fib:'#e0a63f',text:'#d6dae0',free:'#cfd6de'};
 const FIBL=[0,.236,.382,.5,.618,.786,1];
-const twoPoint=new Set(['trend','ray','arrow','rect','ellipse','fib','vprofile']);
+const EXTL=[0,0.618,1,1.618,2.618];
+const FANR=[0.236,0.382,0.5,0.618,0.786,1];
+const CIRCLR=[0.382,0.618,1,1.618,2.618];
+const TZL=[1,2,3,5,8,13,21,34,55,89,144];
+const NPTS={trend:2,ray:2,arrow:2,rect:2,ellipse:2,fib:2,fibext:2,fan:2,circles:2,tzones:2,tbfib:3,pitchfork:3};
 const CHIP={trend:'TREND LINE — click start, click end',ray:'RAY — click origin, click direction',
   arrow:'ARROW — click start, click end',hline:'H LINE — click to place',hray:'H RAY — click to place',
   rect:'RECTANGLE — click two corners',ellipse:'ELLIPSE — click two corners',
-  fib:'FIB RETRACE — click swing high & low',long:'LONG POSITION — click entry',
+  fib:'FIB RETRACE — click swing high & low',
+  fibext:'FIB EXTENSION — click swing A, click swing B',
+  tbfib:'TREND-BASED FIB EXT — click 3 pivots A → B → C',
+  fan:'FIB SPEED FAN — click origin, click second point',
+  circles:'FIB CIRCLES — click center, click radius',
+  tzones:'FIB TIME ZONES — click start, click one unit',
+  pitchfork:'PITCHFORK — click 3 pivots (handle, then prongs)',
+  long:'LONG POSITION — click entry',
   short:'SHORT POSITION — click entry',text:'TEXT — click to type',free:'PENCIL — draw freehand',
   vprofile:'VOLUME PROFILE — click range start & end'};
 
@@ -402,8 +450,7 @@ function pushUndo(){undoStack.push(drawings.slice());if(undoStack.length>80)undo
 function dataAt(x,y){ if(!geo.sp)return{gm:0,p:0};
   const yy=clamp(y,0,Math.max(1,geo.priceH-1));
   const R=geo.yHi-geo.yLo;
-  const p=axInv? geo.yLo+(yy/geo.priceH)*R : geo.yHi-(yy/geo.priceH)*R;
-  return {gm:view.r-(geo.plotW-x)/geo.sp, p}; }
+  return {gm:view.r-(geo.plotW-x)/geo.sp, p:geo.yHi-(yy/geo.priceH)*R}; }
 function snap(d){return JSON.parse(JSON.stringify(d));}
 function finishD(d){d.id=uidC++;pushUndo();drawings.push(d);selId=d.id;setTool('cursor');}
 
@@ -427,6 +474,7 @@ function handlesOf(d){ const out=[],X=geo.X,Y=geo.Y;
   const add=(x,y,kind,i)=>out.push({x,y,kind,i});
   switch(d.type){
     case 'trend':case 'ray':case 'arrow':case 'rect':case 'ellipse':case 'fib':
+    case 'fibext':case 'fan':case 'circles':case 'tzones':case 'tbfib':case 'pitchfork':
       d.pts.forEach((p,i)=>add(X(p.gm),Y(p.p),'pt',i));break;
     case 'hline': add(X(d.pts[0].gm),Y(d.pts[0].p),'hlp',0);break;
     case 'hray':  add(X(d.pts[0].gm),Y(d.pts[0].p),'pt',0);break;
@@ -443,34 +491,60 @@ function hitDrawing(d,mx,my){
   const X=geo.X,Y=geo.Y;
   for(const h of handlesOf(d)) if(Math.abs(mx-h.x)<7&&Math.abs(my-h.y)<7)return{h};
   const near=(x1,y1,x2,y2,tol=6)=>distSeg(mx,my,x1,y1,x2,y2)<tol;
+  const P=d.pts;
   switch(d.type){
-    case 'trend':case 'arrow':
-      return near(X(d.pts[0].gm),Y(d.pts[0].p),X(d.pts[1].gm),Y(d.pts[1].p))?{}:null;
-    case 'ray':
-      return near(X(d.pts[0].gm),Y(d.pts[0].p),X(d.pts[1].gm),Y(d.pts[1].p))?{}:null;
-    case 'hline': return Math.abs(my-Y(d.pts[0].p))<5?{}:null;
-    case 'hray':  return (mx>=X(d.pts[0].gm)-4&&Math.abs(my-Y(d.pts[0].p))<5)?{}:null;
-    case 'rect':{ const xa=X(d.pts[0].gm),xb=X(d.pts[1].gm),ya=Y(d.pts[0].p),yb=Y(d.pts[1].p);
+    case 'trend':case 'arrow':case 'ray':
+      return near(X(P[0].gm),Y(P[0].p),X(P[1].gm),Y(P[1].p))?{}:null;
+    case 'hline': return Math.abs(my-Y(P[0].p))<5?{}:null;
+    case 'hray':  return (mx>=X(P[0].gm)-4&&Math.abs(my-Y(P[0].p))<5)?{}:null;
+    case 'rect':{ const xa=X(P[0].gm),xb=X(P[1].gm),ya=Y(P[0].p),yb=Y(P[1].p);
       const x0=Math.min(xa,xb),x1=Math.max(xa,xb),y0=Math.min(ya,yb),y1=Math.max(ya,yb);
       return (mx>x0&&mx<x1&&my>y0&&my<y1)||near(x0,y0,x1,y0)||near(x0,y1,x1,y1)||near(x0,y0,x0,y1)||near(x1,y0,x1,y1)?{}:null;}
-    case 'ellipse':{ const xa=X(d.pts[0].gm),xb=X(d.pts[1].gm),ya=Y(d.pts[0].p),yb=Y(d.pts[1].p);
+    case 'ellipse':{ const xa=X(P[0].gm),xb=X(P[1].gm),ya=Y(P[0].p),yb=Y(P[1].p);
       const cx=(xa+xb)/2,cy=(ya+yb)/2,rx=Math.abs(xb-xa)/2,ry=Math.abs(yb-ya)/2;
       if(rx<3||ry<3)return null;
       const r=Math.hypot((mx-cx)/rx,(my-cy)/ry),tol=clamp(6/Math.min(rx,ry),.06,.4);
       return Math.abs(r-1)<tol?{}:null;}
-    case 'fib':{ const xa=Math.min(X(d.pts[0].gm),X(d.pts[1].gm)),xb=Math.max(X(d.pts[0].gm),X(d.pts[1].gm));
+    case 'fib':{ const xa=Math.min(X(P[0].gm),X(P[1].gm)),xb=Math.max(X(P[0].gm),X(P[1].gm));
       if(mx<xa-4||mx>xb+4)return null;
-      const p0=d.pts[0].p,p1=d.pts[1].p;
+      const p0=P[0].p,p1=P[1].p;
       for(const lv of FIBL) if(Math.abs(my-Y(p1+(p0-p1)*lv))<5)return{};
       return null;}
-    case 'text':{ ctx.font='600 12px Archivo, sans-serif';
-      const w=ctx.measureText(d.text).width,x=X(d.pts[0].gm),y=Y(d.pts[0].p);
-      return (mx>x-12&&mx<x+w+8&&my>y-18&&my<y+6)?{}:null;}
-    case 'free':{ for(let i=1;i<d.pts.length;i++)
-        if(near(X(d.pts[i-1].gm),Y(d.pts[i-1].p),X(d.pts[i].gm),Y(d.pts[i].p),5))return{};
+    case 'fibext':{ const xa=Math.min(X(P[0].gm),X(P[1].gm)),xb=Math.max(X(P[0].gm),X(P[1].gm));
+      if(mx<xa-4||mx>xb+4)return null;
+      const dP=P[1].p-P[0].p;
+      for(const k of EXTL) if(Math.abs(my-Y(P[1].p+dP*k))<5)return{};
       return null;}
-    case 'vprofile':{ const vp=computeVP(d.pts[0].gm,d.pts[1].gm);if(!vp)return null;
-      const x0=Math.min(X(d.pts[0].gm),X(d.pts[1].gm)),x1=Math.max(X(d.pts[0].gm),X(d.pts[1].gm));
+    case 'tbfib':{ const x0=X(P[2].gm); if(mx<x0-6)return null;
+      const dP=P[1].p-P[0].p;
+      for(const k of EXTL) if(Math.abs(my-Y(P[2].p+dP*k))<5)return{};
+      return null;}
+    case 'fan':{ const ax=X(P[0].gm),ay=Y(P[0].p),bx=X(P[1].gm),by=Y(P[1].p);
+      for(const r of FANR){ const ey=ay+(by-ay)*r,[fx,fy]=far(ax,ay,bx,ey);
+        if(near(ax,ay,fx,fy))return{}; } return null;}
+    case 'circles':{ const cx=X(P[0].gm),cy=Y(P[0].p);
+      const R=Math.hypot(X(P[1].gm)-cx,Y(P[1].p)-cy); if(R<3)return null;
+      const rr2=Math.hypot(mx-cx,my-cy);
+      for(const k of CIRCLR) if(Math.abs(rr2-R*k)<6)return{};
+      return null;}
+    case 'tzones':{ const dg=P[1].gm-P[0].gm;
+      if(Math.abs(mx-X(P[0].gm))<5)return{};
+      for(const F of TZL) if(Math.abs(mx-X(P[0].gm+dg*F))<5)return{};
+      return null;}
+    case 'pitchfork':{ const ax=X(P[0].gm),ay=Y(P[0].p),
+        bx=X(P[1].gm),by=Y(P[1].p),cx2=X(P[2].gm),cy2=Y(P[2].p);
+      const mx2=(bx+cx2)/2,my2=(by+cy2)/2,dx=mx2-ax,dy=my2-ay;
+      const segs=[[ax,ay,...far(ax,ay,mx2,my2)],[ax,ay,mx2,my2],
+        [bx,by,...far(bx,by,bx+dx,by+dy)],[cx2,cy2,...far(cx2,cy2,cx2+dx,cy2+dy)]];
+      return segs.some(s=>near(...s))?{}:null;}
+    case 'text':{ ctx.font='600 12px Archivo, sans-serif';
+      const w=ctx.measureText(d.text).width,x=X(P[0].gm),y=Y(P[0].p);
+      return (mx>x-12&&mx<x+w+8&&my>y-18&&my<y+6)?{}:null;}
+    case 'free':{ for(let i=1;i<P.length;i++)
+        if(near(X(P[i-1].gm),Y(P[i-1].p),X(P[i].gm),Y(P[i].p),5))return{};
+      return null;}
+    case 'vprofile':{ const vp=computeVP(P[0].gm,P[1].gm);if(!vp)return null;
+      const x0=Math.min(X(P[0].gm),X(P[1].gm)),x1=Math.max(X(P[0].gm),X(P[1].gm));
       return (mx>x0&&mx<x1&&my>Y(vp.hi)&&my<Y(vp.lo))?{}:null;}
     case 'pos':{ const x0=Math.min(X(d.gm0),X(d.gm1)),x1=Math.max(X(d.gm0),X(d.gm1));
       const yT=Math.min(Y(d.pE),Y(d.pS),Y(d.pT)),yB=Math.max(Y(d.pE),Y(d.pS),Y(d.pT));
@@ -503,7 +577,8 @@ function applyMove(d,orig,dgm,dp){
 let axisTags=[];
 function renderDrawing(d,o={}){
   const X=geo.X,Y=geo.Y, prev=!!o.preview;
-  const C=d.type==='fib'?DCOL.fib:d.type==='text'?DCOL.text:d.type==='free'?DCOL.free:DCOL.def;
+  const fibFam=['fib','fibext','tbfib','fan','circles','tzones'];
+  const C=fibFam.includes(d.type)?DCOL.fib:d.type==='text'?DCOL.text:d.type==='free'?DCOL.free:DCOL.def;
   ctx.save();
   if(prev){ctx.globalAlpha=.9;ctx.setLineDash([5,4]);}
   const P=d.pts;
@@ -511,8 +586,8 @@ function renderDrawing(d,o={}){
     case 'trend':{ ctx.strokeStyle=C;ctx.lineWidth=1.3;
       line(X(P[0].gm),Y(P[0].p),X(P[1].gm),Y(P[1].p));break;}
     case 'ray':{ const x0=X(P[0].gm),y0=Y(P[0].p),x1=X(P[1].gm),y1=Y(P[1].p);
-      const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1,k=3000/L;
-      ctx.strokeStyle=C;ctx.lineWidth=1.3;line(x0,y0,x0+dx*k,y0+dy*k);
+      const [fx,fy]=far(x0,y0,x1,y1);
+      ctx.strokeStyle=C;ctx.lineWidth=1.3;line(x0,y0,fx,fy);
       ctx.fillStyle=C;ctx.beginPath();ctx.arc(x0,y0,2.4,0,7);ctx.fill();break;}
     case 'arrow':{ const x0=X(P[0].gm),y0=Y(P[0].p),x1=X(P[1].gm),y1=Y(P[1].p);
       ctx.strokeStyle=C;ctx.lineWidth=1.3;line(x0,y0,x1,y1);
@@ -544,6 +619,64 @@ function renderDrawing(d,o={}){
         ctx.setLineDash(lv===.5?[5,4]:[]);line(xa,y,xb,y);ctx.setLineDash([]);
         ctx.fillStyle=`rgba(224,166,63,${strong?.95:.7})`;
         ctx.fillText(`${lv.toFixed(3)}  ${fmtP(pr)}`,xa+5,y-2);}break;}
+    case 'fibext':{ const xa=Math.min(X(P[0].gm),X(P[1].gm)),xb=Math.max(X(P[0].gm),X(P[1].gm));
+      const dP=P[1].p-P[0].p;
+      ctx.textAlign='left';ctx.textBaseline='bottom';ctx.font='500 9.5px '+MONO;
+      for(const k of EXTL){ const pr=P[1].p+dP*k,y=cr(Y(pr));
+        const strong=(k===1||k===1.618);
+        ctx.strokeStyle=`rgba(224,166,63,${strong?.85:.4})`;ctx.lineWidth=strong?1.3:1;
+        ctx.setLineDash(k===0||k===1?[]:[4,4]);line(xa,y,xb,y);ctx.setLineDash([]);
+        ctx.fillStyle=`rgba(224,166,63,${strong?.95:.65})`;
+        ctx.fillText(`${k} · ${fmtP(pr)}`,xa+5,y-2);}break;}
+    case 'tbfib':{ const x0=X(P[2].gm), dP=P[1].p-P[0].p;
+      ctx.textAlign='left';ctx.textBaseline='bottom';ctx.font='500 9.5px '+MONO;
+      for(const k of EXTL){ const pr=P[2].p+dP*k,y=cr(Y(pr));
+        const strong=(k===1||k===1.618);
+        ctx.strokeStyle=`rgba(224,166,63,${strong?.85:.4})`;ctx.lineWidth=strong?1.3:1;
+        ctx.setLineDash(k===0||k===1?[]:[4,4]);line(x0,y,geo.plotW,y);ctx.setLineDash([]);
+        ctx.fillStyle=`rgba(224,166,63,${strong?.95:.65})`;
+        ctx.fillText(`${k} · ${fmtP(pr)}`,x0+5,y-2);}
+      ctx.fillStyle='rgba(224,166,63,.9)';
+      for(const p of P){ctx.beginPath();ctx.arc(X(p.gm),Y(p.p),2.2,0,7);ctx.fill();}break;}
+    case 'fan':{ const ax=X(P[0].gm),ay=Y(P[0].p),bx=X(P[1].gm),by=Y(P[1].p);
+      ctx.font='500 9px '+MONO;ctx.textAlign='left';ctx.textBaseline='middle';
+      for(const r of FANR){ const ey=ay+(by-ay)*r;
+        const [fx,fy]=far(ax,ay,bx,ey);
+        const strong=(r===.382||r===.618);
+        ctx.strokeStyle=`rgba(224,166,63,${strong?.8:.38})`;ctx.lineWidth=strong?1.3:1;
+        line(ax,ay,fx,fy);
+        ctx.fillStyle=`rgba(224,166,63,${strong?.9:.55})`;
+        ctx.fillText(String(r),ax+(bx-ax)*.14+6,ay+(ey-ay)*.14);}
+      ctx.fillStyle=C;ctx.beginPath();ctx.arc(ax,ay,2.4,0,7);ctx.fill();break;}
+    case 'circles':{ const cx=X(P[0].gm),cy=Y(P[0].p);
+      const R=Math.hypot(X(P[1].gm)-cx,Y(P[1].p)-cy); if(R<3)break;
+      ctx.font='500 9px '+MONO;ctx.textAlign='left';ctx.textBaseline='bottom';
+      for(const k of CIRCLR){ const r=R*k;
+        ctx.strokeStyle=`rgba(224,166,63,${k===1?.8:.38})`;ctx.lineWidth=k===1?1.3:1;
+        ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.stroke();
+        ctx.fillStyle=`rgba(224,166,63,${k===1?.9:.55})`;
+        ctx.fillText(String(k),cx+r*.7071+3,cy-r*.7071-3);}
+      ctx.fillStyle=C;ctx.beginPath();ctx.arc(cx,cy,2.4,0,7);ctx.fill();break;}
+    case 'tzones':{ const dg=P[1].gm-P[0].gm;
+      ctx.font='600 9px '+MONO;ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.strokeStyle='rgba(224,166,63,.85)';ctx.lineWidth=1.2;
+      line(cr(X(P[0].gm)),0,cr(X(P[0].gm)),geo.priceH);
+      for(const F of TZL){ const x=cr(X(P[0].gm+dg*F)); if(x<-2||x>geo.plotW+2)continue;
+        ctx.strokeStyle=`rgba(224,166,63,${F===1?.7:.3})`;ctx.lineWidth=F===1?1.2:1;
+        line(x,0,x,geo.priceH);
+        ctx.fillStyle='rgba(224,166,63,.7)';ctx.fillText(String(F),x,4);}break;}
+    case 'pitchfork':{ const ax=X(P[0].gm),ay=Y(P[0].p),
+        bx=X(P[1].gm),by=Y(P[1].p),cx2=X(P[2].gm),cy2=Y(P[2].p);
+      const mx2=(bx+cx2)/2,my2=(by+cy2)/2,dx=mx2-ax,dy=my2-ay;
+      const [fx,fy]=far(ax,ay,mx2,my2);
+      ctx.strokeStyle=C;ctx.lineWidth=1.4;
+      line(ax,ay,mx2,my2);                              // handle
+      ctx.lineWidth=1.2;
+      line(ax,ay,fx,fy);                                // median line
+      line(bx,by,bx+dx*40,by+dy*40);                    // prongs (long rays)
+      line(cx2,cy2,cx2+dx*40,cy2+dy*40);
+      ctx.fillStyle=C;
+      for(const p of P){ctx.beginPath();ctx.arc(X(p.gm),Y(p.p),2.2,0,7);ctx.fill();}break;}
     case 'text':{ const x=X(P[0].gm),y=Y(P[0].p);
       ctx.font='600 12px Archivo, sans-serif';ctx.fillStyle=DCOL.text;
       ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(d.text,x,y);
@@ -626,25 +759,28 @@ function setTool(t){ tool=t;pending=null;cv.style.cursor='';
 function chipTxt(){
   if(!CHIP[tool]){toolChip.style.display='none';return;}
   let t=CHIP[tool];
-  if(pending&&twoPoint.has(pending.type))t+=' · click end point · ESC cancels';
+  if(pending&&NPTS[pending.type])t+=` · point ${pending.n+1}/${NPTS[pending.type]} · ESC cancels`;
   toolChip.textContent=t;toolChip.style.display='block';
 }
 toolBtns.forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
  $('#trashBtn').addEventListener('click',()=>{ if(!drawings.length)return;
   pushUndo();drawings=[];selId=null; });
 
-const indPop=$('#indPop');
- $('#indBtn').addEventListener('click',e=>{e.stopPropagation();indPop.hidden=!indPop.hidden;});
-document.addEventListener('click',e=>{ if(!indPop.hidden&&!indPop.contains(e.target)&&!e.target.closest('#indBtn'))indPop.hidden=true; });
+function popWire(btnId,popId){
+  const pop=$(popId);
+  $(btnId).addEventListener('click',e=>{e.stopPropagation();pop.hidden=!pop.hidden;});
+  document.addEventListener('click',e=>{ if(!pop.hidden&&!pop.contains(e.target)&&!e.target.closest(btnId))pop.hidden=true; });
+  return pop;
+}
+const indPop=popWire('#indBtn','#indPop');
 indPop.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',()=>{
   PANE_DEFS.find(p=>p.id===cb.dataset.pane).on=cb.checked; }));
 
-/* axis-mode segmented control */
-const axSeg=$('#axSeg');
-function syncAxSeg(){ const m=(axPct&&axInv)?'pcti':axPct?'pct':'price';
-  axSeg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); }
-function setAxMode(m){ axPct=m!=='price'; axInv=m==='pcti'; syncAxSeg(); }
-axSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>setAxMode(b.dataset.m)));
+const sclPop=popWire('#sclBtn','#sclPop');
+function syncScales(){ sclPop.querySelectorAll('input').forEach(cb=>cb.checked=!!scales[cb.dataset.scale]); }
+function ensureScale(){ if(!SORDER.some(s=>scales[s]))scales.price=true; syncScales(); }
+sclPop.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',()=>{
+  scales[cb.dataset.scale]=cb.checked; ensureScale(); }));
 
 /* ============================ DOM refs ============================ */
 const ltpEl=$('#ltp'),chgEl=$('#chg'),liveEl=$('#live'),liveTxt=$('#liveTxt');
@@ -701,12 +837,14 @@ addEventListener('keydown',e=>{
   else if(e.key==='g'||e.key==='G'){if(tf>1)ghostToggle.click();}
   else if(e.key===' '){e.preventDefault();$('#pauseBtn').click();}
   else if(e.key==='a'||e.key==='A')priceAuto();
-  else if(e.key==='p'||e.key==='P')setAxMode(axPct?(axInv?'price':'pcti'):'pct'); // cycle
-  else if(e.key==='i'||e.key==='I'){axInv=!axInv;syncAxSeg();}
+  else if(e.key==='p'||e.key==='P'){scales.pct=!scales.pct;ensureScale();}
+  else if(e.key==='i'||e.key==='I'){scales.inv=!scales.inv;ensureScale();}
+  else if(e.key==='t'||e.key==='T'){scales.pts=!scales.pts;ensureScale();}
   else if(e.key==='r'||e.key==='R')resetAll();
   else if(e.key==='Escape'){
     if(txtCtx)closeText(false);
-    else if(indPop.hidden===false)indPop.hidden=true;
+    else if(!indPop.hidden)indPop.hidden=true;
+    else if(!sclPop.hidden)sclPop.hidden=true;
     else if(pending){pending=null;chipTxt();}
     else if(tool!=='cursor')setTool('cursor');
     else selId=null;
@@ -727,24 +865,27 @@ function updateCursorStyle(mx,my){
   if(hit)c=hit.h?'pointer':'move';
   if(cv.style.cursor!==c)cv.style.cursor=c;
 }
-const nearBaseline=(mx,my)=>axPct&&pctBase!=null&&geo.priceH&&mx<=geo.plotW&&
+const nearBaseline=(mx,my)=>anyRel()&&pctBase!=null&&geo.priceH&&mx<=geo.plotW&&
   my>=0&&my<=geo.priceH&&Math.abs(my-geo.Y(pctBase))<6;
 
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault(); viewAnim=null;
   const mx=e.offsetX,my=e.offsetY;
 
-  /* axis badge — click to restore price auto-fit */
   if(geo.badge&&mx>=geo.badge.x&&mx<=geo.badge.x+geo.badge.w&&my>=geo.badge.y&&my<=geo.badge.y+geo.badge.h){
     if(pMode==='manual')priceAuto();
     return;
   }
-  /* axis strips: wheel/drag operate on ONE scale only */
+  /* axis strips */
   if(mx>=geo.plotW||my>=H-TIME_H){
     if(!pending&&yLo!==null){
       suppressUp=true;cv.classList.add('grabbing');cv.setPointerCapture(e.pointerId);
-      if(mx>=geo.plotW){ enterManual();
-        axisDrag={type:'price',y0:my,lo:mLo,hi:mHi,R:(mHi-mLo)||1};
+      if(mx>=geo.plotW){
+        /* relative primary → vertical axis drag slides the 0 baseline;
+           absolute price → pins + pans the scale */
+        if(anyRel()&&primScale()!=='price'){ axisDrag={type:'base'}; }
+        else{ enterManual();
+          axisDrag={type:'price',y0:my,lo:mLo,hi:mHi,R:(mHi-mLo)||1}; }
       }else axisDrag={type:'time',x0:mx,r0:view.r};
     }
     return;
@@ -754,8 +895,8 @@ cv.addEventListener('pointerdown',e=>{
     const hit=hitTopmost(mx,my);
     if(hit){ selId=hit.d.id; pushUndo();
       drag={d:hit.d,h:hit.h||null,ox:mx,oy:my,orig:snap(hit.d),moved:false};
-    }else if(nearBaseline(mx,my)){          /* drag the 0% baseline */
-      enterManual(); baseDrag=true;
+    }else if(nearBaseline(mx,my)){          /* drag the 0 baseline to your entry */
+      baseDrag=true;
       cv.classList.add('grabbing'); cv.setPointerCapture(e.pointerId); return;
     }else{ selId=null; dragging=true; dragX=mx; dragY0=my; dragR=view.r; vBase=null; }
     cv.classList.add('grabbing'); cv.setPointerCapture(e.pointerId); return;
@@ -768,11 +909,18 @@ cv.addEventListener('pointerdown',e=>{
   if(tool==='text'||tool==='hline'||tool==='hray'||tool==='long'||tool==='short'){
     downPt={x:mx,y:my}; cv.setPointerCapture(e.pointerId); return;
   }
-  const md=dataAt(mx,my);
-  if(pending&&twoPoint.has(pending.type)){ pending.pts[1]=md; commitPending(); }
-  else if(twoPoint.has(tool)) pending={type:tool,pts:[md,{gm:md.gm,p:md.p}]};
-  chipTxt();
-  cv.setPointerCapture(e.pointerId);
+  /* N-point tools (2 or 3 clicks; 2-pt also supports drag-release) */
+  if(NPTS[tool]){
+    const md=dataAt(mx,my), k=NPTS[tool];
+    if(pending&&pending.type===tool&&pending.n<k){
+      pending.pts[pending.n]=md; pending.n++;
+      if(pending.n>=k) commitPending();
+    }else if(!pending||pending.type!==tool){
+      pending={type:tool,pts:Array(k).fill(md),n:1};
+    }
+    chipTxt();
+    cv.setPointerCapture(e.pointerId);
+  }
 });
 cv.addEventListener('pointermove',e=>{
   const mx=e.offsetX,my=e.offsetY;
@@ -781,26 +929,32 @@ cv.addEventListener('pointermove',e=>{
   if(baseDrag){ pctBase=clamp(priceAtY(my),price*0.2,price*5); return; }
   if(axisDrag){
     if(axisDrag.type==='price'){
-      const s=(axInv?-1:1)*(my-axisDrag.y0)/geo.priceH*axisDrag.R;
-      mLo=axisDrag.lo+s; mHi=axisDrag.hi+s;
+      const d=(my-axisDrag.y0)/geo.priceH*axisDrag.R;
+      mLo=axisDrag.lo+d; mHi=axisDrag.hi+d;
+    }else if(axisDrag.type==='base'){
+      pctBase=clamp(priceAtY(my),price*0.2,price*5);
     }else view.r=clampR(axisDrag.r0-(mx-axisDrag.x0)/geo.sp);
     return;
   }
   if(drag&&drag.d){
     if(drag.h){ applyHandle(drag.d,drag.h,dataAt(mx,my)); drag.moved=true; }
     else{ const dgm=(mx-drag.ox)/geo.sp,
-            dp=(axInv?1:-1)*(my-drag.oy)/geo.priceH*(geo.yHi-geo.yLo);
+            dp=-(my-drag.oy)/geo.priceH*(geo.yHi-geo.yLo);
       if(applyMove(drag.d,drag.orig,dgm,dp))drag.moved=true; }
     return;
   }
   if(dragging){
     view.r=clampR(dragR-(mx-dragX)/geo.sp);          /* free move: time …   */
     const dy=my-dragY0;
-    if(Math.abs(dy)>2){                              /* … and price axis    */
-      if(!vBase){ if(pMode!=='manual')enterManual();
-        vBase={lo:mLo,hi:mHi,R:(mHi-mLo)||1}; }
-      const s=(axInv?-1:1)*dy*vBase.R/geo.priceH;
-      mLo=vBase.lo+s; mHi=vBase.hi+s; directScale=true;
+    if(Math.abs(dy)>2){                              /* … and price / baseline */
+      if(anyRel()&&primScale()!=='price'){
+        pctBase=clamp(priceAtY(my),price*0.2,price*5);
+      }else{
+        if(!vBase){ if(pMode!=='manual')enterManual();
+          vBase={lo:mLo,hi:mHi,R:(mHi-mLo)||1}; }
+        const s=dy*vBase.R/geo.priceH;
+        mLo=vBase.lo+s; mHi=vBase.hi+s; directScale=true;
+      }
     }
     return;
   }
@@ -809,9 +963,9 @@ cv.addEventListener('pointermove',e=>{
       pending.pts.push(dataAt(mx,my));pending._lx=mx;pending._ly=my;}
     return;
   }
-  if(pending&&twoPoint.has(pending.type)) pending.pts[1]=dataAt(mx,my);
+  if(pending&&NPTS[pending.type]&&pending.n<NPTS[pending.type])
+    pending.pts[pending.n]=dataAt(mx,my);
 
-  /* hover cursor: baseline/axes → resize, badge → pointer, else tool logic */
   let hc=null;
   if(geo.badge&&mx>=geo.badge.x&&mx<=geo.badge.x+geo.badge.w&&my>=geo.badge.y&&my<=geo.badge.y+geo.badge.h)hc='pointer';
   else if(nearBaseline(mx,my)&&(tool==='cursor'))hc='ns-resize';
@@ -846,22 +1000,25 @@ cv.addEventListener('pointerup',e=>{
     }
     downPt=null; return;
   }
-  if(pending&&twoPoint.has(pending.type)){
+  /* 2-point drag-release commit (3-point tools need the final click) */
+  if(pending&&NPTS[pending.type]===2&&pending.n===1){
     const a=pending.pts[0], sx=geo.X(a.gm), sy=geo.Y(a.p);
-    if(Math.hypot(mx-sx,my-sy)>24){ pending.pts[1]=dataAt(mx,my); commitPending(); }
+    if(Math.hypot(mx-sx,my-sy)>24){ pending.pts[1]=dataAt(mx,my); pending.n=2; commitPending(); }
   }
 });
 function commitPending(){
   const d=pending; pending=null; chipTxt();
   if(!d)return;
-  const [p0,p1]=d.pts;
+  const P=d.pts;
   if(d.type==='vprofile'){
-    const gm0=Math.min(p0.gm,p1.gm),gm1=Math.max(p0.gm,p1.gm);
+    const gm0=Math.min(P[0].gm,P[1].gm),gm1=Math.max(P[0].gm,P[1].gm);
     if(gm1-gm0<3){setTool('cursor');return;}
     d.pts=[{gm:gm0,p:0},{gm:gm1,p:0}];
   }else{
-    if(Math.abs(p0.gm-p1.gm)<1e-6&&Math.abs(p0.p-p1.p)<1e-9){setTool('cursor');return;}
-    if(d.type==='fib'&&Math.abs(p0.p-p1.p)<1e-9){setTool('cursor');return;}
+    const same=P.every(q=>Math.abs(q.gm-P[0].gm)<1e-6&&Math.abs(q.p-P[0].p)<1e-9);
+    if(same){setTool('cursor');return;}
+    if((d.type==='fib'||d.type==='fibext'||d.type==='fan')&&Math.abs(P[0].p-P[1].p)<1e-9){setTool('cursor');return;}
+    if(d.type==='tzones'&&Math.abs(P[0].gm-P[1].gm)<1e-6){setTool('cursor');return;}
   }
   finishD(d);
 }
@@ -870,16 +1027,13 @@ cv.addEventListener('pointerleave',()=>{mouse.in=false;});
 cv.addEventListener('wheel',e=>{
   e.preventDefault(); if(!geo.sp)return; viewAnim=null;
   const x=e.offsetX,y=e.offsetY;
-  /* PRICE axis only — or Alt+wheel anywhere */
   if(x>=geo.plotW||e.altKey){ priceZoomAt(y,Math.exp(e.deltaY*0.0012)); return; }
-  /* TIME axis only — anchored at the time under the cursor */
   if(y>=H-TIME_H){
     const t=view.r-(geo.plotW-x)/geo.sp;
     const nv=clamp(view.v*Math.exp(e.deltaY*0.0011),40,2400);
     const nsp=geo.plotW/nv;
     view.r=clampR(t+(geo.plotW-x)/nsp); view.v=nv; return;
   }
-  /* chart body: time zoom (shift = strafe) */
   if(e.shiftKey){view.r=clampR(view.r+(e.deltaY+e.deltaX)*0.6/geo.sp);return;}
   const anchor=view.r-(geo.plotW-x)/geo.sp;
   const nv=clamp(view.v*Math.exp(e.deltaY*0.0011),40,2400);
@@ -888,10 +1042,9 @@ cv.addEventListener('wheel',e=>{
 },{passive:false});
 cv.addEventListener('dblclick',e=>{
   const x=e.offsetX,y=e.offsetY;
-  if(x>=geo.plotW){ priceAuto(); return; }               // price axis → auto-fit price
-  if(y>=H-TIME_H){ animateView(bars.length+42,260); return; } // time axis → jump to latest
-  /* 0% baseline → auto-anchor at first visible candle close */
-  if(nearBaseline(x,y)){ 
+  if(x>=geo.plotW){ priceAuto(); return; }
+  if(y>=H-TIME_H){ animateView(bars.length+42,260); return; }
+  if(nearBaseline(x,y)){                               /* anchor 0 at first visible close */
     const idx=clamp(Math.floor(view.r-view.v),0,bars.length-1);
     pctBase=bars[idx].c; return;
   }
@@ -951,6 +1104,7 @@ function pill(x,y,w,h,txt){ctx.fillStyle='#171c23';ctx.strokeStyle='rgba(255,255
   ctx.fillText(txt,x+w/2,y+h/2+0.5);}
 const MONO='"IBM Plex Mono", monospace';
 const PCT_STEPS=[0.02,0.05,0.1,0.2,0.25,0.5,1,2,2.5,5,10,20,25,50,100,200,500];
+const PTS_STEPS=[0.05,0.1,0.25,0.5,1,2,2.5,5,10,20,25,50,100,200,250,500,1000,2500];
 
 /* ============================ render loop ============================ */
 let yLo=null,yHi=null,volMax=null,volMax1=null;
@@ -991,7 +1145,7 @@ function frame(now){
   const gw=Math.max(1.2,sp*0.46);
   const bp=easeOut(clamp((now-switchT0)/420,0,1));
 
-  /* y-scale targets: manual mode pins the range, auto fits visible data */
+  /* y-scale targets */
   const gA=Math.max(0,Math.floor(leftGM)), gB=Math.min(bars.length-1,Math.ceil(view.r));
   let lo=1e18,hi=-1e18,vmax=0,vmax1=0;
   for(let g=gA;g<=gB;g++){const x=bars[g];if(x.l<lo)lo=x.l;if(x.h>hi)hi=x.h;if(effGhost&&x.v>vmax1)vmax1=x.v;}
@@ -1005,10 +1159,7 @@ function frame(now){
   else{const sm=manual?(direct?1:0.5):0.22;
     yLo+=(tLo-yLo)*sm;yHi+=(tHi-yHi)*sm;
     volMax+=((vmax||1)-volMax)*0.22;volMax1+=((vmax1||1)-volMax1)*0.22;}
-  /* Y() honors the inverted axis; data range stays lo<hi either way */
-  const Y=axInv
-    ? p=>((p-yLo)/(yHi-yLo))*priceH
-    : p=>(1-(p-yLo)/(yHi-yLo))*priceH;
+  const Y=p=>(1-(p-yLo)/(yHi-yLo))*priceH;           // chart NEVER flips
   const X=gm=>plotW-(view.r-gm)*sp;
   geo.sp=sp;geo.plotW=plotW;geo.priceH=priceH;geo.volH=volH;geo.volBot=volBot;
   geo.X=X;geo.Y=Y;geo.yLo=yLo;geo.yHi=yHi;
@@ -1017,34 +1168,18 @@ function frame(now){
   ctx.fillStyle='rgba(255,255,255,.014)';
   ctx.fillRect(plotW,0,AXIS_W,plotH); ctx.fillRect(0,plotH,W,TIME_H);
 
-  /* grid + axis labels — absolute price OR baseline-relative percent */
+  /* grid + axis labels — primary scale drives grid, extras stack beneath */
+  const prim=primScale();
+  const extras=SORDER.filter(s=>scales[s]&&s!==prim);
   ctx.font='10px '+MONO; ctx.textAlign='left'; ctx.textBaseline='middle';
   ctx.lineWidth=1;
   const gridCol=manual?'#c9a45c':COL.dim;
-  if(axPct&&pctBase){
-    const pLo=pctOf(yLo), pHi=pctOf(yHi), span=Math.abs(pHi-pLo)||1;
-    const st=PCT_STEPS.find(s=>span/s<=8)||1000;
-    const k0=Math.floor(Math.min(pLo,pHi)/st), k1=Math.ceil(Math.max(pLo,pHi)/st);
-    ctx.strokeStyle=COL.grid; ctx.fillStyle=gridCol;
-    for(let k=k0;k<=k1;k++){
-      const pv=k*st; if(pv===0)continue;             // zero drawn separately
-      const gy=cr(Y(pctBase*(1+pv/100)));
-      if(gy<-1||gy>priceH+1)continue;
-      line(0,gy,plotW,gy);
-      ctx.fillText(labelPct(pv),plotW+9,gy);
-    }
-    const zy=cr(Y(pctBase));                         // the 0% baseline
-    if(zy>-1&&zy<priceH+1){
-      ctx.strokeStyle=baseDrag?'rgba(224,166,63,1)':'rgba(224,166,63,.75)';
-      ctx.setLineDash([6,4]); line(0,zy,plotW,zy); ctx.setLineDash([]);
-      ctx.font='500 9px '+MONO; ctx.fillStyle='rgba(224,166,63,.9)';
-      ctx.fillText(`0% · ${fmtP(pctBase)}${baseDrag?' · drag':''}`,6,zy-5);
-      ctx.fillStyle=COL.acc; rr(plotW+3,zy-8,32,16,4); ctx.fill();
-      ctx.fillStyle='#10131a'; ctx.font='600 9px '+MONO; ctx.textAlign='center';
-      ctx.fillText('0%',plotW+19,zy); ctx.textAlign='left';
-      ctx.font='10px '+MONO;
-    }
-  }else{
+  const subLabel=(y,p)=>{ if(!extras.length)return;
+    ctx.font='8px '+MONO;
+    extras.forEach((s,i)=>{ ctx.fillStyle='rgba(154,163,174,.55)';
+      ctx.fillText(scaleLabel(s,p),plotW+9,y+11+i*9); });
+    ctx.font='10px '+MONO; };
+  if(prim==='price'){
     const range=yHi-yLo, raw=range/6;
     const pow=Math.pow(10,Math.floor(Math.log10(raw)));
     const step=(raw/pow<1.5?1:raw/pow<3.5?2:raw/pow<7.5?5:10)*pow;
@@ -1053,6 +1188,40 @@ function frame(now){
       const p=i*step, gy=cr(Y(p));
       line(0,gy,plotW,gy);
       ctx.fillText(p.toFixed(2),plotW+9,gy);
+      subLabel(gy,p);
+    }
+  }else{
+    const isPts=prim==='pts';
+    const valOf=p=>isPts?p-pctBase:pctOf(p);
+    const priceOf=v=>isPts?pctBase+v:pctBase*(1+v/100);
+    const span=Math.max(1e-9,valOf(yHi)-valOf(yLo));
+    const STEPS=isPts?PTS_STEPS:PCT_STEPS;
+    const st=STEPS.find(s=>span/s<=8)||1e7;
+    const k0=Math.ceil(valOf(yLo)/st), k1=Math.floor(valOf(yHi)/st);
+    ctx.strokeStyle=COL.grid; ctx.fillStyle=gridCol;
+    for(let k=k0;k<=k1;k++){
+      if(k===0)continue;                             // zero = baseline line
+      const v=k*st, gy=cr(Y(priceOf(v)));
+      if(gy<-1||gy>priceH+1)continue;
+      line(0,gy,plotW,gy);
+      const disp=prim==='inv'?-v:v;
+      ctx.fillText(isPts?labelPts(disp):labelPct(disp),plotW+9,gy);
+      subLabel(gy,priceOf(v));
+    }
+  }
+
+  /* 0 baseline — serves percent, inverted % and points scales */
+  if(anyRel()&&pctBase){
+    const zy=cr(Y(pctBase));
+    if(zy>-1&&zy<priceH+1){
+      ctx.strokeStyle=baseDrag?'rgba(224,166,63,1)':'rgba(224,166,63,.75)';
+      ctx.setLineDash([6,4]); line(0,zy,plotW,zy); ctx.setLineDash([]);
+      ctx.font='500 9px '+MONO; ctx.fillStyle='rgba(224,166,63,.9)';
+      ctx.fillText(`0 · ${fmtP(pctBase)}${baseDrag?' · drag':''}`,6,zy-5);
+      ctx.fillStyle=COL.acc; rr(plotW+3,zy-8,26,16,4); ctx.fill();
+      ctx.fillStyle='#10131a'; ctx.font='600 9px '+MONO; ctx.textAlign='center';
+      ctx.fillText('0',plotW+16,zy); ctx.textAlign='left';
+      ctx.font='10px '+MONO;
     }
   }
 
@@ -1200,7 +1369,7 @@ function frame(now){
     ctx.fillText(t.text,plotW+3+(AXIS_W-7)/2,t.y);
   }
 
-  /* last traded price line + tag (reads % when percent axis is on) */
+  /* last traded price line + tag (primary scale) */
   const lp=bars[bars.length-1].c, ly=Y(lp);
   if(ly>-8&&ly<priceH+8){
     ctx.strokeStyle=COL.acc; ctx.globalAlpha=.55; ctx.setLineDash([3,4]); ctx.lineWidth=1;
@@ -1208,7 +1377,7 @@ function frame(now){
     ctx.fillStyle=COL.acc; rr(plotW+3,ly-9,AXIS_W-7,18,4); ctx.fill();
     ctx.fillStyle='#10131a'; ctx.font='600 10.5px '+MONO;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText((axPct&&pctBase)?labelPct(pctOf(lp)):fmtP(lp),plotW+3+(AXIS_W-7)/2,ly+0.5);
+    ctx.fillText(scaleLabel(prim,lp),plotW+3+(AXIS_W-7)/2,ly+0.5);
   }
 
   /* ----- indicator panes ----- */
@@ -1283,7 +1452,7 @@ function frame(now){
       line(0,cr(mouse.y),plotW,cr(mouse.y));
       const pv=clamp(priceAtY(mouse.y),Math.min(yLo,yHi),Math.max(yLo,yHi));
       ctx.font='500 10px '+MONO;
-      pill(plotW+3,mouse.y-9,AXIS_W-7,18,(axPct&&pctBase)?labelPct(pctOf(pv)):fmtP(pv));
+      pill(plotW+3,mouse.y-9,AXIS_W-7,18,scaleLabel(prim,pv));
     }
     ctx.setLineDash([]);
     const txt=fmtHM(cgm), w=ctx.measureText(txt).width+14;
@@ -1294,7 +1463,7 @@ function frame(now){
   ctx.strokeStyle='#20262f'; ctx.lineWidth=1;
   line(cr(plotW),0,cr(plotW),H); line(0,cr(plotH),W,cr(plotH));
 
-  /* price-scale mode badge: AUTO ⇄ ×factor (click = restore auto) */
+  /* price-scale mode badge */
   geo.badge={x:plotW+4,y:H-TIME_H-20,w:AXIS_W-8,h:15};
   ctx.font='600 8.5px '+MONO;
   const fac=pzR0/((mHi-mLo)||1);
@@ -1303,7 +1472,7 @@ function frame(now){
   rr(geo.badge.x,geo.badge.y,geo.badge.w,geo.badge.h,4);ctx.fill();ctx.stroke();
   ctx.fillStyle=manual?COL.acc:'#5a626d';
   ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(manual?('×'+fac.toFixed(2)+(axInv?' ↕':'')):'AUTO',geo.badge.x+geo.badge.w/2,geo.badge.y+8);
+  ctx.fillText(manual?('×'+fac.toFixed(2)):'AUTO',geo.badge.x+geo.badge.w/2,geo.badge.y+8);
 
   /* legend (DOM) */
   const show=sb>=0?agg[sb]:agg[agg.length-1];
@@ -1315,14 +1484,18 @@ function frame(now){
   lgChg.textContent=(dC>=0?'+':'−')+Math.abs(dP).toFixed(2)+'%';
   lgV.textContent=fmtV(show.v);
   [lgO,lgH,lgL,lgC,lgChg,lgV].forEach(el=>el.style.color=cc);
-  const pctx=v=>(axPct&&pctBase)?` · <b class="${v>=pctBase?'u':'d'}">${labelPct(pctOf(v))}</b>`:'';
+  const relTags=v=>{ if(!pctBase)return ''; let s='';
+    if(scales.pct){const dv=pctOf(v); s+=` · <b class="${dv>=0?'u':'d'}">${labelPct(dv)}</b>`;}
+    if(scales.inv){const dv=-pctOf(v); s+=` · <b class="${dv>=0?'u':'d'}">${labelPct(dv)}</b>`;}
+    if(scales.pts){const dv=v-pctBase; s+=` · <b class="${dv>=0?'u':'d'}">${labelPts(dv)}</b>`;}
+    return s; };
   let html;
   if(tf>1&&sb>=0){
     const ib=bars[gi], iu=ib.c>=ib.o?'u':'d';
-    html=`INNER 1m · <b>${fmtHM(gi)}</b> · O <b>${fmtP(ib.o)}</b> H <b class="${iu}">${fmtP(ib.h)}</b> L <b class="${iu}">${fmtP(ib.l)}</b> C <b class="${iu}">${fmtP(ib.c)}</b> · VOL <b>${fmtV(ib.v)}</b>${pctx(ib.c)} · SHELL ${tf}m ${fmtHM(agg[sb].g0)}–${fmtEnd(agg[sb].g1)}`;
+    html=`INNER 1m · <b>${fmtHM(gi)}</b> · O <b>${fmtP(ib.o)}</b> H <b class="${iu}">${fmtP(ib.h)}</b> L <b class="${iu}">${fmtP(ib.l)}</b> C <b class="${iu}">${fmtP(ib.c)}</b> · VOL <b>${fmtV(ib.v)}</b>${relTags(ib.c)} · SHELL ${tf}m ${fmtHM(agg[sb].g0)}–${fmtEnd(agg[sb].g1)}`;
   }else if(sb>=0){
-    html=tf>1?`SHELL ${tf}m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g1)}</b> · ${tf} × 1m aggregated${pctx(show.c)}`
-             :`1m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g0+1)}</b>${pctx(show.c)}`;
+    html=tf>1?`SHELL ${tf}m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g1)}</b> · ${tf} × 1m aggregated${relTags(show.c)}`
+             :`1m · <b>${fmtHM(agg[sb].g0)}</b> → <b>${fmtEnd(agg[sb].g0+1)}</b>${relTags(show.c)}`;
   }else{
     html=tf>1?`${tf}m view · hover any candle — legend reads the ${tf}m shell and the exact 1m minute inside it`
              :`drag to pan · wheel to zoom · keys 1 2 3 4 = timeframes · G ghost · SPACE pause`;
@@ -1333,8 +1506,8 @@ function frame(now){
 }
 
 /* ============================ boot ============================ */
-pctBase=prevCloseRef();                              // 0% defaults to previous close
-renderHeader(); updateAggInfo();
+pctBase=prevCloseRef();                              // 0 defaults to previous close
+renderHeader(); updateAggInfo(); syncScales();
 requestAnimationFrame(frame);
 </script>
 </body>
