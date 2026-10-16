@@ -122,6 +122,11 @@ function installData(sd){
   directScale=false; vBase=null; pMode='auto';
   switchT0=performance.now();
 }
+function clearChart(){
+  bars.length=0; dayLbl.length=0; price=0; lastPrice=0; liveDrift=0; bornGM=-1;
+  aggDirty=true; aggCache.clear(); dataVer++;
+  fvgCache={ver:-1,list:[]}; indCache={tf:-1,ver:-1,d:null};
+  yLo=yHi=null; volMax=volMax1=null; viewAnim=null; }
 /* header DOM */
 const tfSeg=document.querySelector('#tfSeg'), ghostCtl=document.querySelector('#ghostCtl');
 const ltpEl=document.querySelector('#ltp'),chgEl=document.querySelector('#chg'),liveEl=document.querySelector('#live'),liveTxt=document.querySelector('#liveTxt');
@@ -397,7 +402,14 @@ function frame(now){
   requestAnimationFrame(frame);
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle=COL.bg; ctx.fillRect(0,0,W,H);
-  if(W<60||H<60||!bars.length)return;
+  if(W<60||H<60)return;
+  if(!bars.length){
+    ctx.fillStyle='rgba(214,218,224,.28)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='700 15px '+MONO; ctx.fillText('NO DATA',W/2,H/2-14);
+    ctx.font='500 10.5px '+MONO; ctx.fillStyle='rgba(214,218,224,.14)';
+    ctx.fillText(SRC!=='sim'?(BROKERS[SRC].label+' · configure ⚙ or load a symbol'):'load a symbol from the top bar',W/2,H/2+10);
+    return; }
+  // if(W<60||H<60||!bars.length)return;
   const plotW=W-AXIS_W, plotH=H-TIME_H;
   const volH=Math.max(30,plotH*0.15);
   const act=PANE_DEFS.filter(p=>p.on);
