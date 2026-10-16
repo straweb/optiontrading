@@ -3,6 +3,7 @@
    NOTE: history needs the broker TOKEN for the symbol; put a mapping in
    settings "TOKEN MAP" e.g. {"NIFTY":"26000","RELIANCE":"2885"}. Symbols
    without a token fall back to using the raw symbol as token.          */
+window.BROKERS=window.BROKERS||{};
 BROKERS.shoonya={
   id:'shoonya', label:'SHOONYA',
   fields:[
