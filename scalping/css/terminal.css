@@ -351,3 +351,14 @@ tr:hover td{background:rgba(255,255,255,.02)}
 #watch.min .phead span:first-child,#watch.min .phead .cnt{display:none}
 .wcoll{cursor:pointer;color:var(--faint);font-size:11px;padding:0 3px;border-radius:4px}
 .wcoll:hover{color:var(--acc)}
+
+/* per-pane legend bottom-left, out of the title's way */
+#legend{left:10px;top:auto;bottom:30px}
+#latestBtn{right:14px;bottom:32px}
+/* layout picker */
+#layPop{min-width:130px;min-height:130px}
+.layM{width:70px;height:70px}
+/* lock toggle */
+#lockBtn.on{color:var(--acc);border-color:rgba(224,166,63,.6);background:rgba(224,166,63,.1)}
+/* pill overflow pills on non-master panes */
+.xpill{position:absolute;z-index:14;pointer-events:none}
