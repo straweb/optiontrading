@@ -91,8 +91,27 @@
       </div>
     </div>
 
-    <main id="wrap"><div id="grid"></div></main>
-
+    <!-- <main id="wrap"><div id="grid"></div></main> -->
+    <main id="wrap">
+      <div id="grid"></div>
+      <div id="tools"></div>
+      <div id="toolChip"></div>
+      <div id="axMenu" hidden>
+        <div class="mh">ADD ON SCALE</div>
+        <button data-act="buy"><span class="sw" style="background:var(--up)"></span>BUY MARKER</button>
+        <button data-act="sell"><span class="sw" style="background:var(--dn)"></span>SELL MARKER</button>
+        <button data-act="base"><span class="sw" style="background:var(--acc)"></span>SET 0 · BASELINE</button>
+      </div>
+      <input id="txtIn" type="text" maxlength="120" placeholder="Type · Enter to place" spellcheck="false">
+      <div id="legend">
+        <div class="lgRow"><span class="chipTf" id="lgTf">5m</span>
+          <span class="k">O</span><span class="v" id="lgO">—</span><span class="k">H</span><span class="v" id="lgH">—</span>
+          <span class="k">L</span><span class="v" id="lgL">—</span><span class="k">C</span><span class="v" id="lgC">—</span>
+          <span class="k">VOL</span><span class="v" id="lgV">—</span></div>
+        <div class="lgRow" id="lgRow2">—</div>
+      </div>
+      <button id="latestBtn">▶ LATEST</button>
+    </main>
     <div id="paneBar">
       <div class="paneTabs" id="paneTabs"></div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
@@ -104,7 +123,7 @@
       </div>
     </div>
 
-    <div id="legend">
+    <!-- <div id="legend">
       <div class="lgRow"><span class="chipTf" id="lgTf">5m</span>
         <span class="k">O</span><span class="v" id="lgO">—</span><span class="k">H</span><span class="v" id="lgH">—</span>
         <span class="k">L</span><span class="v" id="lgL">—</span><span class="k">C</span><span class="v" id="lgC">—</span>
@@ -119,7 +138,7 @@
       <button data-act="sell"><span class="sw" style="background:var(--dn)"></span>SELL MARKER</button>
       <button data-act="base"><span class="sw" style="background:var(--acc)"></span>SET 0 · BASELINE</button>
     </div>
-    <input id="txtIn" type="text" maxlength="120" placeholder="Type · Enter to place" spellcheck="false">
+    <input id="txtIn" type="text" maxlength="120" placeholder="Type · Enter to place" spellcheck="false"> -->
   </section>
 
   <aside id="strikes">
