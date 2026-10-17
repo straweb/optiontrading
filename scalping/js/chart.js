@@ -55,7 +55,6 @@ function paneFVG(p){
     if(f.dir===1){ if(x.l<=f.bot){f.gone=true;break;} if(!f.fill&&x.l<f.top)f.fill=j; }
     else{ if(x.h>=f.top){f.gone=true;break;} if(!f.fill&&x.h>f.bot)f.fill=j; } } }
   p._fvgVer=p.dataVer;p._fvg=list;return list; }
-
 function view0(p){
   const src=paneBars(p), n=src.length||100;
   if(!p.view)p.view={r:n+6,v:Math.min(260,Math.max(40,n))};
