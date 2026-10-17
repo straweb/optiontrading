@@ -1082,32 +1082,28 @@ if(typeof layout==='string'){ const m=layout.match(/(\d+)\D+(\d+)/);
 if(typeof layout==='number'){ const n=layout; layout={r:n,c:n}; }
 
 /* ── 1 · layout picker: label ABOVE matrix, display-toggle, fixed syntax ── */
-function buildLayPop(){
+/* ── layPop: fixed-position under the button, label ABOVE matrix ── */
+(function(){
+  const lb=qs('#layBtn'); if(!lb)return;
+  const nb=lb.cloneNode(true); lb.replaceWith(nb); })();
+function openLayPop(){
+  const pop=qs('#layPop'), lb=qs('#layBtn'); if(!pop||!lb)return;
+  if(pop.dataset.built!=='1'){ buildLayPop(); pop.dataset.built='1'; }
+  const r=lb.getBoundingClientRect();
+  pop.style.position='fixed';
+  pop.style.top=(r.bottom+6)+'px';
+  pop.style.left=r.left+'px';
+  pop.style.display='block'; }
+function closeLayPop(){ const pop=qs('#layPop'); if(pop)pop.style.display='none'; }
+on('#layBtn','click',e=>{ e.stopPropagation();
   const pop=qs('#layPop'); if(!pop)return;
-  pop.innerHTML='';
-  pop.hidden=false;
-  pop.style.display='none';
-  pop.style.cssText+=';position:absolute;top:30px;left:8px;z-index:300;background:#11141a;'+
-    'border:1px solid #262e39;border-radius:12px;padding:10px;box-shadow:0 16px 40px rgba(0,0,0,.6)';
-  const lbl=document.createElement('div');
-  lbl.style.cssText='font:600 9.5px "IBM Plex Mono",monospace;color:#e0a63f;text-align:center;margin-bottom:7px;min-width:112px';
-  const tbl=document.createElement('div');
-  tbl.style.cssText='display:grid;grid-template-columns:repeat(5,16px);grid-template-rows:repeat(5,16px);gap:3px';
-  for(let r=1;r<=5;r++)for(let c=1;c<=5;c++){
-    const cell=document.createElement('i');
-    cell.dataset.r=r; cell.dataset.c=c;
-    cell.style.cssText='background:#1a2029;border-radius:3px;cursor:pointer;display:block';
-    tbl.appendChild(cell); }
-  pop.appendChild(lbl);                       /* label ABOVE the matrix */
-  pop.appendChild(tbl);
-  const paint=(r,c)=>{ [...tbl.children].forEach(el=>{
-      el.style.background=(+el.dataset.r<=r&&+el.dataset.c<=c)?'#e0a63f':'#1a2029'; }); };
-  tbl.addEventListener('mousemove',e=>{ const el=e.target.closest('i'); if(el)paint(+el.dataset.r,+el.dataset.c); });
-  tbl.addEventListener('mouseleave',()=>paint(layout.r,layout.c));
-  tbl.addEventListener('click',e=>{ const el=e.target.closest('i'); if(!el)return;
-    pop.style.display='none';
-    setLayout(+el.dataset.r,+el.dataset.c); });
-  paint(layout.r,layout.c); }
+  pop.style.display==='block'?closeLayPop():openLayPop(); });
+document.addEventListener('click',e=>{
+  const pop=qs('#layPop');
+  if(pop&&pop.style.display==='block'&&!pop.contains(e.target)&&!e.target.closest('#layBtn'))closeLayPop(); });
+/* dedupe overlays (old index.html duplicates hide the real ones) */
+['#tools','#legend','#toolChip','#axMenu','#txtIn','#latestBtn'].forEach(id=>{
+  document.querySelectorAll(id).forEach((el,i)=>{ if(i>0)el.remove(); }); });
 
 /* kill stale layBtn listeners (clone drops them), wire display-toggle */
 (function(){
