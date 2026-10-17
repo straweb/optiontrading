@@ -1001,3 +1001,107 @@ popWire('#sclBtn','#sclPop');
 popWire('#indBtn','#indPop');
 syncScalesUI(); syncGhostUI(); refreshPositions(); updateAcct();
 requestAnimationFrame(frame);
+
+/* ═══ pane-guard layer — paste at the VERY END of core.js ═══ */
+(function(){
+  /* normalize layout shape (older code paths may have left a string/number) */
+  if(typeof layout==='string'){ const m=layout.match(/(\d+)\D+(\d+)/);
+    layout=m?{r:+m[1],c:+m[2]}:{r:2,c:2}; }
+  if(typeof layout==='number'){ const n=layout; layout={r:n,c:n}; }
+
+  let _fixing=false;
+  const sane=()=>{
+    if(!Array.isArray(panes))panes=[];
+    const good=panes.filter(p=>p&&p.box instanceof Element);
+    if(good.length!==panes.length){
+      console.warn('[layout] dropped '+(panes.length-good.length)+
+        ' malformed pane(s) — a stale fragment is still in core.js. Run __diag() and search the file for: _keep / paneCount / resetSplitters / installData / clearChart / tick( / newBar( / renderHeader(');
+      panes=good;
+      if(!_fixing&&panes.length){
+        _fixing=true;
+        try{ buildLayout(layout.r||2,layout.c||2); }catch(e){}
+        _fixing=false;
+        return sane();
+      }
+    }
+    if(activePane>=panes.length)activePane=Math.max(0,panes.length-1);
+    return panes.length>0;
+  };
+
+  applyGridTemplate=function(){
+    const grid=qs('#grid'); if(!grid)return;
+    if(!sane())return;
+    grid.style.gridTemplateColumns=colFr.map(f=>f+'fr').join(' ');
+    grid.style.gridTemplateRows=rowFr.map(f=>f+'fr').join(' ');
+    grid.classList.toggle('maxed',maxPane!=null);
+    panes.forEach((p,i)=>p.box.classList.toggle('max',i===maxPane));
+    placeSplitters();
+  };
+
+  syncPaneUI=function(){ if(!sane())return;
+    panes.forEach((p,i)=>{
+      p.box.classList.toggle('activePane',i===activePane);
+      const pn=p.box.querySelector('.pn');
+      if(pn)pn.textContent='P'+(i+1)+' · '+paneTitle(p.key);
+      const q=p.key?quotes.get(p.key):null;
+      const pl=p.box.querySelector('.pl');
+      if(pl){ pl.textContent=q?fmtP(q.ltp):'—';
+        pl.style.color=q&&q.prevClose&&q.ltp<q.prevClose?'var(--dn)':'var(--up)'; }
+      const px=p.box.querySelector('.px');
+      if(px)px.style.visibility=p.key?'visible':'hidden';
+    });
+  };
+
+  placeSplitters=function(){
+    qsa('#wrap .spl').forEach(e=>e.remove());
+    if(maxPane!=null||!panes.length)return;
+    const wrap=qs('#wrap'); if(!wrap)return;
+    const totC=colFr.reduce((a,b)=>a+b,0)||1, totR=rowFr.reduce((a,b)=>a+b,0)||1;
+    for(let j=1;j<colFr.length;j++){
+      const s=document.createElement('div'); s.className='spl v';
+      s.style.left=(colFr.slice(0,j).reduce((a,b)=>a+b,0)/totC*100)+'%';
+      s.dataset.j=j; wrap.appendChild(s); }
+    for(let i=1;i<rowFr.length;i++){
+      const s=document.createElement('div'); s.className='spl h';
+      s.style.top=(rowFr.slice(0,i).reduce((a,b)=>a+b,0)/totR*100)+'%';
+      s.dataset.i=i; wrap.appendChild(s); }
+  };
+
+  mountOverlays=function(){
+    const p=activeP(); if(!p||!(p.box instanceof Element))return;
+    ['#tools','#legend','#latestBtn','#toolChip','#axMenu','#txtIn'].forEach(id=>{
+      const el=qs(id); if(el&&el.parentElement!==p.box)p.box.appendChild(el); });
+  };
+
+  layoutUI=function(){
+    const pt=qs('#paneTabs'); if(!pt)return;
+    if(!sane()){pt.innerHTML='';return;}
+    pt.innerHTML=panes.map((p,i)=>
+      `<span class="ptab${i===activePane?' on':''}" data-i="${i}">P${i+1} · ${paneTitle(p.key)}</span>`).join('');
+    qsa('#paneTabs .ptab').forEach(t=>on(t,'click',()=>{
+      activePane=+t.dataset.i;layoutUI();syncPaneUI();syncGhostUI();}));
+    mountOverlays();
+  };
+
+  clearAllPanes=function(){
+    panes.forEach(p=>{ if(!p)return;
+      p.key=null;p.yLo=p.yHi=null;
+      if(p.aggCache)p.aggCache.clear();
+      p.indCache=null;p.dataVer=(p.dataVer||0)+1; });
+    bars.length=0;
+    if(sane()){syncPaneUI();layoutUI();}
+  };
+
+  /* diagnostics */
+  window.__diag=()=>{
+    const stale=['paneCount','resetSplitters','snapshotTab','restoreTab','switchTab',
+      'installData','clearChart','tick','newBar','renderHeader','flashHeader','fmtEnd'];
+    const found=stale.filter(f=>typeof window[f]==='function');
+    console.table(found.map(f=>({staleFunction:f})));
+    console.log('applyGridTemplate guarded:',/sane/.test(applyGridTemplate.toString()));
+    console.log('panes:',panes.length,'| active:',activePane,'| layout:',JSON.stringify(layout));
+    return found.length?('STALE FRAGMENTS PRESENT — delete the blocks defining: '+found.join(', '))
+                       :'core.js looks clean';
+  };
+  console.log('%c[layout guard] active — run __diag() to find stale fragments','color:#e0a63f');
+})();
