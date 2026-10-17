@@ -362,3 +362,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
 #lockBtn.on{color:var(--acc);border-color:rgba(224,166,63,.6);background:rgba(224,166,63,.1)}
 /* pill overflow pills on non-master panes */
 .xpill{position:absolute;z-index:14;pointer-events:none}
+
+.paneBox .ph{left:46px;right:8px}
+.paneBox .ph .pn{flex:0 1 auto;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.paneBox .ph .pl{flex:none;min-width:88px;text-align:right}
+.paneBox .ph .mx{margin-left:auto}
