@@ -1074,15 +1074,23 @@ popWire('#sclBtn','#sclPop');
 popWire('#indBtn','#indPop');
 syncScalesUI(); syncGhostUI(); refreshPositions(); updateAcct();
 requestAnimationFrame(frame);
+/* ═══════════ PATCH LAYER v2 — paste at the VERY END of core.js ═══════════ */
 
-/* ═══ patch layer · paste at the VERY END of core.js ═══ */
+/* normalize layout shape if an older fragment left a string */
+if(typeof layout==='string'){ const m=layout.match(/(\d+)\D+(\d+)/);
+  layout=m?{r:+m[1],c:+m[2]}:{r:2,c:2}; }
+if(typeof layout==='number'){ const n=layout; layout={r:n,c:n}; }
 
-/* layout picker — inline styles, no CSS dependency */
+/* ── 1 · layout picker: label ABOVE matrix, display-toggle, fixed syntax ── */
 function buildLayPop(){
   const pop=qs('#layPop'); if(!pop)return;
   pop.innerHTML='';
-  pop.style.cssText='position:absolute;top:30px;left:8px;z-index:300;background:#11141a;'+
+  pop.hidden=false;
+  pop.style.display='none';
+  pop.style.cssText+=';position:absolute;top:30px;left:8px;z-index:300;background:#11141a;'+
     'border:1px solid #262e39;border-radius:12px;padding:10px;box-shadow:0 16px 40px rgba(0,0,0,.6)';
+  const lbl=document.createElement('div');
+  lbl.style.cssText='font:600 9.5px "IBM Plex Mono",monospace;color:#e0a63f;text-align:center;margin-bottom:7px;min-width:112px';
   const tbl=document.createElement('div');
   tbl.style.cssText='display:grid;grid-template-columns:repeat(5,16px);grid-template-rows:repeat(5,16px);gap:3px';
   for(let r=1;r<=5;r++)for(let c=1;c<=5;c++){
@@ -1090,27 +1098,38 @@ function buildLayPop(){
     cell.dataset.r=r; cell.dataset.c=c;
     cell.style.cssText='background:#1a2029;border-radius:3px;cursor:pointer;display:block';
     tbl.appendChild(cell); }
-  const lbl=document.createElement('div');
-  lbl.style.cssText='font:600 9.5px "IBM Plex Mono",monospace;color:#e0a63f;text-align:center;margin-top:7px;min-width:112px';
-  pop.appendChild(tbl); pop.appendChild(lbl);
+  pop.appendChild(lbl);                       /* label ABOVE the matrix */
+  pop.appendChild(tbl);
   const paint=(r,c)=>{ [...tbl.children].forEach(el=>{
-      el.style.background=(+el.dataset.r<=r&&+el.dataset.c<=c)?'#e0a63f':'#1a2029'); };
-    lbl.textContent=r+' rows × '+c+' cols'; };
+      el.style.background=(+el.dataset.r<=r&&+el.dataset.c<=c)?'#e0a63f':'#1a2029'; }); };
   tbl.addEventListener('mousemove',e=>{ const el=e.target.closest('i'); if(el)paint(+el.dataset.r,+el.dataset.c); });
   tbl.addEventListener('mouseleave',()=>paint(layout.r,layout.c));
   tbl.addEventListener('click',e=>{ const el=e.target.closest('i'); if(!el)return;
-    pop.hidden=true; console.log('[layout]',el.dataset.r+'x'+el.dataset.c);
+    pop.style.display='none';
     setLayout(+el.dataset.r,+el.dataset.c); });
   paint(layout.r,layout.c); }
-buildLayPop();                                    /* ← was never invoked before */
 
-/* pane header: constant title, fixed-width value — buttons never move */
+/* kill stale layBtn listeners (clone drops them), wire display-toggle */
+(function(){
+  const lb=qs('#layBtn'); if(!lb)return;
+  const nb=lb.cloneNode(true); lb.replaceWith(nb); })();
+on('#layBtn','click',e=>{ e.stopPropagation();
+  const pop=qs('#layPop'); if(!pop)return;
+  pop.hidden=false;
+  pop.style.display=pop.style.display==='block'?'none':'block'; });
+document.addEventListener('click',e=>{
+  const pop=qs('#layPop'); if(!pop)return;
+  if(pop.style.display==='block'&&!pop.contains(e.target)&&!e.target.closest('#layBtn'))
+    pop.style.display='none'; });
+buildLayPop();                                /* ← was never invoked before */
+
+/* ── 2 · pane headers: constant title, fixed-width value, buttons FIRST ── */
 function syncPaneUI(){
   panes.forEach((p,i)=>{
     if(!p||!(p.box instanceof Element))return;
     p.box.classList.toggle('activePane',i===activePane);
     const pn=p.box.querySelector('.pn');
-    if(pn)pn.textContent='P'+(i+1)+' · '+paneTitle(p.key);        /* NEVER hover-mutated */
+    if(pn)pn.textContent='P'+(i+1)+' · '+paneTitle(p.key);   /* NEVER mutated */
     const q=p.key?quotes.get(p.key):null;
     const src=p.key===SYM?.key?bars:(dataCache.get(p.key)?.bars||[]);
     const hv=p._hoverGm!=null?src[p._hoverGm]:null;
@@ -1121,48 +1140,151 @@ function syncPaneUI(){
     if(pl){ pl.textContent=(p._hoverGm!=null?'@ ':'')+(val!=null?fmtP(val):'—');
       pl.style.color=chg>=0?'var(--up)':'var(--dn)'; }
     const px=p.box.querySelector('.px');
-    if(px)px.style.visibility=p.key?'visible':'hidden'; }); }
+    if(px)px.style.visibility=p.key?'visible':'hidden'; });
+  /* ticket auto-follows the active pane */
+  const ak=activeP()?.key;
+  if(ak&&ak!==ticketKey){ ticketKey=ak;
+    const t=qs('#tkSym'); if(t)t.textContent=disp(ak); updateLotLbl(); }
+  /* legend: hovered 1m OHLCV + ghost shell context */
+  const ap=activeP();
+  if(ap&&ap.key){
+    const src=ap.key===SYM?.key?bars:(dataCache.get(ap.key)?.bars||[]);
+    if(src.length){
+      const gm=clamp(ap._hoverGm!=null?ap._hoverGm:src.length-1,0,src.length-1);
+      const b=src[gm];
+      const o=qs('#lgO'),h=qs('#lgH'),l=qs('#lgL'),c=qs('#lgC'),v=qs('#lgV'),tf=qs('#lgTf'),r2=qs('#lgRow2');
+      if(o){ o.textContent=fmtP(b.o); h.textContent=fmtP(b.h); l.textContent=fmtP(b.l);
+        c.textContent=fmtP(b.c); v.textContent=fmtV(b.v);
+        const col=b.c>=b.o?'#2fbf7f':'#e5484d';
+        [o,h,l,c,v].forEach(el=>el.style.color=col); }
+      if(tf)tf.textContent=ap.tf+'m';
+      if(r2){ let s=`1m ${fmtHM(gm)} · ${fmtHM(gm)} bar`;
+        if(ap.ghost&&ap.tf>1){
+          const shell=paneAgg(ap,ap.tf)[Math.floor(gm/ap.tf)];
+          if(shell)s+=` · ghost inside ${ap.tf}m shell ${fmtHM(shell.g0)}–${fmtHM(shell.g1-1)}`; }
+        s+=ap.autoFollow===false?'':' · following ⟳';
+        r2.innerHTML=s; } } } }
 
-/* FNO: P1 spot full-width top · CE + PE second row · 4th slot hidden */
+/* ── 3 · FNO: P1 spot full-width top row, CE|PE below, 4th slot hidden ── */
 function setupFnoPanes(){
   const root=rootOf(); if(!root)return;
   buildLayout(2,2);
   const spot=liveSpot(root), step=strikeStep(root,spot);
   const atm=Math.round(spot/step)*step;
   curSpot='NSE:'+root;
-  panes[0].box.style.gridArea='1 / 1 / 2 / 3';   /* spot spans both columns */
-  panes[1].box.style.gridArea='2 / 1 / 3 / 2';   /* ATM CE */
-  panes[2].box.style.gridArea='2 / 2 / 3 / 3';   /* ATM PE */
-  panes[3].box.style.display='none';             /* unused 4th slot */
+  panes[0].box.style.gridArea='1 / 1 / 2 / 3';
+  panes[1].box.style.gridArea='2 / 1 / 3 / 2';
+  panes[2].box.style.gridArea='2 / 2 / 3 / 3';
+  panes[3].box.style.display='none';
   panes[0].key=curSpot;
   panes[1].key=optKey(root,atm,'CE');
   panes[2].key=optKey(root,atm,'PE');
   panes[3].key=null;
-  panes.forEach(p=>{
-    p.view=null;p.yLo=p.yHi=null;
-    if(p.aggCache)p.aggCache.clear();
-    p.indCache=null;p.dataVer=(p.dataVer||0)+1;
+  panes.forEach(p=>{ p.view=null;p.yLo=p.yHi=null;p.autoFollow=true;
+    if(p.aggCache)p.aggCache.clear(); p.indCache=null;p.dataVer=(p.dataVer||0)+1;
     if(p.key){ ensureQuote(p.key); if(SRC==='sim')symbolData(p.key); } });
   curOptExp=expOptIdx;
   activePane=0; layoutUI(); syncPaneUI(); syncGhostUI(); mountOverlays(); refreshStrikes();
   ticketKey=curSpot; const t=qs('#tkSym'); if(t)t.textContent=disp(curSpot);
   updateLotLbl();
-  toast('FNO: P1 spot (full width) · row2: CE | PE ('+expAll[curOptExp].f+')','ok'); }
+  toast('FNO: P1 spot (full width) · row2 CE | PE ('+expAll[curOptExp].f+')','ok'); }
 
-/* diagnostics — run __chk() in the console after Ctrl+F5 */
+/* ── 4 · lock btn auto-inject + double-click price axis = pin scale ── */
+(function(){
+  let b=qs('#lockBtn');
+  if(!b){ b=document.createElement('button'); b.id='lockBtn'; b.className='iconBtn';
+    b.title='lock time crosshair across panes'; b.textContent='🔒';
+    const live=qs('#live'); if(live)live.parentElement.insertBefore(b,live); }
+  b.classList.add('on'); })();
+on('#lockBtn','click',()=>{ lockCross=!lockCross;
+  const b=qs('#lockBtn'); if(b)b.classList.toggle('on',lockCross); });
+document.addEventListener('dblclick',e=>{
+  const cvEl=e.target.closest?.('.paneBox canvas'); if(!cvEl)return;
+  const i=panes.findIndex(p=>p.cv===cvEl); if(i<0)return;
+  const r=cvEl.getBoundingClientRect();
+  if(e.clientX-r.left>=r.width-AXIS_W){        /* double-click on price axis */
+    const p=panes[i];
+    if(p.yLo!=null){ p.mLo=p.yLo; p.mHi=p.yHi; p.pMode='manual';
+      toast('price scale pinned — wheel on axis to zoom, drag body vertically to slide'); } } });
+
+/* ── 5 · workspace tabs — multiple tabs, each with its own layout ── */
+let wsList=[{name:'W1',state:null}], wsCur=0, wsSeq=2;
+function wsSnapshot(){
+  return { layout:{...layout}, colFr:[...colFr], rowFr:[...rowFr], activePane,
+    panes:panes.map(p=>({key:p.key,tf:p.tf,ghost:p.ghost,ghostStyle:p.ghostStyle,
+      drawings:p.drawings,uidC:p.uidC,undo:p.undo,selId:p.selId,view:p.view,
+      pctBase:p.pctBase,pMode:p.pMode,mLo:p.mLo,mHi:p.mHi,
+      yLo:p.yLo,yHi:p.yHi,volMax:p.volMax,volMax1:p.volMax1,autoFollow:p.autoFollow})) }; }
+function wsRestore(s){
+  buildLayout(s.layout.r,s.layout.c);
+  colFr=s.colFr.slice(); rowFr=s.rowFr.slice();
+  s.panes.forEach((sp,i)=>{ if(!panes[i])return;
+    Object.assign(panes[i],sp);
+    panes[i].aggDirty=true; panes[i].dataVer=(panes[i].dataVer||0)+1;
+    if(panes[i].key){ ensureQuote(panes[i].key); if(SRC==='sim')symbolData(panes[i].key); } });
+  activePane=Math.min(s.activePane,panes.length-1);
+  applyGridTemplate(); layoutUI(); syncPaneUI(); syncGhostUI(); mountOverlays(); }
+function wsSwitch(i){ if(i===wsCur)return;
+  wsList[wsCur].state=wsSnapshot();
+  wsCur=i; const ws=wsList[i];
+  if(ws.state)wsRestore(ws.state); else buildLayout(1,1);
+  wsRenderBar(); toast('workspace '+ws.name); }
+function wsAdd(){
+  wsList[wsCur].state=wsSnapshot();
+  wsList.push({name:'W'+wsSeq,state:null}); wsSeq++;
+  wsCur=wsList.length-1; buildLayout(1,1); wsRenderBar();
+  toast('workspace W'+(wsSeq-1)+' — pick a layout & symbols','ok'); }
+function wsClose(i){
+  if(wsList.length<=1)return;
+  wsList.splice(i,1); wsCur=Math.min(wsCur,wsList.length-1);
+  const ws=wsList[wsCur];
+  if(ws.state)wsRestore(ws.state); else buildLayout(1,1);
+  wsRenderBar(); }
+function wsRenderBar(){
+  let bar=qs('#wsBar');
+  if(!bar){ bar=document.createElement('div'); bar.id='wsBar';
+    bar.style.cssText='display:flex;gap:3px;align-items:center';
+    const cb=qs('#chartbar'); if(cb)cb.insertBefore(bar,cb.firstChild); }
+  bar.innerHTML='';
+  wsList.forEach((w,i)=>{
+    const t=document.createElement('span');
+    t.style.cssText='font:600 9.5px "IBM Plex Mono",monospace;padding:4px 9px;border:1px solid '+
+      (i===wsCur?'rgba(224,166,63,.55);color:#e0a63f;background:rgba(224,166,63,.08)':'#262e39;color:#8b95a1')+
+      ';border-radius:7px;cursor:pointer;white-space:nowrap';
+    t.textContent=w.name;
+    t.onclick=()=>wsSwitch(i);
+    t.ondblclick=()=>{ if(wsList.length>1&&confirm('close '+w.name+'?'))wsClose(i); };
+    bar.appendChild(t); });
+  const add=document.createElement('span');
+  add.style.cssText='font:600 11px "IBM Plex Mono",monospace;padding:3px 8px;border:1px dashed #262e39;border-radius:7px;color:#8b95a1;cursor:pointer';
+  add.textContent='+'; add.title='new workspace (own layout, own charts)';
+  add.onclick=wsAdd; bar.appendChild(add); }
+wsRenderBar();
+
+/* paneLoadSymbol keeps auto-follow on fresh loads */
+const _pls0=paneLoadSymbol;
+paneLoadSymbol=function(key){ _pls0(key); const p=activeP(); if(p)p.autoFollow=true; };
+
+mountOverlays();
+
+/* ── diagnostics ── */
 window.__chk=()=>{
   const r={};
   r.layPop_cells=qs('#layPop')?qs('#layPop').querySelectorAll('i').length:0;
+  r.layPop_display=qs('#layPop')?.style.display||'(unset)';
+  r.ws_tabs=wsList.length;
   r.tools_parent=qs('#tools')?.parentElement?.className||'MISSING';
   r.legend_parent=qs('#legend')?.parentElement?.className||'MISSING';
   r.chart_relLabel=typeof relLabel==='function';
   r.chart_addBtn=typeof frame==='function'&&frame.toString().includes('_addBtn');
-  r.chart_priceZoom=typeof bindPaneEvents==='function'&&bindPaneEvents.toString().includes('PRICE zoom');
+  r.chart_priceZoom=typeof bindPaneEvents==='function'&&
+    (bindPaneEvents.toString().includes('PRICE zoom')||frame.toString().includes('PRICE zoom'));
   r.chart_lockCross=typeof lockCross!=='undefined';
   r.panes=panes.length;
   r.panes_valid=panes.filter(p=>p&&p.box instanceof Element).length;
   console.table(r);
   if(!r.chart_relLabel||!r.chart_addBtn||!r.chart_priceZoom)
-    console.warn('%c→ chart.js is an OLD version. Re-apply the full chart.js from the previous patch (price zoom, add-button, locked crosshair and %/pts pills all live there).','color:#e5484d');
+    console.warn('%c→ chart.js is an OLD version — re-apply the full chart.js from the earlier patch (price zoom, add-button, %/pts pills, locked crosshair live there).','color:#e5484d');
+  if(r.tools_parent!=='paneBox')console.warn('%c→ overlays not mounted: click a pane once (layoutUI→mountOverlays). If still wrong, index.html must hold exactly ONE copy of #tools/#legend/#toolChip/#axMenu/#txtIn/#latestBtn, inside <main id="wrap">.','color:#e5484d');
   return r; };
-console.log('%c[patch] active — run __chk()','color:#e0a63f');
+console.log('%c[patch v2] active — run __chk()','color:#e0a63f');
