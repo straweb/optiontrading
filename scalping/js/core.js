@@ -34,7 +34,52 @@ function selectSrc(id){
     else if(SYM)loadSymbol(SYM.key);
     else toast(BROKERS[id].label+' selected — load a symbol'); }
   updateAcct(); refreshStrikes(); refreshPositions(); }
-
+/* pane wiring — self-healing override of chart.js's bindPaneEvents */
+function bindPaneEvents(){
+  panes.forEach((p,idx)=>{
+    if(!p)return;
+    /* self-heal: guarantee a real canvas inside the pane box */
+    let cvEl=p.cv;
+    if(!(cvEl instanceof Element)&&p.box){
+      cvEl=p.box.querySelector('canvas');
+      if(!cvEl){ cvEl=document.createElement('canvas'); p.box.appendChild(cvEl); }
+      p.cv=cvEl; p.ctx=cvEl.getContext('2d');
+    }
+    if(!(cvEl instanceof Element)){ console.warn('[pane '+(idx+1)+'] no canvas — skipped'); return; }
+    p.cv=cvEl; p.ctx=p.ctx||cvEl.getContext('2d');
+    const ro=new ResizeObserver(()=>{
+      p.dpr=window.devicePixelRatio||1;
+      p.W=cvEl.clientWidth; p.H=cvEl.clientHeight;
+      cvEl.width=Math.round(p.W*p.dpr); cvEl.height=Math.round(p.H*p.dpr);
+      if(p.key)p.aggDirty=true;
+    });
+    ro.observe(cvEl);
+    cvEl.addEventListener('pointerdown',e=>{ e.preventDefault();
+      if(activePane!==idx){activePane=idx;layoutUI();syncPaneUI();syncGhostUI();mountOverlays();}
+      const v=view0(p);
+      p._drag={x:e.offsetX,y:e.offsetY,r:v.r,lo:p.yLo,hi:p.yHi};
+      try{cvEl.setPointerCapture(e.pointerId);}catch(_){}
+    });
+    cvEl.addEventListener('pointermove',e=>{
+      p.mouse={x:e.offsetX,y:e.offsetY,in:true};
+      const d=p._drag;
+      if(d){ const v=view0(p);
+        v.r=clampPaneR(p,d.r-(e.offsetX-d.x)/paneSp(p));
+        const dy=e.offsetY-d.y;
+        if(Math.abs(dy)>2&&p.yLo!=null){
+          const R=p.yHi-p.yLo;
+          p.mLo=d.lo+dy*R/p.priceH; p.mHi=d.hi+dy*R/p.priceH; p.pMode='manual'; } } });
+    const end=()=>{ p._drag=null; };
+    cvEl.addEventListener('pointerup',end); cvEl.addEventListener('pointercancel',end);
+    cvEl.addEventListener('pointerleave',()=>{ p.mouse.in=false; });
+    cvEl.addEventListener('wheel',e=>{ e.preventDefault();
+      const v=view0(p), sp=paneSp(p), plotW=p.W-AXIS_W;
+      const nv=clamp(v.v*Math.exp(e.deltaY*0.0011),40,2400);
+      const anchor=v.r-(plotW-e.offsetX)/sp;
+      v.r=clampPaneR(p,anchor+(plotW-e.offsetX)/(plotW/nv)); v.v=nv; },{passive:false});
+    cvEl.addEventListener('dblclick',()=>{ p.view=null;p.yLo=p.yHi=null;p.pMode='auto'; });
+  });
+}
 /* ═══════════ layout: rows × cols, splitters, maximize, overlays ═══════════ */
 let panes=[], activePane=0, layout={r:2,c:2}, colFr=[], rowFr=[], maxPane=null;
 function paneTitle(k){ if(!k)return '—';
