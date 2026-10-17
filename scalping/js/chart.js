@@ -279,7 +279,7 @@ function frame(now){
     ctx.font='10px '+MONO;ctx.textAlign='left';ctx.textBaseline='middle';ctx.lineWidth=1;
     const tickPts=[];
     const gridCol=manual?'#c9a45c':COL.dim;
-    if(prim==='price'){
+        if(prim==='price'){
       const raw=(p.yHi-p.yLo)/6, pow=Math.pow(10,Math.floor(Math.log10(raw)));
       const st=(raw/pow<1.5?1:raw/pow<3.5?2:raw/pow<7.5?5:10)*pow;
       ctx.strokeStyle=COL.grid;ctx.fillStyle=gridCol;
@@ -287,6 +287,17 @@ function frame(now){
         const gy=cr(Y(i*st));line(0,gy,plotW,gy);
         ctx.fillText((i*st).toFixed(2),primX0+8,gy);
         tickPts.push({gy,p:i*st}); }
+      /* relative sub-labels in the LEFT measurement column */
+      const others=SORDER.filter(s=>scales[s]&&s!==prim);
+      if(others.length&&p.pctBase){
+        ctx.font='8.5px '+MONO;
+        for(const t of tickPts){
+          others.forEach((s,i)=>{
+            let v=s==='pts'?t.p-p.pctBase:(t.p-p.pctBase)/p.pctBase*100;
+            if(s==='inv')v=-v;
+            ctx.fillStyle='rgba(154,163,174,.65)';
+            ctx.fillText(relLabel(v,s==='pts'),plotW+5,t.gy+(i-(others.length-1)/2)*10); }); }
+        ctx.font='10px '+MONO; }
     }else{
       const isPts=prim==='pts';
       const valOf=pp=>isPts?pp-p.pctBase:(pp-p.pctBase)/p.pctBase*100;
