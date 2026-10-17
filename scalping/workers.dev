@@ -1,0 +1,23 @@
+// Cloudflare Worker — deploy as-is, then use the workers.dev URL as BASE URL
+const UPSTREAM = 'https://api.shoonya.com/NorenWClientTP';
+export default {
+  async fetch(req) {
+    const cors = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    };
+    if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
+    if (req.method !== 'POST')
+      return new Response('POST only', { status: 405, headers: cors });
+    const ep = new URL(req.url).pathname.split('/').filter(Boolean).pop() || 'QuickAuth';
+    const r = await fetch(`${UPSTREAM}/${ep}`, {
+      method: 'POST',
+      headers: { 'Content-Type': req.headers.get('Content-Type') || 'application/json' },
+      body: await req.text(),
+    });
+    const h = new Headers(r.headers);
+    Object.entries(cors).forEach(([k, v]) => h.set(k, v));
+    return new Response(r.body, { status: r.status, headers: h });
+  },
+};
