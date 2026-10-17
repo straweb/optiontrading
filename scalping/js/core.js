@@ -1,5 +1,6 @@
 'use strict';
-let CFG=Object.assign({cap:100000,deployMode:'pct',deployVal:75,src:'sim',defLots:1,brokers:{},layout:'3'},
+/* ═══════════ config / broker routing ═══════════ */
+let CFG=Object.assign({cap:100000,deployMode:'pct',deployVal:75,src:'sim',defLots:1,brokers:{},layout:'2x2'},
   JSON.parse(localStorage.getItem('scalping_cfg')||'{}'));
 function saveCfg(){localStorage.setItem('scalping_cfg',JSON.stringify(CFG));}
 const bcfg=id=>CFG.brokers[id]||(CFG.brokers[id]={});
@@ -9,7 +10,6 @@ function usableFunds(){ return CFG.deployMode==='pct'?CFG.cap*(+CFG.deployVal||0
 let SYM=null, ticketKey=null, ordType='MKT', PRD='MIS', editRowId=null;
 let lastRoot=null, curSpot=null, curOptExp=0;
 
-/* ---------- brokers ---------- */
 function buildSrcSeg(){
   const seg=qs('#srcSeg'); if(!seg)return;
   seg.innerHTML='';
@@ -17,7 +17,9 @@ function buildSrcSeg(){
     const bt=document.createElement('button');bt.textContent=b.label;bt.dataset.s=b.id;
     bt.classList.toggle('on',b.id===SRC);
     on(bt,'click',()=>selectSrc(b.id));
-    seg.appendChild(bt); }); }
+    seg.appendChild(bt); });
+  if(Object.keys(BROKERS).length<3)
+    console.warn('[scalping] brokers missing — check js/brokers/* (Network tab for 404)'); }
 function setSrcDot(){ const d=qs('#srcDot'); if(!d)return;
   d.className=SRC==='sim'?'':(apiOK?'api':'err');
   qs('#srcLbl').textContent=SRC==='sim'?'SIM':(apiOK?BROKERS[SRC].label+' · LIVE':BROKERS[SRC].label+' · NO LINK'); }
@@ -33,7 +35,7 @@ function selectSrc(id){
     else toast(BROKERS[id].label+' selected — load a symbol'); }
   updateAcct(); refreshStrikes(); refreshPositions(); }
 
-/* ══════════ layout: rows × cols matrix, splitters, maximize, overlays ══════════ */
+/* ═══════════ layout: rows × cols, splitters, maximize, overlays ═══════════ */
 let panes=[], activePane=0, layout={r:2,c:2}, colFr=[], rowFr=[], maxPane=null;
 function paneTitle(k){ if(!k)return '—';
   const m=resolveMeta(k);
@@ -67,11 +69,12 @@ function layoutUI(){
   qsa('#paneTabs .ptab').forEach(t=>on(t,'click',()=>{activePane=+t.dataset.i;layoutUI();syncPaneUI();syncGhostUI();}));
   mountOverlays(); }
 function mountOverlays(){
-  const p=activeP(); if(!p)return;
+  const p=activeP(); if(!p||!p.box)return;
   ['#tools','#legend','#latestBtn','#toolChip','#axMenu','#txtIn'].forEach(id=>{
     const el=qs(id); if(el&&el.parentElement!==p.box)p.box.appendChild(el); }); }
-function activeP(){ return panes[activePane]; }
+function activeP(){ return panes[activePane]||null; }
 function syncPaneUI(){ panes.forEach((p,i)=>{
+  if(!p||!p.box)return;
   p.box.classList.toggle('activePane',i===activePane);
   p.box.querySelector('.pn').textContent='P'+(i+1)+' · '+paneTitle(p.key);
   const q=p.key?quotes.get(p.key):null;
@@ -103,7 +106,7 @@ qsa('#tfSeg button').forEach(b=>on(b,'click',()=>paneSetTF(+b.dataset.tf)));
 on('#ghostToggle','click',()=>{ const p=activeP(); if(p){p.ghost=!p.ghost;syncGhostUI();} });
 qsa('#styleSeg button').forEach(b=>on(b,'click',()=>{
   const p=activeP(); if(p)p.ghostStyle=b.dataset.s; syncGhostUI(); }));
-/* ---- layout picker: hover rows × cols matrix ---- */
+/* layout picker: hover rows × cols */
 on('#layBtn','click',e=>{ e.stopPropagation(); const pop=qs('#layPop'); if(pop)pop.hidden=!pop.hidden; });
 document.addEventListener('click',e=>{ const pop=qs('#layPop');
   if(pop&&!pop.hidden&&!pop.contains(e.target)&&e.target!==qs('#layBtn'))pop.hidden=true; });
@@ -132,7 +135,7 @@ function setLayout(r,c){
     ensureQuote(p.key); if(SRC==='sim')symbolData(p.key); } });
   if(curSpot&&!panes.some(p=>p.key===curSpot)&&panes[0])panes[0].key=curSpot;
   syncPaneUI(); layoutUI(); }
-/* ---- resizable splitters + maximize ---- */
+/* splitters + maximize */
 function applyGridTemplate(){
   const grid=qs('#grid'); if(!grid)return;
   grid.style.gridTemplateColumns=colFr.map(f=>f+'fr').join(' ');
@@ -194,10 +197,11 @@ qsa('#sclPop input').forEach(cb=>on(cb,'change',()=>{
 function syncScalesUI(){ qsa('#sclPop input').forEach(cb=>cb.checked=!!scales[cb.dataset.scale]); }
 qsa('#indPop input').forEach(cb=>on(cb,'change',()=>{
   PANE_DEFS.find(x=>x.id===cb.dataset.pane).on=cb.checked; }));
-function clearAllPanes(){ panes.forEach(p=>{ p.key=null;p.yLo=p.yHi=null;
-  p.aggCache.clear();p.indCache=null;p.dataVer++; });
+function clearAllPanes(){ panes.forEach(p=>{ if(!p)return;
+  p.key=null;p.yLo=p.yHi=null;p.aggCache.clear();p.indCache=null;p.dataVer++; });
   bars.length=0; syncPaneUI(); layoutUI(); }
-/* ============ orders ============ */
+
+/* ═══════════ orders / positions / trades ═══════════ */
 let positions=[], trades=[], posId=1;
 const realized={};
 function currentPriceOf(key){ const q=quotes.get(key); return q?q.ltp:resolveMeta(key).basePrice; }
@@ -356,7 +360,7 @@ on('#defLots','change',e=>{ CFG.defLots=Math.max(1,Math.round(+e.target.value||1
   e.target.value=CFG.defLots; saveCfg(); refreshStrikes(); });
 on('#prdSel','change',e=>{ PRD=e.target.value; });
 
-/* ============ watchlist ============ */
+/* ═══════════ watchlist ═══════════ */
 let watch=JSON.parse(localStorage.getItem('scalping_watch')||
   '["NSE:NIFTY","NSE:BANKNIFTY","NSE:RELIANCE","NSE:HDFCBANK","NSE:TCS"]');
 const wRefs=new Map();
@@ -385,9 +389,10 @@ function refreshWatch(){
     r.row.classList.toggle('on',!!SYM&&key===SYM.key); } }
 function persistWatch(){localStorage.setItem('scalping_watch',JSON.stringify(watch));}
 on('#wCol','click',()=>{
-  const w=qs('#watch'); w.classList.toggle('min');
-  qs('#wCol').textContent=w.classList.contains('min')?'»':'«'; });
-/* ============ EQ / FNO + dual expiries + FNO auto-grid ============ */
+  const w=qs('#watch'); if(!w)return; w.classList.toggle('min');
+  const b=qs('#wCol'); if(b)b.textContent=w.classList.contains('min')?'»':'«'; });
+
+/* ═══════════ EQ / FNO + dual expiries + FNO auto-grid ═══════════ */
 let inst='eq', expSpotIdx=0, expOptIdx=0;
 function rootOf(){
   if(SYM){ if(SYM.type==='OPT'||SYM.type==='FUT')return SYM.root;
@@ -399,7 +404,7 @@ function buildExpSels(){
   ss.innerHTML=''; so.innerHTML='';
   expAll.forEach((e,i)=>{
     let o=document.createElement('option');o.value=i;
-    o.textContent=e.f+(e.kind==='monthly'?' ·M':' (spot+fut)');
+    o.textContent=e.f+(e.kind==='monthly'?' ·M':'');
     ss.appendChild(o);
     o=document.createElement('option');o.value=i;
     o.textContent=e.f+(e.kind==='monthly'?' ·M':'');
@@ -418,22 +423,19 @@ qsa('#instSeg button').forEach(b=>on(b,'click',()=>{
   if(inst==='fno'){
     if(!rootOf()){ toast('search & load an FNO symbol (index / F&O stock) first','err');
       inst='eq'; applySegUI(); return; }
-    applySegUI();
-    setupFnoPanes(); }
-  else{ applySegUI(); qs('#strikes').style.display='none';
+    applySegUI(); setupFnoPanes(); }
+  else{ applySegUI(); const st=qs('#strikes'); if(st)st.style.display='none';
     if(SYM&&(SYM.type==='OPT'||SYM.type==='FUT'))loadSymbol(SYM.underlying||'NSE:'+(SYM.root||SYM.sym)); }
   refreshStrikes(); }));
 on('#expSpot','change',e=>{
   expSpotIdx=+e.target.value; const root=rootOf(); if(!root)return;
-  paneLoadSymbol('NSE:'+root);
-  toast('spot+fut expiry → '+expAll[expSpotIdx].f); });
+  paneLoadSymbol('NSE:'+root); });
 on('#expOpt','change',e=>{
   expOptIdx=+e.target.value; curOptExp=expOptIdx;
   strikeSig=''; refreshStrikes(); setupFnoPanes(); });
-/* FNO default panes: [0]=spot, [1]=ATM CE, [2]=ATM PE */
 function setupFnoPanes(){
   const root=rootOf(); if(!root)return;
-  if(panes.length<3)buildLayout(2);          /* need ≥3 slots → 2×2 */
+  if(panes.length<3)buildLayout(2,2);
   const spot=liveSpot(root), step=strikeStep(root,spot);
   const atm=Math.round(spot/step)*step;
   curSpot='NSE:'+root;
@@ -443,15 +445,16 @@ function setupFnoPanes(){
   panes.slice(0,3).forEach(p=>{ p.view=null;p.yLo=p.yHi=null;p.aggCache.clear();p.indCache=null;p.dataVer++;
     ensureQuote(p.key); if(SRC==='sim')symbolData(p.key); });
   curOptExp=expOptIdx;
-  activePane=0; layoutUI(); syncPaneUI(); syncGhostUI(); refreshStrikes();
-  ticketKey=curSpot; qs('#tkSym').textContent=disp(curSpot); updateLotLbl();
-  toast(`FNO: spot P1 · ATM ${atm} CE P2 · PE P3 (${expAll[expOptIdx].f})`,'ok'); }
+  activePane=0; layoutUI(); syncPaneUI(); syncGhostUI(); mountOverlays(); refreshStrikes();
+  ticketKey=curSpot; const t=qs('#tkSym'); if(t)t.textContent=disp(curSpot);
+  updateLotLbl();
+  toast(`FNO: spot P1 · ATM ${atm} CE P2 · PE P3 (${expAll[curOptExp].f})`,'ok'); }
 function updateStrikesVis(){
   const root=rootOf(); const show=inst==='fno'&&!!root;
   const st=qs('#strikes'); if(st)st.style.display=show?'flex':'none';
   return show?root:null; }
 
-/* ============ strike panel ============ */
+/* ═══════════ strike panel ═══════════ */
 let optSide='CE', optRole='buyer', offDir=1, strikeSig='';
 const strikeLists=new Map();
 const rowRefs=new Map();
@@ -617,16 +620,12 @@ on('#stBody','click',e=>{
     als.max=r.amode==='amt'?Math.max(1,Math.round(usableFunds())):100;
     als.step=r.amode==='amt'?1000:1;
     updateStrikeCells(root,expAll[curOptExp].f,listFor()); return; }
-  /* click strike / LTP → point that pane at the option (pane stays its own) */
   if(e.target.classList.contains('k')||e.target.classList.contains('lpx')){
     const key=optKey(root,K,r.side);
     ticketKey=key; qs('#tkSym').textContent=disp(key);
     qs('#tkQty').value=1; updateLotLbl();
     qsa('.srow').forEach(x=>x.classList.toggle('selRow',x===row));
-    const pane=activeP();
-    if(pane&&pane!==panes[0])paneLoadSymbol(key);
-    else paneLoadSymbol(key);
-    return; }
+    loadSymbol(key); return; }
   const step=strikeStep(root,liveSpot(root));
   if(act==='en'){ r.on=e.target.checked; return; }
   if(act==='up'||act==='dn'){ r.K=K+(act==='up'?step:-step);
@@ -754,7 +753,7 @@ function checkSLTP(){
     else{ if(isFinite(sl)&&ltp>=sl)hit='SL'; else if(isFinite(tp)&&ltp<=tp)hit='TARGET'; }
     if(hit){ toast(`${hit} hit · ${disp(p.key)} @ ${fmtP(ltp)}`, hit==='SL'?'err':'ok'); squareOff(p.id); } } }
 
-/* ============ scheduler ============ */
+/* ═══════════ scheduler ═══════════ */
 let sched=[], schedSeq=1;
 const ACTS={
   deployCE:()=>deploy('CE'), deployPE:()=>deploy('PE'),
@@ -814,7 +813,7 @@ setInterval(()=>{ let fired=false; const now=Date.now();
     toast(`⏰ ${ACTLBL[t.act]||t.act} fired`,'ok'); } }
   if(fired)renderSched(); },250);
 
-/* ============ quotes / sim ============ */
+/* ═══════════ quotes / sim ticks ═══════════ */
 function simTickOthers(){
   for(const [key,q] of quotes){
     if(panes.some(p=>p.key===key))continue;
@@ -825,7 +824,7 @@ function simTickOthers(){
 let tickN=0;
 setInterval(()=>{ if(SRC!=='sim'||paused)return;
   tickN++;
-  const keys=new Set(panes.filter(p=>p.key).map(p=>p.key));
+  const keys=new Set(panes.filter(p=>p&&p.key).map(p=>p.key));
   keys.forEach(k=>{
     const sd=dataCache.get(k); if(!sd||!sd.bars.length)return;
     const arr=k===(SYM&&SYM.key)?bars:sd.bars;
@@ -835,7 +834,7 @@ setInterval(()=>{ if(SRC!=='sim'||paused)return;
     b.c=nc; if(nc>b.h)b.h=nc; if(nc<b.l)b.l=nc;
     b.v+=Math.round(50+rng()*180);
     const q=quotes.get(k); if(q)q.ltp=nc;
-    panes.forEach(p=>{ if(p.key===k){p.aggDirty=true;p.dataVer++;} }); });
+    panes.forEach(p=>{ if(p&&p.key===k){p.aggDirty=true;p.dataVer++;} }); });
   simTickOthers(); },280);
 setInterval(()=>{ if(SRC!=='sim')return;
   refreshWatch(); refreshStrikes(); refreshPositions(); checkSLTP(); updateAcct(); syncPaneUI(); },1000);
@@ -848,13 +847,13 @@ async function brokerPoll(){
           const qr=quotes.get(k);
           if(q.prevClose)qr.prevClose=q.prevClose;
           qr.ltp=q.ltp;
-          panes.forEach(p=>{ if(p.key===k){p.aggDirty=true;p.dataVer++;} }); } }catch(e){} }));
+          panes.forEach(p=>{ if(p&&p.key===k){p.aggDirty=true;p.dataVer++;} }); } }catch(e){} }));
     apiOK=ok>0; setSrcDot();
     refreshWatch(); refreshStrikes(); refreshPositions(); checkSLTP(); updateAcct(); syncPaneUI(); }
   finally{apiPolling=false;} }
 setInterval(brokerPoll,3000);
 
-/* ============ load ============ */
+/* ═══════════ load (no sim fallback) ═══════════ */
 async function loadSymbol(key){
   key=normKey(key);
   const {exch}=parseKey(key);
@@ -914,7 +913,7 @@ qsa('#ordType button').forEach(b=>on(b,'click',()=>{
 on('#botMin','click',()=>{ const bd=qs('#bottom'); bd.classList.toggle('min');
   qs('#botMin').textContent=bd.classList.contains('min')?'▴':'▾'; });
 
-/* ============ settings ============ */
+/* ═══════════ settings ═══════════ */
 on('#setBtn','click',()=>{
   const b=activeBroker();
   qs('#setTitle').textContent=b.label+' · SETTINGS';
@@ -944,7 +943,7 @@ on('#setTest','click',async()=>{
   try{ await b.test(bcfg(b.id)); toast(b.label+' reachable ✓ session stored','ok'); }
   catch(e){ toast('TEST failed: '+e.message,'err'); } });
 
-/* ============ boot ============ */
+/* ═══════════ boot (single, authoritative) ═══════════ */
 buildSrcSeg(); setSrcDot();
 buildLayout(2,2);
 buildToolbar(); setTool('cursor');
@@ -953,7 +952,6 @@ on('#exchSel','change',e=>{ CUR_EXCH=e.target.value; });
 wireAutocomplete(qs('#symIn'),qs('#acDrop'),k=>loadSymbol(k));
 qs('#defLots').value=CFG.defLots||1;
 loadSymbol('NSE:NIFTY');
-/* popover open/close wiring (was missing → buttons looked dead) */
 popWire('#sclBtn','#sclPop');
 popWire('#indBtn','#indPop');
 syncScalesUI(); syncGhostUI(); refreshPositions(); updateAcct();
