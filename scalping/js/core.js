@@ -48,7 +48,7 @@ let panes=[], activePane=0, maxPane=null;
 let colFr=[], rowFr=[];
 let layout=(function(){ const m=String(CFG.layout||'2x2').match(/(\d+)\D+(\d+)/);
   return m?{r:clamp(+m[1],1,5),c:clamp(+m[2],1,5)}:{r:2,c:2}; })();
-let lockCross=true;
+/* lock toggle — lockCross itself is declared in chart.js */
 on('#lockBtn','click',()=>{ lockCross=!lockCross;
   qs('#lockBtn').classList.toggle('on',lockCross); });
 qs('#lockBtn').classList.add('on');
