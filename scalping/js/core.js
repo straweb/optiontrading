@@ -33,43 +33,43 @@ function selectSrc(id){
     else toast(BROKERS[id].label+' selected — load a symbol'); }
   updateAcct(); refreshStrikes(); refreshPositions(); }
 
-/* ============ layout: 1×1 → 5×5 matrix ============ */
-let panes=[], activePane=0, layout=CFG.layout||'3';
+/* ══════════ layout: rows × cols matrix, splitters, maximize, overlays ══════════ */
+let panes=[], activePane=0, layout={r:2,c:2}, colFr=[], rowFr=[], maxPane=null;
 function paneTitle(k){ if(!k)return '—';
   const m=resolveMeta(k);
   return m.type==='OPT'?`${m.root} ${m.strike}${m.optSide}`:m.type==='FUT'?m.root+' F':m.sym; }
-function buildLayout(n){
-  n=n||+layout;
+function buildLayout(r,c){
+  r=clamp(r||2,1,5); c=clamp(c||2,1,5);
+  layout={r,c}; CFG.layout=r+'x'+c; saveCfg();
   const grid=qs('#grid'); if(!grid)return;
-  layout=n; CFG.layout=n; saveCfg();
   const old=panes;
-  grid.className='g'+n+'x'+n;
+  grid.style.gridTemplateColumns=`repeat(${c},1fr)`;
+  grid.style.gridTemplateRows=`repeat(${r},1fr)`;
   grid.innerHTML='';
   panes=[];
-  for(let i=0;i<n*n;i++){
+  for(let i=0;i<r*c;i++){
     const prev=old[i];
     const box=document.createElement('div');box.className='paneBox';
-    // box.innerHTML=`<div class="ph"><span class="pn">—</span><span class="pl">—</span><span class="px" title="clear pane">✕</span></div><canvas></canvas>`;
     box.innerHTML=`<div class="ph"><span class="pn">—</span><span class="pl">—</span><span class="mx" title="maximize / restore (Esc)">⤢</span><span class="px" title="clear pane">✕</span></div><canvas></canvas>`;
     grid.appendChild(box);
-    const cv=box.querySelector('canvas');
-    panes.push(prev&&prev._keep?{...prev,_keep:false}:
-      {key:null,tf:5,ghost:true,ghostStyle:'hollow',drawings:[],uidC:1,undo:[],selId:null,
-       view:null,pctBase:null,pMode:'auto',mLo:0,mHi:1,
-       box,cv,ctx:cv.getContext('2d'),dpr:1,W:0,H:0,
-       yLo:null,yHi:null,volMax:null,volMax1:null,
-       aggDirty:true,aggCache:new Map(),indCache:null,dataVer:0,
-       mouse:{x:0,y:0,in:false},_drag:null,_fvgVer:-1,_fvg:[]});
-    if(prev)prev._keep=false; }
-  /* preserve symbols/order when just resizing */
-  for(let i=0;i<Math.min(old.length,n*n);i++){
-    if(old[i]&&old[i].key&&panes[i]&&!panes[i].key)panes[i].key=old[i].key; }
-  panes.forEach(p=>{ if(p.key)p._keep=true; });
-  bindPaneEvents(); buildLayPop(); layoutUI(); syncPaneUI(); resetSplitters(); applyGridTemplate(); }
+    const cv2=box.querySelector('canvas');
+    panes.push(prev?{...prev,box,cv:cv2,ctx:cv2.getContext('2d')}
+      :{key:null,tf:5,ghost:true,ghostStyle:'hollow',drawings:[],uidC:1,undo:[],selId:null,
+        view:null,pctBase:null,pMode:'auto',mLo:0,mHi:1,
+        dpr:1,W:0,H:0,yLo:null,yHi:null,volMax:null,volMax1:null,
+        aggDirty:true,aggCache:new Map(),indCache:null,dataVer:0,
+        mouse:{x:0,y:0,in:false},_drag:null,_fvgVer:-1,_fvg:[]}); }
+  colFr=Array(c).fill(1); rowFr=Array(r).fill(1); maxPane=null;
+  bindPaneEvents(); layoutUI(); syncPaneUI(); applyGridTemplate(); }
 function layoutUI(){
   const pt=qs('#paneTabs'); if(!pt)return;
   pt.innerHTML=panes.map((p,i)=>`<span class="ptab${i===activePane?' on':''}" data-i="${i}">P${i+1} · ${paneTitle(p.key)}</span>`).join('');
-  qsa('#paneTabs .ptab').forEach(t=>on(t,'click',()=>{activePane=+t.dataset.i;layoutUI();syncPaneUI();syncGhostUI();})); }
+  qsa('#paneTabs .ptab').forEach(t=>on(t,'click',()=>{activePane=+t.dataset.i;layoutUI();syncPaneUI();syncGhostUI();}));
+  mountOverlays(); }
+function mountOverlays(){
+  const p=activeP(); if(!p)return;
+  ['#tools','#legend','#latestBtn','#toolChip','#axMenu','#txtIn'].forEach(id=>{
+    const el=qs(id); if(el&&el.parentElement!==p.box)p.box.appendChild(el); }); }
 function activeP(){ return panes[activePane]; }
 function syncPaneUI(){ panes.forEach((p,i)=>{
   p.box.classList.toggle('activePane',i===activePane);
@@ -81,7 +81,7 @@ function syncPaneUI(){ panes.forEach((p,i)=>{
   p.box.querySelector('.px').style.visibility=p.key?'visible':'hidden'; }); }
 on(document,'click',e=>{
   const px=e.target.closest?.('.paneBox .px'); if(!px)return;
-  const box=px.closest('.paneBox'); const i=panes.findIndex(p=>p.box===box);
+  const i=panes.findIndex(p=>p.box===px.closest('.paneBox'));
   if(i>=0){ const p=panes[i]; p.key=null;p.drawings=[];p.undo=[];p.selId=null;
     p.yLo=p.yHi=null;p.aggCache.clear();p.indCache=null;p.dataVer++;syncPaneUI();layoutUI(); } });
 function paneLoadSymbol(key){
@@ -103,45 +103,36 @@ qsa('#tfSeg button').forEach(b=>on(b,'click',()=>paneSetTF(+b.dataset.tf)));
 on('#ghostToggle','click',()=>{ const p=activeP(); if(p){p.ghost=!p.ghost;syncGhostUI();} });
 qsa('#styleSeg button').forEach(b=>on(b,'click',()=>{
   const p=activeP(); if(p)p.ghostStyle=b.dataset.s; syncGhostUI(); }));
+/* ---- layout picker: hover rows × cols matrix ---- */
 on('#layBtn','click',e=>{ e.stopPropagation(); const pop=qs('#layPop'); if(pop)pop.hidden=!pop.hidden; });
 document.addEventListener('click',e=>{ const pop=qs('#layPop');
   if(pop&&!pop.hidden&&!pop.contains(e.target)&&e.target!==qs('#layBtn'))pop.hidden=true; });
 function buildLayPop(){
   const pop=qs('#layPop'); if(!pop)return;
   pop.innerHTML='';
-  for(let n=1;n<=5;n++){
-    for(let i=0;i<n*n;i++){
-      const cell=document.createElement('i');
-      cell.className='f';
-      cell.dataset.n=n; cell.dataset.k=i;
-      cell.style.display='none';
-      pop.appendChild(cell); } }
-  /* build 25 thumbnails: a thumb of size n shows n×n filled cells */
-  pop.innerHTML='';
-  for(let n=1;n<=5;n++){
-    const t=document.createElement('div');t.className='layT'+(n===+layout?' on':'');
-    t.dataset.n=n; t.title=`${n}×${n}`;
-    t.style.gridTemplateColumns=`repeat(${n},1fr)`;
-    t.style.gridTemplateRows=`repeat(${n},1fr)`;
-    for(let i=0;i<n*n;i++)t.appendChild(document.createElement('i')).className='f';
-    const lbl=document.createElement('div');lbl.className='layLbl';lbl.textContent=n+'×'+n;
-    const wrap=document.createElement('div');wrap.style.display='contents';
-    wrap.appendChild(t);wrap.appendChild(lbl);
-    pop.appendChild(wrap);
-    on(t,'click',()=>{ qs('#layPop').hidden=true; buildLayout(n);
-      if(curSpot)paneLoadSymbol(curSpot); }); } }
-qsa('#sclPop input').forEach(cb=>on(cb,'change',()=>{
-  scales[cb.dataset.scale]=cb.checked;
-  if(!SORDER.some(s=>scales[s]))scales.price=true;
-  syncScalesUI(); }));
-function syncScalesUI(){ qsa('#sclPop input').forEach(cb=>cb.checked=!!scales[cb.dataset.scale]); }
-qsa('#indPop input').forEach(cb=>on(cb,'change',()=>{
-  PANE_DEFS.find(x=>x.id===cb.dataset.pane).on=cb.checked; }));
-function clearAllPanes(){ panes.forEach(p=>{ p.key=null;p.yLo=p.yHi=null;
-  p.aggCache.clear();p.indCache=null;p.dataVer++; });
-  bars.length=0; syncPaneUI(); layoutUI(); }
-/* ===== resizable grid: drag splitters + pane maximize ===== */
-let colFr=[], rowFr=[], maxPane=null;
+  const tbl=document.createElement('div'); tbl.className='layM';
+  for(let r=1;r<=5;r++)for(let c=1;c<=5;c++){
+    const cell=document.createElement('i'); cell.dataset.r=r; cell.dataset.c=c;
+    tbl.appendChild(cell); }
+  const lbl=document.createElement('div'); lbl.className='layLbl2';
+  pop.appendChild(tbl); pop.appendChild(lbl);
+  const paint=(r,c)=>{ qsa('#layPop .layM i').forEach(el=>{
+      el.classList.toggle('f',+el.dataset.r<=r&&+el.dataset.c<=c); });
+    lbl.textContent=r+' rows × '+c+' cols'; };
+  on(tbl,'mousemove',e=>{ const el=e.target.closest('i'); if(el)paint(+el.dataset.r,+el.dataset.c); });
+  on(tbl,'mouseleave',()=>paint(layout.r,layout.c));
+  on(tbl,'click',e=>{ const el=e.target.closest('i'); if(!el)return;
+    qs('#layPop').hidden=true;
+    setLayout(+el.dataset.r,+el.dataset.c); });
+  paint(layout.r,layout.c); }
+function setLayout(r,c){
+  const keys=panes.map(p=>p.key);
+  buildLayout(r,c);
+  panes.forEach((p,i)=>{ if(keys[i]){ p.key=keys[i];
+    ensureQuote(p.key); if(SRC==='sim')symbolData(p.key); } });
+  if(curSpot&&!panes.some(p=>p.key===curSpot)&&panes[0])panes[0].key=curSpot;
+  syncPaneUI(); layoutUI(); }
+/* ---- resizable splitters + maximize ---- */
 function applyGridTemplate(){
   const grid=qs('#grid'); if(!grid)return;
   grid.style.gridTemplateColumns=colFr.map(f=>f+'fr').join(' ');
@@ -149,49 +140,39 @@ function applyGridTemplate(){
   grid.classList.toggle('maxed',maxPane!=null);
   panes.forEach((p,i)=>p.box.classList.toggle('max',i===maxPane));
   placeSplitters(); }
-function resetSplitters(){
-  const n=Math.round(Math.sqrt(panes.length))||1;
-  colFr=Array(n).fill(1); rowFr=Array(n).fill(1); }
 function placeSplitters(){
   qsa('#wrap .spl').forEach(e=>e.remove());
-  const grid=qs('#grid'), wrap=qs('#wrap');
-  if(!grid||!wrap||maxPane!=null||!panes.length)return;
-  const n=Math.round(Math.sqrt(panes.length));
+  if(maxPane!=null||!panes.length)return;
+  const wrap=qs('#wrap'); if(!wrap)return;
   const totC=colFr.reduce((a,b)=>a+b,0), totR=rowFr.reduce((a,b)=>a+b,0);
-  for(let j=1;j<n;j++){
+  for(let j=1;j<colFr.length;j++){
     const pct=colFr.slice(0,j).reduce((a,b)=>a+b,0)/totC*100;
     const s=document.createElement('div'); s.className='spl v';
-    s.style.left=`calc(${pct}% )`; s.dataset.j=j;
-    wrap.appendChild(s); }
-  for(let i=1;i<n;i++){
+    s.style.left=pct+'%'; s.dataset.j=j; wrap.appendChild(s); }
+  for(let i=1;i<rowFr.length;i++){
     const pct=rowFr.slice(0,i).reduce((a,b)=>a+b,0)/totR*100;
     const s=document.createElement('div'); s.className='spl h';
-    s.style.top=`calc(${pct}% )`; s.dataset.i=i;
-    wrap.appendChild(s); } }
+    s.style.top=pct+'%'; s.dataset.i=i; wrap.appendChild(s); } }
 on(document,'pointerdown',e=>{
   const s=e.target.closest?.('.spl'); if(!s)return;
   e.preventDefault(); s.classList.add('act');
   const grid=qs('#grid'), rect=grid.getBoundingClientRect();
-  let move,up;
+  let move;
   if(s.classList.contains('v')){
-    const j=+s.dataset.j;
-    const a0=colFr[j-1], b0=colFr[j], tot=a0+b0;
-    const pxPerFr=rect.width/tot;
+    const j=+s.dataset.j, a0=colFr[j-1], b0=colFr[j], tot=a0+b0;
+    const pxPerFr=rect.width/colFr.reduce((x,y)=>x+y,0);
     const x0=e.clientX;
     move=ev=>{ const d=(ev.clientX-x0)/pxPerFr;
-      colFr[j-1]=clamp(a0+d,0.35,tot-0.35);
-      colFr[j]=tot-colFr[j-1];
+      colFr[j-1]=clamp(a0+d,0.3,tot-0.3); colFr[j]=tot-colFr[j-1];
       applyGridTemplate(); };
   }else{
-    const i=+s.dataset.i;
-    const a0=rowFr[i-1], b0=rowFr[i], tot=a0+b0;
-    const pxPerFr=rect.height/tot;
+    const i=+s.dataset.i, a0=rowFr[i-1], b0=rowFr[i], tot=a0+b0;
+    const pxPerFr=rect.height/rowFr.reduce((x,y)=>x+y,0);
     const y0=e.clientY;
     move=ev=>{ const d=(ev.clientY-y0)/pxPerFr;
-      rowFr[i-1]=clamp(a0+d,0.35,tot-0.35);
-      rowFr[i]=tot-rowFr[i-1];
+      rowFr[i-1]=clamp(a0+d,0.3,tot-0.3); rowFr[i]=tot-rowFr[i-1];
       applyGridTemplate(); }; }
-  up=()=>{ s.classList.remove('act');
+  const up=()=>{ s.classList.remove('act');
     document.removeEventListener('pointermove',move);
     document.removeEventListener('pointerup',up); };
   document.addEventListener('pointermove',move);
@@ -202,10 +183,20 @@ function toggleMaxPane(i){
   panes.forEach(p=>{ if(p.key)p.aggDirty=true; }); }
 on(document,'click',e=>{
   const mx=e.target.closest?.('.paneBox .mx'); if(!mx)return;
-  const box=mx.closest('.paneBox'); const i=panes.findIndex(p=>p.box===box);
+  const i=panes.findIndex(p=>p.box===mx.closest('.paneBox'));
   if(i>=0)toggleMaxPane(i); });
 on(document,'keydown',e=>{
   if(e.key==='Escape'&&maxPane!=null){ maxPane=null; applyGridTemplate(); } });
+qsa('#sclPop input').forEach(cb=>on(cb,'change',()=>{
+  scales[cb.dataset.scale]=cb.checked;
+  if(!SORDER.some(s=>scales[s]))scales.price=true;
+  syncScalesUI(); }));
+function syncScalesUI(){ qsa('#sclPop input').forEach(cb=>cb.checked=!!scales[cb.dataset.scale]); }
+qsa('#indPop input').forEach(cb=>on(cb,'change',()=>{
+  PANE_DEFS.find(x=>x.id===cb.dataset.pane).on=cb.checked; }));
+function clearAllPanes(){ panes.forEach(p=>{ p.key=null;p.yLo=p.yHi=null;
+  p.aggCache.clear();p.indCache=null;p.dataVer++; });
+  bars.length=0; syncPaneUI(); layoutUI(); }
 /* ============ orders ============ */
 let positions=[], trades=[], posId=1;
 const realized={};
@@ -955,12 +946,15 @@ on('#setTest','click',async()=>{
 
 /* ============ boot ============ */
 buildSrcSeg(); setSrcDot();
-buildLayout(2);                                   /* 2×2 default, enough for spot+CE+PE */
+buildLayout(2,2);
 buildToolbar(); setTool('cursor');
 syncDefaults(); buildWatch(); buildExpSels();
 on('#exchSel','change',e=>{ CUR_EXCH=e.target.value; });
 wireAutocomplete(qs('#symIn'),qs('#acDrop'),k=>loadSymbol(k));
 qs('#defLots').value=CFG.defLots||1;
 loadSymbol('NSE:NIFTY');
+/* popover open/close wiring (was missing → buttons looked dead) */
+popWire('#sclBtn','#sclPop');
+popWire('#indBtn','#indPop');
 syncScalesUI(); syncGhostUI(); refreshPositions(); updateAcct();
 requestAnimationFrame(frame);
