@@ -34,7 +34,6 @@
     <input type="range" id="capSlider" min="0" max="100" value="75">
     <span class="achip" id="capPct">75%</span>
     <select id="srcSel" class="miniSel" style="height:28px" title="data source / broker"></select>
-    <span id="srcSeg" style="display:none"></span>
     <span id="srcDot"></span><span id="srcLbl">SIM</span>
     <button class="btn" id="setBtn">⚙ SETTINGS</button>
   </div>
@@ -87,7 +86,7 @@
       <div id="grid"></div>
       <div id="tools"></div>
       <div id="toolChip"></div>
-      <div id="axMenu" hidden style="display:none">
+      <div id="axMenu" style="display:none">
         <div class="mh">ADD ON SCALE</div>
         <button data-act="buy"><span class="sw" style="background:var(--up)"></span>BUY MARKER</button>
         <button data-act="sell"><span class="sw" style="background:var(--dn)"></span>SELL MARKER</button>
@@ -145,9 +144,9 @@
     <div class="ticket">
       <span class="tsym" id="tkSym">—</span>
       <span class="lotlbl" id="lotLbl">SH</span>
-      <input id="tkQty" type="number" min="1" value="1" title="lots / shares">
-      <input id="tkSL" type="number" step="0.05" placeholder="SL" style="width:56px" title="stop-loss (optional, monitored)">
-      <input id="tkTP" type="number" step="0.05" placeholder="TGT" style="width:56px" title="target (optional, monitored)">
+      <input id="tkQty" type="number" min="1" value="1">
+      <input id="tkSL" type="number" step="0.05" placeholder="SL" style="width:56px" title="stop-loss (optional)">
+      <input id="tkTP" type="number" step="0.05" placeholder="TGT" style="width:56px" title="target (optional)">
       <button class="btn buy" id="tkBuy">BUY</button>
       <button class="btn sell" id="tkSell">SELL</button>
       <div class="seg mini" id="ordType"><button data-o="MKT" class="on">MKT</button><button data-o="LMT">LMT</button></div>
