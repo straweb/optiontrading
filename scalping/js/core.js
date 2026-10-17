@@ -1,6 +1,13 @@
 'use strict';
-/* ═══════════ config / broker routing ═══════════ */
-let CFG=Object.assign({cap:100000,deployMode:'pct',deployVal:75,src:'sim',defLots:1,brokers:{},layout:'2x2'},
+/* ═══════════════════════════════════════════════════════════════
+   SCALPING TOOL · core.js  (authoritative single-copy version)
+   Requires (loaded before): instruments.js, indicators.js,
+   brokers/*, chart.js, tools.js
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────── config / broker routing ─────────────── */
+let CFG=Object.assign({cap:100000,deployMode:'pct',deployVal:75,src:'sim',defLots:1,
+  brokers:{},layout:'2x2'},
   JSON.parse(localStorage.getItem('scalping_cfg')||'{}'));
 function saveCfg(){localStorage.setItem('scalping_cfg',JSON.stringify(CFG));}
 const bcfg=id=>CFG.brokers[id]||(CFG.brokers[id]={});
@@ -19,10 +26,11 @@ function buildSrcSeg(){
     on(bt,'click',()=>selectSrc(b.id));
     seg.appendChild(bt); });
   if(Object.keys(BROKERS).length<3)
-    console.warn('[scalping] brokers missing — check js/brokers/* (Network tab for 404)'); }
+    console.warn('[scalping] brokers missing — check js/brokers/* in the Network tab (404?)'); }
 function setSrcDot(){ const d=qs('#srcDot'); if(!d)return;
   d.className=SRC==='sim'?'':(apiOK?'api':'err');
-  qs('#srcLbl').textContent=SRC==='sim'?'SIM':(apiOK?BROKERS[SRC].label+' · LIVE':BROKERS[SRC].label+' · NO LINK'); }
+  const l=qs('#srcLbl');
+  if(l)l.textContent=SRC==='sim'?'SIM':(apiOK?BROKERS[SRC].label+' · LIVE':BROKERS[SRC].label+' · NO LINK'); }
 function selectSrc(id){
   SRC=id; CFG.src=id; saveCfg();
   buildSrcSeg(); setSrcDot();
@@ -30,61 +38,21 @@ function selectSrc(id){
   if(id==='sim'){ if(SYM)loadSymbol(SYM.key); }
   else{
     const cfgd=!!(bcfg(id).key||bcfg(id).uid||bcfg(id).url);
-    if(!cfgd){ toast(BROKERS[id].label+' not configured — chart cleared','err'); qs('#setBtn').click(); }
+    if(!cfgd){ toast(BROKERS[id].label+' not configured — chart cleared','err'); const b=qs('#setBtn'); if(b)b.click(); }
     else if(SYM)loadSymbol(SYM.key);
     else toast(BROKERS[id].label+' selected — load a symbol'); }
   updateAcct(); refreshStrikes(); refreshPositions(); }
-/* pane wiring — self-healing override of chart.js's bindPaneEvents */
-function bindPaneEvents(){
-  panes.forEach((p,idx)=>{
-    if(!p)return;
-    /* self-heal: guarantee a real canvas inside the pane box */
-    let cvEl=p.cv;
-    if(!(cvEl instanceof Element)&&p.box){
-      cvEl=p.box.querySelector('canvas');
-      if(!cvEl){ cvEl=document.createElement('canvas'); p.box.appendChild(cvEl); }
-      p.cv=cvEl; p.ctx=cvEl.getContext('2d');
-    }
-    if(!(cvEl instanceof Element)){ console.warn('[pane '+(idx+1)+'] no canvas — skipped'); return; }
-    p.cv=cvEl; p.ctx=p.ctx||cvEl.getContext('2d');
-    const ro=new ResizeObserver(()=>{
-      p.dpr=window.devicePixelRatio||1;
-      p.W=cvEl.clientWidth; p.H=cvEl.clientHeight;
-      cvEl.width=Math.round(p.W*p.dpr); cvEl.height=Math.round(p.H*p.dpr);
-      if(p.key)p.aggDirty=true;
-    });
-    ro.observe(cvEl);
-    cvEl.addEventListener('pointerdown',e=>{ e.preventDefault();
-      if(activePane!==idx){activePane=idx;layoutUI();syncPaneUI();syncGhostUI();mountOverlays();}
-      const v=view0(p);
-      p._drag={x:e.offsetX,y:e.offsetY,r:v.r,lo:p.yLo,hi:p.yHi};
-      try{cvEl.setPointerCapture(e.pointerId);}catch(_){}
-    });
-    cvEl.addEventListener('pointermove',e=>{
-      p.mouse={x:e.offsetX,y:e.offsetY,in:true};
-      const d=p._drag;
-      if(d){ const v=view0(p);
-        v.r=clampPaneR(p,d.r-(e.offsetX-d.x)/paneSp(p));
-        const dy=e.offsetY-d.y;
-        if(Math.abs(dy)>2&&p.yLo!=null){
-          const R=p.yHi-p.yLo;
-          p.mLo=d.lo+dy*R/p.priceH; p.mHi=d.hi+dy*R/p.priceH; p.pMode='manual'; } } });
-    const end=()=>{ p._drag=null; };
-    cvEl.addEventListener('pointerup',end); cvEl.addEventListener('pointercancel',end);
-    cvEl.addEventListener('pointerleave',()=>{ p.mouse.in=false; });
-    cvEl.addEventListener('wheel',e=>{ e.preventDefault();
-      const v=view0(p), sp=paneSp(p), plotW=p.W-AXIS_W;
-      const nv=clamp(v.v*Math.exp(e.deltaY*0.0011),40,2400);
-      const anchor=v.r-(plotW-e.offsetX)/sp;
-      v.r=clampPaneR(p,anchor+(plotW-e.offsetX)/(plotW/nv)); v.v=nv; },{passive:false});
-    cvEl.addEventListener('dblclick',()=>{ p.view=null;p.yLo=p.yHi=null;p.pMode='auto'; });
-  });
-}
-/* ═══════════ layout: rows × cols, splitters, maximize, overlays ═══════════ */
-let panes=[], activePane=0, layout={r:2,c:2}, colFr=[], rowFr=[], maxPane=null;
+
+/* ─────────────── layout: rows × cols, splitters, maximize, overlays ─────────────── */
+let panes=[], activePane=0, maxPane=null;
+let colFr=[], rowFr=[];
+let layout=(function(){ const m=String(CFG.layout||'2x2').match(/(\d+)\D+(\d+)/);
+  return m?{r:clamp(+m[1],1,5),c:clamp(+m[2],1,5)}:{r:2,c:2}; })();
+
 function paneTitle(k){ if(!k)return '—';
   const m=resolveMeta(k);
   return m.type==='OPT'?`${m.root} ${m.strike}${m.optSide}`:m.type==='FUT'?m.root+' F':m.sym; }
+
 function buildLayout(r,c){
   r=clamp(r||2,1,5); c=clamp(c||2,1,5);
   layout={r,c}; CFG.layout=r+'x'+c; saveCfg();
@@ -96,42 +64,72 @@ function buildLayout(r,c){
   panes=[];
   for(let i=0;i<r*c;i++){
     const prev=old[i];
-    const box=document.createElement('div');box.className='paneBox';
-    box.innerHTML=`<div class="ph"><span class="pn">—</span><span class="pl">—</span><span class="mx" title="maximize / restore (Esc)">⤢</span><span class="px" title="clear pane">✕</span></div><canvas></canvas>`;
+    const box=document.createElement('div'); box.className='paneBox';
+    box.innerHTML=`<div class="ph"><span class="pn">—</span><span class="pl">—</span>`+
+      `<span class="mx" title="maximize / restore (Esc)">⤢</span>`+
+      `<span class="px" title="clear pane">✕</span></div><canvas></canvas>`;
     grid.appendChild(box);
     const cv2=box.querySelector('canvas');
-    panes.push(prev?{...prev,box,cv:cv2,ctx:cv2.getContext('2d')}
-      :{key:null,tf:5,ghost:true,ghostStyle:'hollow',drawings:[],uidC:1,undo:[],selId:null,
-        view:null,pctBase:null,pMode:'auto',mLo:0,mHi:1,
-        dpr:1,W:0,H:0,yLo:null,yHi:null,volMax:null,volMax1:null,
-        aggDirty:true,aggCache:new Map(),indCache:null,dataVer:0,
-        mouse:{x:0,y:0,in:false},_drag:null,_fvgVer:-1,_fvg:[]}); }
+    panes.push({
+      key:prev&&prev.key?prev.key:null,
+      tf:prev?prev.tf:5, ghost:prev?prev.ghost:true, ghostStyle:prev?prev.ghostStyle:'hollow',
+      drawings:prev?prev.drawings:[], uidC:prev?prev.uidC:1, undo:prev?prev.undo:[], selId:null,
+      view:prev?prev.view:null, pctBase:prev?prev.pctBase:null,
+      pMode:'auto', mLo:0, mHi:1,
+      box, cv:cv2, ctx:cv2.getContext('2d'), dpr:1, W:0, H:0,
+      yLo:null, yHi:null, volMax:null, volMax1:null,
+      aggDirty:true, aggCache:new Map(), indCache:null, dataVer:0,
+      mouse:{x:0,y:0,in:false}, _drag:null, _fvgVer:-1, _fvg:[] });
+  }
   colFr=Array(c).fill(1); rowFr=Array(r).fill(1); maxPane=null;
-  bindPaneEvents(); layoutUI(); syncPaneUI(); applyGridTemplate(); }
+  if(activePane>=panes.length)activePane=0;
+  bindPaneEvents(); layoutUI(); syncPaneUI(); applyGridTemplate();
+  if(curSpot&&!panes.some(p=>p.key===curSpot)&&panes[0])panes[0].key=curSpot;
+  syncPaneUI();
+}
+
 function layoutUI(){
   const pt=qs('#paneTabs'); if(!pt)return;
-  pt.innerHTML=panes.map((p,i)=>`<span class="ptab${i===activePane?' on':''}" data-i="${i}">P${i+1} · ${paneTitle(p.key)}</span>`).join('');
-  qsa('#paneTabs .ptab').forEach(t=>on(t,'click',()=>{activePane=+t.dataset.i;layoutUI();syncPaneUI();syncGhostUI();}));
+  pt.innerHTML=panes.map((p,i)=>
+    `<span class="ptab${i===activePane?' on':''}" data-i="${i}">P${i+1} · ${paneTitle(p.key)}</span>`).join('');
+  qsa('#paneTabs .ptab').forEach(t=>on(t,'click',()=>{
+    activePane=+t.dataset.i; layoutUI(); syncPaneUI(); syncGhostUI(); }));
   mountOverlays(); }
+
 function mountOverlays(){
-  const p=activeP(); if(!p||!p.box)return;
+  const p=activeP(); if(!p||!(p.box instanceof Element))return;
   ['#tools','#legend','#latestBtn','#toolChip','#axMenu','#txtIn'].forEach(id=>{
     const el=qs(id); if(el&&el.parentElement!==p.box)p.box.appendChild(el); }); }
+
 function activeP(){ return panes[activePane]||null; }
-function syncPaneUI(){ panes.forEach((p,i)=>{
-  if(!p||!p.box)return;
-  p.box.classList.toggle('activePane',i===activePane);
-  p.box.querySelector('.pn').textContent='P'+(i+1)+' · '+paneTitle(p.key);
-  const q=p.key?quotes.get(p.key):null;
-  const pl=p.box.querySelector('.pl');
-  pl.textContent=q?fmtP(q.ltp):'—';
-  pl.style.color=q&&q.prevClose&&q.ltp<q.prevClose?'var(--dn)':'var(--up)';
-  p.box.querySelector('.px').style.visibility=p.key?'visible':'hidden'; }); }
+
+function syncPaneUI(){
+  panes.forEach((p,i)=>{
+    if(!p||!(p.box instanceof Element))return;
+    p.box.classList.toggle('activePane',i===activePane);
+    const pn=p.box.querySelector('.pn');
+    if(pn)pn.textContent='P'+(i+1)+' · '+paneTitle(p.key);
+    const q=p.key?quotes.get(p.key):null;
+    const pl=p.box.querySelector('.pl');
+    if(pl){ pl.textContent=q?fmtP(q.ltp):'—';
+      pl.style.color=q&&q.prevClose&&q.ltp<q.prevClose?'var(--dn)':'var(--up)'; }
+    const px=p.box.querySelector('.px');
+    if(px)px.style.visibility=p.key?'visible':'hidden'; }); }
+
 on(document,'click',e=>{
   const px=e.target.closest?.('.paneBox .px'); if(!px)return;
   const i=panes.findIndex(p=>p.box===px.closest('.paneBox'));
-  if(i>=0){ const p=panes[i]; p.key=null;p.drawings=[];p.undo=[];p.selId=null;
-    p.yLo=p.yHi=null;p.aggCache.clear();p.indCache=null;p.dataVer++;syncPaneUI();layoutUI(); } });
+  if(i>=0){ const p=panes[i];
+    p.key=null; p.drawings=[]; p.undo=[]; p.selId=null;
+    p.yLo=p.yHi=null; p.aggCache.clear(); p.indCache=null; p.dataVer++;
+    syncPaneUI(); layoutUI(); } });
+on(document,'click',e=>{
+  const mx=e.target.closest?.('.paneBox .mx'); if(!mx)return;
+  const i=panes.findIndex(p=>p.box===mx.closest('.paneBox'));
+  if(i>=0)toggleMaxPane(i); });
+on(document,'keydown',e=>{
+  if(e.key==='Escape'&&maxPane!=null){ maxPane=null; applyGridTemplate(); } });
+
 function paneLoadSymbol(key){
   key=normKey(key);
   const p=activeP(); if(!p)return;
@@ -140,18 +138,22 @@ function paneLoadSymbol(key){
   ensureQuote(key);
   if(SRC==='sim')symbolData(key);
   syncPaneUI(); layoutUI(); refreshWatch(); refreshStrikes(); }
-function paneSetTF(t){ const p=activeP(); if(!p)return;
-  p.tf=t; syncGhostUI(); }
-function syncGhostUI(){ const p=activeP(); if(!p)return;
+
+function paneSetTF(t){ const p=activeP(); if(!p)return; p.tf=t; syncGhostUI(); }
+
+function syncGhostUI(){
+  const p=activeP(); if(!p)return;
   qsa('#tfSeg button').forEach(b=>b.classList.toggle('on',+b.dataset.tf===p.tf));
   const gc=qs('#ghostCtl'); if(gc)gc.classList.toggle('dis',p.tf===1);
   const gt=qs('#ghostToggle'); if(gt)gt.classList.toggle('on',p.ghost);
   qsa('#styleSeg button').forEach(x=>x.classList.toggle('on',x.dataset.s===p.ghostStyle)); }
+
 qsa('#tfSeg button').forEach(b=>on(b,'click',()=>paneSetTF(+b.dataset.tf)));
 on('#ghostToggle','click',()=>{ const p=activeP(); if(p){p.ghost=!p.ghost;syncGhostUI();} });
 qsa('#styleSeg button').forEach(b=>on(b,'click',()=>{
   const p=activeP(); if(p)p.ghostStyle=b.dataset.s; syncGhostUI(); }));
-/* layout picker: hover rows × cols */
+
+/* layout picker — hover rows × cols matrix */
 on('#layBtn','click',e=>{ e.stopPropagation(); const pop=qs('#layPop'); if(pop)pop.hidden=!pop.hidden; });
 document.addEventListener('click',e=>{ const pop=qs('#layPop');
   if(pop&&!pop.hidden&&!pop.contains(e.target)&&e.target!==qs('#layBtn'))pop.hidden=true; });
@@ -174,15 +176,17 @@ function buildLayPop(){
     setLayout(+el.dataset.r,+el.dataset.c); });
   paint(layout.r,layout.c); }
 function setLayout(r,c){
-  const keys=panes.map(p=>p.key);
+  const keys=panes.map(p=>p?p.key:null);
   buildLayout(r,c);
   panes.forEach((p,i)=>{ if(keys[i]){ p.key=keys[i];
     ensureQuote(p.key); if(SRC==='sim')symbolData(p.key); } });
   if(curSpot&&!panes.some(p=>p.key===curSpot)&&panes[0])panes[0].key=curSpot;
   syncPaneUI(); layoutUI(); }
-/* splitters + maximize */
+
+/* resizable splitters + maximize */
 function applyGridTemplate(){
   const grid=qs('#grid'); if(!grid)return;
+  if(!panes.length||panes.some(p=>!p||!(p.box instanceof Element)))return;
   grid.style.gridTemplateColumns=colFr.map(f=>f+'fr').join(' ');
   grid.style.gridTemplateRows=rowFr.map(f=>f+'fr').join(' ');
   grid.classList.toggle('maxed',maxPane!=null);
@@ -192,15 +196,15 @@ function placeSplitters(){
   qsa('#wrap .spl').forEach(e=>e.remove());
   if(maxPane!=null||!panes.length)return;
   const wrap=qs('#wrap'); if(!wrap)return;
-  const totC=colFr.reduce((a,b)=>a+b,0), totR=rowFr.reduce((a,b)=>a+b,0);
+  const totC=colFr.reduce((a,b)=>a+b,0)||1, totR=rowFr.reduce((a,b)=>a+b,0)||1;
   for(let j=1;j<colFr.length;j++){
-    const pct=colFr.slice(0,j).reduce((a,b)=>a+b,0)/totC*100;
     const s=document.createElement('div'); s.className='spl v';
-    s.style.left=pct+'%'; s.dataset.j=j; wrap.appendChild(s); }
+    s.style.left=(colFr.slice(0,j).reduce((a,b)=>a+b,0)/totC*100)+'%';
+    s.dataset.j=j; wrap.appendChild(s); }
   for(let i=1;i<rowFr.length;i++){
-    const pct=rowFr.slice(0,i).reduce((a,b)=>a+b,0)/totR*100;
     const s=document.createElement('div'); s.className='spl h';
-    s.style.top=pct+'%'; s.dataset.i=i; wrap.appendChild(s); } }
+    s.style.top=(rowFr.slice(0,i).reduce((a,b)=>a+b,0)/totR*100)+'%';
+    s.dataset.i=i; wrap.appendChild(s); } }
 on(document,'pointerdown',e=>{
   const s=e.target.closest?.('.spl'); if(!s)return;
   e.preventDefault(); s.classList.add('act');
@@ -208,14 +212,14 @@ on(document,'pointerdown',e=>{
   let move;
   if(s.classList.contains('v')){
     const j=+s.dataset.j, a0=colFr[j-1], b0=colFr[j], tot=a0+b0;
-    const pxPerFr=rect.width/colFr.reduce((x,y)=>x+y,0);
+    const pxPerFr=rect.width/(colFr.reduce((x,y)=>x+y,0)||1);
     const x0=e.clientX;
     move=ev=>{ const d=(ev.clientX-x0)/pxPerFr;
       colFr[j-1]=clamp(a0+d,0.3,tot-0.3); colFr[j]=tot-colFr[j-1];
       applyGridTemplate(); };
   }else{
     const i=+s.dataset.i, a0=rowFr[i-1], b0=rowFr[i], tot=a0+b0;
-    const pxPerFr=rect.height/rowFr.reduce((x,y)=>x+y,0);
+    const pxPerFr=rect.height/(rowFr.reduce((x,y)=>x+y,0)||1);
     const y0=e.clientY;
     move=ev=>{ const d=(ev.clientY-y0)/pxPerFr;
       rowFr[i-1]=clamp(a0+d,0.3,tot-0.3); rowFr[i]=tot-rowFr[i-1];
@@ -228,13 +232,8 @@ on(document,'pointerdown',e=>{
 function toggleMaxPane(i){
   maxPane=maxPane===i?null:i;
   applyGridTemplate();
-  panes.forEach(p=>{ if(p.key)p.aggDirty=true; }); }
-on(document,'click',e=>{
-  const mx=e.target.closest?.('.paneBox .mx'); if(!mx)return;
-  const i=panes.findIndex(p=>p.box===mx.closest('.paneBox'));
-  if(i>=0)toggleMaxPane(i); });
-on(document,'keydown',e=>{
-  if(e.key==='Escape'&&maxPane!=null){ maxPane=null; applyGridTemplate(); } });
+  panes.forEach(p=>{ if(p&&p.key)p.aggDirty=true; }); }
+
 qsa('#sclPop input').forEach(cb=>on(cb,'change',()=>{
   scales[cb.dataset.scale]=cb.checked;
   if(!SORDER.some(s=>scales[s]))scales.price=true;
@@ -242,11 +241,16 @@ qsa('#sclPop input').forEach(cb=>on(cb,'change',()=>{
 function syncScalesUI(){ qsa('#sclPop input').forEach(cb=>cb.checked=!!scales[cb.dataset.scale]); }
 qsa('#indPop input').forEach(cb=>on(cb,'change',()=>{
   PANE_DEFS.find(x=>x.id===cb.dataset.pane).on=cb.checked; }));
-function clearAllPanes(){ panes.forEach(p=>{ if(!p)return;
-  p.key=null;p.yLo=p.yHi=null;p.aggCache.clear();p.indCache=null;p.dataVer++; });
-  bars.length=0; syncPaneUI(); layoutUI(); }
 
-/* ═══════════ orders / positions / trades ═══════════ */
+function clearAllPanes(){
+  panes.forEach(p=>{ if(!p)return;
+    p.key=null; p.yLo=p.yHi=null;
+    if(p.aggCache)p.aggCache.clear();
+    p.indCache=null; p.dataVer=(p.dataVer||0)+1; });
+  bars.length=0;
+  syncPaneUI(); layoutUI(); }
+
+/* ─────────────── orders / positions / trades ─────────────── */
 let positions=[], trades=[], posId=1;
 const realized={};
 function currentPriceOf(key){ const q=quotes.get(key); return q?q.ltp:resolveMeta(key).basePrice; }
@@ -254,8 +258,9 @@ function ticketLot(){ const m=ticketKey||(SYM&&SYM.key);
   if(!m)return 1; const mm=resolveMeta(m);
   return (mm.root&&LOTS[mm.root])?LOTS[mm.root]:1; }
 function updateLotLbl(){ const lot=ticketLot();
-  const l=qs('#lotLbl'); if(l){l.textContent=lot>1?'LOT':'SH';
-    qs('#tkQty').title=lot>1?`lots · 1 lot = ${lot}`:'shares';} }
+  const l=qs('#lotLbl');
+  if(l){ l.textContent=lot>1?'LOT':'SH';
+    qs('#tkQty').title=lot>1?`lots · 1 lot = ${lot}`:'shares'; } }
 function resolveFill(live){
   if(ordType==='LMT'){ const v=+qs('#ordPx').value; return isFinite(v)&&v>0?v:live; }
   return live; }
@@ -340,7 +345,10 @@ function posRow(p){
     <td>${fmtP(p.avg)}</td><td>${fmtP(ltp)}</td>
     <td class="${pnl>=0?'u':'d'}">${pnl>=0?'+':''}${pnl.toFixed(2)}</td>
     <td class="${net>=0?'u':'d'}">${net>=0?'+':''}${net.toFixed(2)}</td>
-    <td><button class="pb" onclick="editPosition(${p.id})">EDIT</button><button class="pb" onclick="repeatPos(${p.id})">REPEAT</button><button class="pb" onclick="swapPos(${p.id})">SWAP</button><button class="sq dz" onclick="squareOff(${p.id})">SQ-OFF</button></td></tr>`; }
+    <td><button class="pb" onclick="editPosition(${p.id})">EDIT</button>`+
+    `<button class="pb" onclick="repeatPos(${p.id})">REPEAT</button>`+
+    `<button class="pb" onclick="swapPos(${p.id})">SWAP</button>`+
+    `<button class="sq dz" onclick="squareOff(${p.id})">SQ-OFF</button></td></tr>`; }
 function refreshPositions(){
   const tb=qs('#tbPos'); if(!tb)return;
   if(editRowId!=null){
@@ -369,7 +377,8 @@ function refreshPositions(){
         <td>${fmtP(ltp)}</td>
         <td class="${pnl>=0?'u':'d'}">${pnl>=0?'+':''}${pnl.toFixed(2)}</td>
         <td class="${net>=0?'u':'d'}">${net>=0?'+':''}${net.toFixed(2)}</td>
-        <td><button class="pb" onclick="saveEdit(${x.id})">SAVE</button><button class="sq" onclick="cancelEdit()">CANCEL</button></td></tr>`
+        <td><button class="pb" onclick="saveEdit(${x.id})">SAVE</button>`+
+        `<button class="sq" onclick="cancelEdit()">CANCEL</button></td></tr>`
       :posRow(x)).join('');
     const tr=tb.querySelector(`tr[data-id="${p.id}"]`);
     if(tr){ tr.querySelector('.eq').focus(); tr.querySelector('.eq').select(); } }
@@ -405,7 +414,7 @@ on('#defLots','change',e=>{ CFG.defLots=Math.max(1,Math.round(+e.target.value||1
   e.target.value=CFG.defLots; saveCfg(); refreshStrikes(); });
 on('#prdSel','change',e=>{ PRD=e.target.value; });
 
-/* ═══════════ watchlist ═══════════ */
+/* ─────────────── watchlist ─────────────── */
 let watch=JSON.parse(localStorage.getItem('scalping_watch')||
   '["NSE:NIFTY","NSE:BANKNIFTY","NSE:RELIANCE","NSE:HDFCBANK","NSE:TCS"]');
 const wRefs=new Map();
@@ -437,7 +446,7 @@ on('#wCol','click',()=>{
   const w=qs('#watch'); if(!w)return; w.classList.toggle('min');
   const b=qs('#wCol'); if(b)b.textContent=w.classList.contains('min')?'»':'«'; });
 
-/* ═══════════ EQ / FNO + dual expiries + FNO auto-grid ═══════════ */
+/* ─────────────── EQ / FNO + dual expiries + FNO auto-grid ─────────────── */
 let inst='eq', expSpotIdx=0, expOptIdx=0;
 function rootOf(){
   if(SYM){ if(SYM.type==='OPT'||SYM.type==='FUT')return SYM.root;
@@ -487,7 +496,8 @@ function setupFnoPanes(){
   panes[0].key=curSpot;
   panes[1].key=optKey(root,atm,'CE');
   panes[2].key=optKey(root,atm,'PE');
-  panes.slice(0,3).forEach(p=>{ p.view=null;p.yLo=p.yHi=null;p.aggCache.clear();p.indCache=null;p.dataVer++;
+  panes.slice(0,3).forEach(p=>{
+    p.view=null; p.yLo=p.yHi=null; p.aggCache.clear(); p.indCache=null; p.dataVer++;
     ensureQuote(p.key); if(SRC==='sim')symbolData(p.key); });
   curOptExp=expOptIdx;
   activePane=0; layoutUI(); syncPaneUI(); syncGhostUI(); mountOverlays(); refreshStrikes();
@@ -499,7 +509,7 @@ function updateStrikesVis(){
   const st=qs('#strikes'); if(st)st.style.display=show?'flex':'none';
   return show?root:null; }
 
-/* ═══════════ strike panel ═══════════ */
+/* ─────────────── strike panel ─────────────── */
 let optSide='CE', optRole='buyer', offDir=1, strikeSig='';
 const strikeLists=new Map();
 const rowRefs=new Map();
@@ -798,7 +808,7 @@ function checkSLTP(){
     else{ if(isFinite(sl)&&ltp>=sl)hit='SL'; else if(isFinite(tp)&&ltp<=tp)hit='TARGET'; }
     if(hit){ toast(`${hit} hit · ${disp(p.key)} @ ${fmtP(ltp)}`, hit==='SL'?'err':'ok'); squareOff(p.id); } } }
 
-/* ═══════════ scheduler ═══════════ */
+/* ─────────────── scheduler ─────────────── */
 let sched=[], schedSeq=1;
 const ACTS={
   deployCE:()=>deploy('CE'), deployPE:()=>deploy('PE'),
@@ -819,7 +829,9 @@ function renderSched(){
     return `<tr><td><b>${new Date(t.at).toLocaleString('en-IN',{hour12:false})}</b></td>
       <td>${ACTLBL[t.act]||t.act}</td><td>${tgt}</td>
       <td class="${t.done?'':(pend?'u':'d')}">${t.done?'✓ fired':pend?'pending':'missed'}</td>
-      <td>${!t.done?`<button class="pb" onclick="schedFire(${t.id})">RUN NOW</button>`:''}<button class="pb" onclick="schedEdit(${t.id})">EDIT</button><button class="sq" onclick="schedDel(${t.id})">✕</button></td></tr>`;}).join(''); }
+      <td>${!t.done?`<button class="pb" onclick="schedFire(${t.id})">RUN NOW</button>`:''}`+
+      `<button class="pb" onclick="schedEdit(${t.id})">EDIT</button>`+
+      `<button class="sq" onclick="schedDel(${t.id})">✕</button></td></tr>`;}).join(''); }
 function schedFire(id){ const t=sched.find(x=>x.id===id); if(!t||t.done)return;
   t.done=true;
   try{t.sym?ACTS[t.act](t.sym):ACTS[t.act]();}catch(e){}
@@ -858,10 +870,10 @@ setInterval(()=>{ let fired=false; const now=Date.now();
     toast(`⏰ ${ACTLBL[t.act]||t.act} fired`,'ok'); } }
   if(fired)renderSched(); },250);
 
-/* ═══════════ quotes / sim ticks ═══════════ */
+/* ─────────────── quotes / sim ticks ─────────────── */
 function simTickOthers(){
   for(const [key,q] of quotes){
-    if(panes.some(p=>p.key===key))continue;
+    if(panes.some(p=>p&&p.key===key))continue;
     const m=metaCache.get(key);
     if(m&&m.type==='OPT')
       q.ltp=bs(liveSpot(m.root),m.strike,tym(m.exp),m.iv,m.optSide==='CE')*(1+(rng()-.5)*0.012);
@@ -898,7 +910,7 @@ async function brokerPoll(){
   finally{apiPolling=false;} }
 setInterval(brokerPoll,3000);
 
-/* ═══════════ load (no sim fallback) ═══════════ */
+/* ─────────────── load (no sim fallback) ─────────────── */
 async function loadSymbol(key){
   key=normKey(key);
   const {exch}=parseKey(key);
@@ -958,7 +970,7 @@ qsa('#ordType button').forEach(b=>on(b,'click',()=>{
 on('#botMin','click',()=>{ const bd=qs('#bottom'); bd.classList.toggle('min');
   qs('#botMin').textContent=bd.classList.contains('min')?'▴':'▾'; });
 
-/* ═══════════ settings ═══════════ */
+/* ─────────────── settings ─────────────── */
 on('#setBtn','click',()=>{
   const b=activeBroker();
   qs('#setTitle').textContent=b.label+' · SETTINGS';
@@ -988,9 +1000,57 @@ on('#setTest','click',async()=>{
   try{ await b.test(bcfg(b.id)); toast(b.label+' reachable ✓ session stored','ok'); }
   catch(e){ toast('TEST failed: '+e.message,'err'); } });
 
-/* ═══════════ boot (single, authoritative) ═══════════ */
+/* ─────────────── pane wiring — self-healing override ───────────────
+   Defined here (core.js loads last) so it wins over chart.js's copy.
+   Guarantees every pane has a real canvas before observing/binding.   */
+function bindPaneEvents(){
+  panes.forEach((p,idx)=>{
+    if(!p)return;
+    let cvEl=p.cv;
+    if(!(cvEl instanceof Element)&&p.box instanceof Element){
+      cvEl=p.box.querySelector('canvas');
+      if(!cvEl){ cvEl=document.createElement('canvas'); p.box.appendChild(cvEl); }
+      p.cv=cvEl; p.ctx=cvEl.getContext('2d');
+    }
+    if(!(cvEl instanceof Element)){ console.warn('[pane '+(idx+1)+'] no canvas — skipped'); return; }
+    p.cv=cvEl; p.ctx=p.ctx||cvEl.getContext('2d');
+    const ro=new ResizeObserver(()=>{
+      p.dpr=window.devicePixelRatio||1;
+      p.W=cvEl.clientWidth; p.H=cvEl.clientHeight;
+      cvEl.width=Math.round(p.W*p.dpr); cvEl.height=Math.round(p.H*p.dpr);
+      if(p.key)p.aggDirty=true;
+    });
+    ro.observe(cvEl);
+    cvEl.addEventListener('pointerdown',e=>{ e.preventDefault();
+      if(activePane!==idx){activePane=idx;layoutUI();syncPaneUI();syncGhostUI();mountOverlays();}
+      const v=view0(p);
+      p._drag={x:e.offsetX,y:e.offsetY,r:v.r,lo:p.yLo,hi:p.yHi};
+      try{cvEl.setPointerCapture(e.pointerId);}catch(_){}
+    });
+    cvEl.addEventListener('pointermove',e=>{
+      p.mouse={x:e.offsetX,y:e.offsetY,in:true};
+      const d=p._drag;
+      if(d){ const v=view0(p);
+        v.r=clampPaneR(p,d.r-(e.offsetX-d.x)/paneSp(p));
+        const dy=e.offsetY-d.y;
+        if(Math.abs(dy)>2&&p.yLo!=null){
+          const R=p.yHi-p.yLo;
+          p.mLo=d.lo+dy*R/p.priceH; p.mHi=d.hi+dy*R/p.priceH; p.pMode='manual'; } } });
+    const end=()=>{ p._drag=null; };
+    cvEl.addEventListener('pointerup',end); cvEl.addEventListener('pointercancel',end);
+    cvEl.addEventListener('pointerleave',()=>{ p.mouse.in=false; });
+    cvEl.addEventListener('wheel',e=>{ e.preventDefault();
+      const v=view0(p), sp=paneSp(p), plotW=p.W-AXIS_W;
+      const nv=clamp(v.v*Math.exp(e.deltaY*0.0011),40,2400);
+      const anchor=v.r-(plotW-e.offsetX)/sp;
+      v.r=clampPaneR(p,anchor+(plotW-e.offsetX)/(plotW/nv)); v.v=nv; },{passive:false});
+    cvEl.addEventListener('dblclick',()=>{ p.view=null;p.yLo=p.yHi=null;p.pMode='auto'; });
+  });
+}
+
+/* ─────────────── boot ─────────────── */
 buildSrcSeg(); setSrcDot();
-buildLayout(2,2);
+buildLayout(layout.r,layout.c);
 buildToolbar(); setTool('cursor');
 syncDefaults(); buildWatch(); buildExpSels();
 on('#exchSel','change',e=>{ CUR_EXCH=e.target.value; });
@@ -1001,107 +1061,3 @@ popWire('#sclBtn','#sclPop');
 popWire('#indBtn','#indPop');
 syncScalesUI(); syncGhostUI(); refreshPositions(); updateAcct();
 requestAnimationFrame(frame);
-
-/* ═══ pane-guard layer — paste at the VERY END of core.js ═══ */
-(function(){
-  /* normalize layout shape (older code paths may have left a string/number) */
-  if(typeof layout==='string'){ const m=layout.match(/(\d+)\D+(\d+)/);
-    layout=m?{r:+m[1],c:+m[2]}:{r:2,c:2}; }
-  if(typeof layout==='number'){ const n=layout; layout={r:n,c:n}; }
-
-  let _fixing=false;
-  const sane=()=>{
-    if(!Array.isArray(panes))panes=[];
-    const good=panes.filter(p=>p&&p.box instanceof Element);
-    if(good.length!==panes.length){
-      console.warn('[layout] dropped '+(panes.length-good.length)+
-        ' malformed pane(s) — a stale fragment is still in core.js. Run __diag() and search the file for: _keep / paneCount / resetSplitters / installData / clearChart / tick( / newBar( / renderHeader(');
-      panes=good;
-      if(!_fixing&&panes.length){
-        _fixing=true;
-        try{ buildLayout(layout.r||2,layout.c||2); }catch(e){}
-        _fixing=false;
-        return sane();
-      }
-    }
-    if(activePane>=panes.length)activePane=Math.max(0,panes.length-1);
-    return panes.length>0;
-  };
-
-  applyGridTemplate=function(){
-    const grid=qs('#grid'); if(!grid)return;
-    if(!sane())return;
-    grid.style.gridTemplateColumns=colFr.map(f=>f+'fr').join(' ');
-    grid.style.gridTemplateRows=rowFr.map(f=>f+'fr').join(' ');
-    grid.classList.toggle('maxed',maxPane!=null);
-    panes.forEach((p,i)=>p.box.classList.toggle('max',i===maxPane));
-    placeSplitters();
-  };
-
-  syncPaneUI=function(){ if(!sane())return;
-    panes.forEach((p,i)=>{
-      p.box.classList.toggle('activePane',i===activePane);
-      const pn=p.box.querySelector('.pn');
-      if(pn)pn.textContent='P'+(i+1)+' · '+paneTitle(p.key);
-      const q=p.key?quotes.get(p.key):null;
-      const pl=p.box.querySelector('.pl');
-      if(pl){ pl.textContent=q?fmtP(q.ltp):'—';
-        pl.style.color=q&&q.prevClose&&q.ltp<q.prevClose?'var(--dn)':'var(--up)'; }
-      const px=p.box.querySelector('.px');
-      if(px)px.style.visibility=p.key?'visible':'hidden';
-    });
-  };
-
-  placeSplitters=function(){
-    qsa('#wrap .spl').forEach(e=>e.remove());
-    if(maxPane!=null||!panes.length)return;
-    const wrap=qs('#wrap'); if(!wrap)return;
-    const totC=colFr.reduce((a,b)=>a+b,0)||1, totR=rowFr.reduce((a,b)=>a+b,0)||1;
-    for(let j=1;j<colFr.length;j++){
-      const s=document.createElement('div'); s.className='spl v';
-      s.style.left=(colFr.slice(0,j).reduce((a,b)=>a+b,0)/totC*100)+'%';
-      s.dataset.j=j; wrap.appendChild(s); }
-    for(let i=1;i<rowFr.length;i++){
-      const s=document.createElement('div'); s.className='spl h';
-      s.style.top=(rowFr.slice(0,i).reduce((a,b)=>a+b,0)/totR*100)+'%';
-      s.dataset.i=i; wrap.appendChild(s); }
-  };
-
-  mountOverlays=function(){
-    const p=activeP(); if(!p||!(p.box instanceof Element))return;
-    ['#tools','#legend','#latestBtn','#toolChip','#axMenu','#txtIn'].forEach(id=>{
-      const el=qs(id); if(el&&el.parentElement!==p.box)p.box.appendChild(el); });
-  };
-
-  layoutUI=function(){
-    const pt=qs('#paneTabs'); if(!pt)return;
-    if(!sane()){pt.innerHTML='';return;}
-    pt.innerHTML=panes.map((p,i)=>
-      `<span class="ptab${i===activePane?' on':''}" data-i="${i}">P${i+1} · ${paneTitle(p.key)}</span>`).join('');
-    qsa('#paneTabs .ptab').forEach(t=>on(t,'click',()=>{
-      activePane=+t.dataset.i;layoutUI();syncPaneUI();syncGhostUI();}));
-    mountOverlays();
-  };
-
-  clearAllPanes=function(){
-    panes.forEach(p=>{ if(!p)return;
-      p.key=null;p.yLo=p.yHi=null;
-      if(p.aggCache)p.aggCache.clear();
-      p.indCache=null;p.dataVer=(p.dataVer||0)+1; });
-    bars.length=0;
-    if(sane()){syncPaneUI();layoutUI();}
-  };
-
-  /* diagnostics */
-  window.__diag=()=>{
-    const stale=['paneCount','resetSplitters','snapshotTab','restoreTab','switchTab',
-      'installData','clearChart','tick','newBar','renderHeader','flashHeader','fmtEnd'];
-    const found=stale.filter(f=>typeof window[f]==='function');
-    console.table(found.map(f=>({staleFunction:f})));
-    console.log('applyGridTemplate guarded:',/sane/.test(applyGridTemplate.toString()));
-    console.log('panes:',panes.length,'| active:',activePane,'| layout:',JSON.stringify(layout));
-    return found.length?('STALE FRAGMENTS PRESENT — delete the blocks defining: '+found.join(', '))
-                       :'core.js looks clean';
-  };
-  console.log('%c[layout guard] active — run __diag() to find stale fragments','color:#e0a63f');
-})();
