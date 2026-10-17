@@ -67,6 +67,7 @@ function la0(sp){ return clamp((sp-1.5)/1.8,0,1); }
 /* per-pane interactions */
 function bindPaneEvents(){
   panes.forEach((p,idx)=>{
+    if(!p||!(p.cv instanceof Element))return;
     const cv=p.cv;
     const ro=new ResizeObserver(()=>{
       p.dpr=window.devicePixelRatio||1;
