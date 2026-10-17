@@ -55,14 +55,17 @@ function paneFVG(p){
     if(f.dir===1){ if(x.l<=f.bot){f.gone=true;break;} if(!f.fill&&x.l<f.top)f.fill=j; }
     else{ if(x.h>=f.top){f.gone=true;break;} if(!f.fill&&x.h>f.bot)f.fill=j; } } }
   p._fvgVer=p.dataVer;p._fvg=list;return list; }
-function view0(p){ if(!p.view){ const src=paneBars(p);
-  p.view={r:(src.length||100)+6,v:Math.min(260,Math.max(40,(src.length||100)))}; }
-  if(p.autoFollow!==false){ const n=src.length;
-    if(n&&Math.abs(v.r-(n+3))>2)v.r=n+3; }
+
+function view0(p){
+  const src=paneBars(p), n=src.length||100;
+  if(!p.view)p.view={r:n+6,v:Math.min(260,Math.max(40,n))};
+  if(p.autoFollow!==false&&n){
+    if(Math.abs(p.view.r-(n+3))>2)p.view.r=n+3; }
   return p.view; }
 function paneSp(p){ return (p.W-AXIS_W)/view0(p).v; }
 function clampPaneR(p,r){ const src=paneBars(p);
   return clamp(r,view0(p).v-30,src.length+90); }
+
 function la0(sp){ return clamp((sp-1.5)/1.8,0,1); }
 function fmtHM(gm){const m=((gm%SESSION)+SESSION)%SESSION,t=OPEN_MIN+m;
   return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
