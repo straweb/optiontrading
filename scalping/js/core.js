@@ -1074,3 +1074,95 @@ popWire('#sclBtn','#sclPop');
 popWire('#indBtn','#indPop');
 syncScalesUI(); syncGhostUI(); refreshPositions(); updateAcct();
 requestAnimationFrame(frame);
+
+/* ═══ patch layer · paste at the VERY END of core.js ═══ */
+
+/* layout picker — inline styles, no CSS dependency */
+function buildLayPop(){
+  const pop=qs('#layPop'); if(!pop)return;
+  pop.innerHTML='';
+  pop.style.cssText='position:absolute;top:30px;left:8px;z-index:300;background:#11141a;'+
+    'border:1px solid #262e39;border-radius:12px;padding:10px;box-shadow:0 16px 40px rgba(0,0,0,.6)';
+  const tbl=document.createElement('div');
+  tbl.style.cssText='display:grid;grid-template-columns:repeat(5,16px);grid-template-rows:repeat(5,16px);gap:3px';
+  for(let r=1;r<=5;r++)for(let c=1;c<=5;c++){
+    const cell=document.createElement('i');
+    cell.dataset.r=r; cell.dataset.c=c;
+    cell.style.cssText='background:#1a2029;border-radius:3px;cursor:pointer;display:block';
+    tbl.appendChild(cell); }
+  const lbl=document.createElement('div');
+  lbl.style.cssText='font:600 9.5px "IBM Plex Mono",monospace;color:#e0a63f;text-align:center;margin-top:7px;min-width:112px';
+  pop.appendChild(tbl); pop.appendChild(lbl);
+  const paint=(r,c)=>{ [...tbl.children].forEach(el=>{
+      el.style.background=(+el.dataset.r<=r&&+el.dataset.c<=c)?'#e0a63f':'#1a2029'); };
+    lbl.textContent=r+' rows × '+c+' cols'; };
+  tbl.addEventListener('mousemove',e=>{ const el=e.target.closest('i'); if(el)paint(+el.dataset.r,+el.dataset.c); });
+  tbl.addEventListener('mouseleave',()=>paint(layout.r,layout.c));
+  tbl.addEventListener('click',e=>{ const el=e.target.closest('i'); if(!el)return;
+    pop.hidden=true; console.log('[layout]',el.dataset.r+'x'+el.dataset.c);
+    setLayout(+el.dataset.r,+el.dataset.c); });
+  paint(layout.r,layout.c); }
+buildLayPop();                                    /* ← was never invoked before */
+
+/* pane header: constant title, fixed-width value — buttons never move */
+function syncPaneUI(){
+  panes.forEach((p,i)=>{
+    if(!p||!(p.box instanceof Element))return;
+    p.box.classList.toggle('activePane',i===activePane);
+    const pn=p.box.querySelector('.pn');
+    if(pn)pn.textContent='P'+(i+1)+' · '+paneTitle(p.key);        /* NEVER hover-mutated */
+    const q=p.key?quotes.get(p.key):null;
+    const src=p.key===SYM?.key?bars:(dataCache.get(p.key)?.bars||[]);
+    const hv=p._hoverGm!=null?src[p._hoverGm]:null;
+    const val=hv?hv.c:(q?q.ltp:null);
+    const base=q&&q.prevClose?q.prevClose:(p.pctBase||val);
+    const chg=val&&base?(val-base)/base*100:0;
+    const pl=p.box.querySelector('.pl');
+    if(pl){ pl.textContent=(p._hoverGm!=null?'@ ':'')+(val!=null?fmtP(val):'—');
+      pl.style.color=chg>=0?'var(--up)':'var(--dn)'; }
+    const px=p.box.querySelector('.px');
+    if(px)px.style.visibility=p.key?'visible':'hidden'; }); }
+
+/* FNO: P1 spot full-width top · CE + PE second row · 4th slot hidden */
+function setupFnoPanes(){
+  const root=rootOf(); if(!root)return;
+  buildLayout(2,2);
+  const spot=liveSpot(root), step=strikeStep(root,spot);
+  const atm=Math.round(spot/step)*step;
+  curSpot='NSE:'+root;
+  panes[0].box.style.gridArea='1 / 1 / 2 / 3';   /* spot spans both columns */
+  panes[1].box.style.gridArea='2 / 1 / 3 / 2';   /* ATM CE */
+  panes[2].box.style.gridArea='2 / 2 / 3 / 3';   /* ATM PE */
+  panes[3].box.style.display='none';             /* unused 4th slot */
+  panes[0].key=curSpot;
+  panes[1].key=optKey(root,atm,'CE');
+  panes[2].key=optKey(root,atm,'PE');
+  panes[3].key=null;
+  panes.forEach(p=>{
+    p.view=null;p.yLo=p.yHi=null;
+    if(p.aggCache)p.aggCache.clear();
+    p.indCache=null;p.dataVer=(p.dataVer||0)+1;
+    if(p.key){ ensureQuote(p.key); if(SRC==='sim')symbolData(p.key); } });
+  curOptExp=expOptIdx;
+  activePane=0; layoutUI(); syncPaneUI(); syncGhostUI(); mountOverlays(); refreshStrikes();
+  ticketKey=curSpot; const t=qs('#tkSym'); if(t)t.textContent=disp(curSpot);
+  updateLotLbl();
+  toast('FNO: P1 spot (full width) · row2: CE | PE ('+expAll[curOptExp].f+')','ok'); }
+
+/* diagnostics — run __chk() in the console after Ctrl+F5 */
+window.__chk=()=>{
+  const r={};
+  r.layPop_cells=qs('#layPop')?qs('#layPop').querySelectorAll('i').length:0;
+  r.tools_parent=qs('#tools')?.parentElement?.className||'MISSING';
+  r.legend_parent=qs('#legend')?.parentElement?.className||'MISSING';
+  r.chart_relLabel=typeof relLabel==='function';
+  r.chart_addBtn=typeof frame==='function'&&frame.toString().includes('_addBtn');
+  r.chart_priceZoom=typeof bindPaneEvents==='function'&&bindPaneEvents.toString().includes('PRICE zoom');
+  r.chart_lockCross=typeof lockCross!=='undefined';
+  r.panes=panes.length;
+  r.panes_valid=panes.filter(p=>p&&p.box instanceof Element).length;
+  console.table(r);
+  if(!r.chart_relLabel||!r.chart_addBtn||!r.chart_priceZoom)
+    console.warn('%c→ chart.js is an OLD version. Re-apply the full chart.js from the previous patch (price zoom, add-button, locked crosshair and %/pts pills all live there).','color:#e5484d');
+  return r; };
+console.log('%c[patch] active — run __chk()','color:#e0a63f');
